@@ -379,6 +379,9 @@ class Level1Scene extends Phaser.Scene {
       if (JEDA.Stage3D) {
         JEDA.Stage3D.setSync('good');
         JEDA.Stage3D.pulse(0.6);
+        if (JEDA.Stage3D.triggerBreathRing) {
+          JEDA.Stage3D.triggerBreathRing();
+        }
       }
     } else if (cycleScore >= 0.5) {
       dotColor = JEDA.CFG.COLOR.warn;
@@ -505,13 +508,17 @@ class Level1Scene extends Phaser.Scene {
     // 1. Tampilkan toast peringatan BR-03
     JEDA.UI.toast(this, 'Perhatianmu tadi pergi. Kembali ke napas.');
 
-    // 2. Orb berkedip warna 'off' (#FF8FA3)
+    // 2. Orb berkedip warna 'off' (#FF8FA3) dan meredup 0,5 detik (Tabel 13.4)
     this.flashOrbOff();
     if (JEDA.Stage3D) {
-      JEDA.Stage3D.setSync('off');
-      this.time.delayedCall(600, () => {
-        if (JEDA.Stage3D) JEDA.Stage3D.setSync('good');
-      });
+      if (JEDA.Stage3D.flashDistraction) {
+        JEDA.Stage3D.flashDistraction();
+      } else {
+        JEDA.Stage3D.setSync('off');
+        this.time.delayedCall(500, () => {
+          if (JEDA.Stage3D) JEDA.Stage3D.setSync('good');
+        });
+      }
     }
   }
 
@@ -556,6 +563,9 @@ class Level1Scene extends Phaser.Scene {
       JEDA.State.data.fails.l1 = 0;
       if (JEDA.Stage3D) {
         JEDA.Stage3D.setLanterns(1); // Lentera pulau 1 menyala
+        if (JEDA.Stage3D.celebratePass) {
+          JEDA.Stage3D.celebratePass();
+        }
       }
     } else {
       JEDA.State.data.fails.l1 = (JEDA.State.data.fails.l1 || 0) + 1;

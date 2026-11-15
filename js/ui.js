@@ -371,6 +371,9 @@ JEDA.UI = {
     const motionBtn = this.createButton(scene, cx, cy - 40, 520, 64, motionBtnText, () => {
       JEDA.State.data.settings.reduceMotion = !JEDA.State.data.settings.reduceMotion;
       JEDA.State.save();
+      if (JEDA.Stage3D && JEDA.Stage3D.setReduceMotion) {
+        JEDA.Stage3D.setReduceMotion(JEDA.State.data.settings.reduceMotion);
+      }
       motionBtn.textObj.setText(JEDA.State.data.settings.reduceMotion ? 'Kurangi Gerakan: [AKTIF]' : 'Kurangi Gerakan: [NONAKTIF]');
       JEDA.UI.toast(scene, 'Pengaturan animasi diperbarui.');
     });
@@ -400,6 +403,12 @@ JEDA.UI = {
   showPanicOverlay(scene) {
     const W = JEDA.CFG.W;
     const H = JEDA.CFG.H;
+
+    // Reaksi 3D Tabel 13.4: Suasana meredup, kamera mundur sedikit
+    if (JEDA.Stage3D && JEDA.Stage3D.triggerPanic) {
+      JEDA.Stage3D.triggerPanic();
+    }
+
     const container = scene.add.container(W / 2, H / 2).setDepth(1500);
 
     const bg = scene.add.graphics();

@@ -393,8 +393,11 @@ class Level2Scene extends Phaser.Scene {
 
       if (JEDA.Stage3D) {
         JEDA.Stage3D.pulse(0.5);
-        this.currentCalm = Math.min(1.0, (this.currentCalm || 0.5) + 0.08);
+        this.currentCalm = Math.min(1.0, (this.currentCalm || 0.5) + 0.1);
         JEDA.Stage3D.setCalm(this.currentCalm);
+        if (JEDA.Stage3D.spawnCloud) {
+          JEDA.Stage3D.spawnCloud();
+        }
       }
 
       // 2. Animasi BENAR: "gelembung berubah menjadi awan putih dan terangkat ke atas lalu hilang" (PRD 5.3)
@@ -627,6 +630,9 @@ class Level2Scene extends Phaser.Scene {
       JEDA.State.data.fails.l2 = 0;
       if (JEDA.Stage3D) {
         JEDA.Stage3D.setLanterns(2); // Lentera pulau 2 menyala
+        if (JEDA.Stage3D.celebratePass) {
+          JEDA.Stage3D.celebratePass();
+        }
       }
     } else {
       JEDA.State.data.fails.l2 = (JEDA.State.data.fails.l2 || 0) + 1;

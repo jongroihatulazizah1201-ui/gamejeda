@@ -716,6 +716,9 @@ class Level3Scene extends Phaser.Scene {
       JEDA.State.data.fails.l3 = 0;
       if (JEDA.Stage3D) {
         JEDA.Stage3D.setLanterns(3); // Seluruh 3 lentera taman menyala!
+        if (JEDA.Stage3D.celebratePass) {
+          JEDA.Stage3D.celebratePass();
+        }
       }
     } else {
       JEDA.State.data.fails.l3 = (JEDA.State.data.fails.l3 || 0) + 1;

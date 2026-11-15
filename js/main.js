@@ -16,6 +16,11 @@ function initJedaGame() {
     JEDA.CFG.USE_3D = false;
   }
 
+  // Sembunyikan elemen canvas 3D jika mode 2D aktif
+  if (!JEDA.CFG.USE_3D && stage3dEl) {
+    stage3dEl.style.display = 'none';
+  }
+
   const is3D = !!JEDA.CFG.USE_3D;
 
   const config = {
