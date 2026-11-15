@@ -33,6 +33,14 @@ class ResultScene extends Phaser.Scene {
 
     // 3. Latar Belakang & Vinyet
     JEDA.FX.createBackground(this);
+    if (JEDA.Stage3D) {
+      JEDA.Stage3D.setMode('result');
+      let passedCount = 0;
+      if ((JEDA.State.data.stars.l1 || 0) > 0 || (JEDA.State.data.best.l1 || 0) >= JEDA.CFG.PASS) passedCount++;
+      if ((JEDA.State.data.stars.l2 || 0) > 0 || (JEDA.State.data.best.l2 || 0) >= JEDA.CFG.PASS) passedCount++;
+      if ((JEDA.State.data.stars.l3 || 0) > 0 || (JEDA.State.data.best.l3 || 0) >= JEDA.CFG.PASS) passedCount++;
+      JEDA.Stage3D.setLanterns(passedCount);
+    }
     this.cameras.main.fadeIn(350);
 
     // 4. Header

@@ -35,6 +35,12 @@ class Level2Scene extends Phaser.Scene {
 
     // 1. Latar Belakang & Vinyet
     JEDA.FX.createBackground(this);
+    if (JEDA.Stage3D) {
+      JEDA.Stage3D.setMode('l2');
+      JEDA.Stage3D.setCalm(0.5);
+      JEDA.Stage3D.setLanterns(1); // Level 1 lulus
+    }
+    this.currentCalm = 0.5;
     this.cameras.main.fadeIn(350);
 
     // 2. Header & Navigasi
@@ -385,6 +391,12 @@ class Level2Scene extends Phaser.Scene {
       this.resolvedCount++;
       this.counterText.setText(`Terselesaikan: ${this.resolvedCount}/10`);
 
+      if (JEDA.Stage3D) {
+        JEDA.Stage3D.pulse(0.5);
+        this.currentCalm = Math.min(1.0, (this.currentCalm || 0.5) + 0.08);
+        JEDA.Stage3D.setCalm(this.currentCalm);
+      }
+
       // 2. Animasi BENAR: "gelembung berubah menjadi awan putih dan terangkat ke atas lalu hilang" (PRD 5.3)
       if (bubble.driftTween) bubble.driftTween.stop();
       bubble.disableInteractive();
@@ -613,6 +625,9 @@ class Level2Scene extends Phaser.Scene {
     if (result.passed) {
       JEDA.State.saveLevelScore(2, result.score, result.stars);
       JEDA.State.data.fails.l2 = 0;
+      if (JEDA.Stage3D) {
+        JEDA.Stage3D.setLanterns(2); // Lentera pulau 2 menyala
+      }
     } else {
       JEDA.State.data.fails.l2 = (JEDA.State.data.fails.l2 || 0) + 1;
     }
@@ -726,20 +741,30 @@ class Level2Scene extends Phaser.Scene {
     const btnY = cardH / 2 - 80;
     if (result.passed) {
       const nextBtn = JEDA.UI.createButton(this, 170, btnY, 280, 60, 'Lanjut ke Level 3', () => {
+        if (JEDA.Stage3D) JEDA.Stage3D.setMode('l3');
         JEDA.FX.transitionTo(this, 'Level3Scene');
       }, { primary: true, radius: 30 });
 
       const repeatBtn = JEDA.UI.createButton(this, -170, btnY, 280, 60, 'Ulangi Level 2', () => {
+        if (JEDA.Stage3D) {
+          JEDA.Stage3D.setMode('l2');
+          JEDA.Stage3D.setLanterns(1);
+        }
         this.scene.restart();
       }, { radius: 30 });
 
       modal.add([nextBtn, repeatBtn]);
     } else {
       const repeatBtn = JEDA.UI.createButton(this, 150, btnY, 260, 60, 'Ulangi Level 2', () => {
+        if (JEDA.Stage3D) {
+          JEDA.Stage3D.setMode('l2');
+          JEDA.Stage3D.setLanterns(1);
+        }
         this.scene.restart();
       }, { primary: true, radius: 30 });
 
       const menuBtn = JEDA.UI.createButton(this, -150, btnY, 260, 60, 'Menu Utama', () => {
+        if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
         JEDA.FX.transitionTo(this, 'CheckinScene');
       }, { radius: 30 });
 

@@ -554,6 +554,9 @@ class Level1Scene extends Phaser.Scene {
     if (result.passed) {
       JEDA.State.saveLevelScore(1, result.score, result.stars);
       JEDA.State.data.fails.l1 = 0;
+      if (JEDA.Stage3D) {
+        JEDA.Stage3D.setLanterns(1); // Lentera pulau 1 menyala
+      }
     } else {
       JEDA.State.data.fails.l1 = (JEDA.State.data.fails.l1 || 0) + 1;
     }
