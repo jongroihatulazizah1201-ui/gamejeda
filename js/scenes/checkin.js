@@ -80,6 +80,14 @@ class CheckinScene extends Phaser.Scene {
         this.showIntroCard();
       });
     }
+
+    // 11. Pembersihan elemen DOM saat berpindah scene
+    this.events.on('shutdown', () => {
+      if (this.activeTextarea) {
+        this.activeTextarea.remove();
+        this.activeTextarea = null;
+      }
+    });
   }
 
   /**
@@ -265,11 +273,210 @@ class CheckinScene extends Phaser.Scene {
       this.labelButtons.push(chip);
     });
 
-    // 7. Tombol Mulai (PRD 14.5: 48 px di bawah panel M)
+    // 7. Tombol Mulai dan Mode Jurnal (opsional) (PRD 14.5 & 15.6)
     // Panel bottom = 480 + 384/2 = 672. 672 + 48 = 720. Pusat tombol = 720 + 44 = 764.
-    this.startButton = JEDA.UI.createButton(this, cx, 764, 320, 88, 'Mulai', () => {
+    const startW = 280;
+    const journalW = 340;
+    const btnGap = 24;
+    const btnXs = Layout.rowCenter([startW, journalW], btnGap);
+
+    this.startButton = JEDA.UI.createButton(this, btnXs[0], 764, startW, 88, 'Mulai', () => {
       this.handleStartClick();
     }, { primary: true, disabled: true, radius: 44, fontSize: 33 });
+
+    this.journalButton = JEDA.UI.createButton(this, btnXs[1], 764, journalW, 88, 'Mode Jurnal (opsional)', () => {
+      this.openJournalModal();
+    }, { primary: false, radius: 44, fontSize: 27 });
+  }
+
+  /**
+   * Menampilkan modal Mode Jurnal dengan kartu persetujuan dan input textarea HTML (PRD 15.6, BR-19, BR-20).
+   */
+  openJournalModal() {
+    const Layout = JEDA.Layout;
+    const cx = Layout.cx();
+    const cy = Layout.cy();
+    const W = Layout.W;
+    const H = Layout.H;
+
+    // Bersihkan textarea jika masih ada
+    if (this.activeTextarea) {
+      this.activeTextarea.remove();
+      this.activeTextarea = null;
+    }
+
+    const modal = this.add.container(cx, cy).setDepth(3000);
+
+    // Backdrop redup
+    const backdrop = this.add.rectangle(0, 0, W, H, 0x070818, 0.85)
+      .setInteractive();
+    modal.add(backdrop);
+
+    // Panel Kaca Modal (Lebar 980, tinggi 680)
+    const cardW = 980;
+    const cardH = 680;
+    const cardBg = this.add.graphics();
+    cardBg.fillStyle(0x131535, 0.96);
+    cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
+    cardBg.lineStyle(2, 0x7FE0C3, 0.65);
+    cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
+    modal.add(cardBg);
+
+    // Judul Modal
+    const titleT = this.add.text(0, -cardH / 2 + 54, 'Mode Jurnal (Misi Pribadi)', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '36px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.calm
+    }).setOrigin(0.5).setResolution(2);
+
+    // Kartu Persetujuan & Penjelasan Privasi (BR-19)
+    const noticeText = 'Tulisanmu hanya diproses di perangkat ini, tidak dikirim ke mana pun,\ndan hilang saat sesi berakhir. Hindari menulis nama orang lain.';
+    const noticeT = this.add.text(0, -cardH / 2 + 115, noticeText, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '22px',
+      fontStyle: '600',
+      color: '#CBD5E1',
+      align: 'center',
+      lineSpacing: 6
+    }).setOrigin(0.5).setResolution(2);
+
+    // Counter Kalimat Real-time
+    const counterT = this.add.text(0, 160, 'Terdeteksi: 0 kalimat (minimal 3, maksimal 12 kalimat)', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '22px',
+      fontStyle: '700',
+      color: '#94A3B8'
+    }).setOrigin(0.5).setResolution(2);
+
+    // Tombol Batal & Buat Misi
+    const btnW = 280;
+    const btnH = 72;
+    const btnGap = 32;
+    const btnY = cardH / 2 - 64;
+
+    const cleanupModal = () => {
+      if (this.activeTextarea) {
+        this.activeTextarea.remove();
+        this.activeTextarea = null;
+      }
+      modal.destroy();
+    };
+
+    const cancelBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Batal', () => {
+      cleanupModal();
+    }, { radius: 36, fontSize: 27 });
+
+    const submitBtn = JEDA.UI.createButton(this, (btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Buat Misi', () => {
+      if (!this.activeTextarea) return;
+      const text = this.activeTextarea.value.trim();
+
+      // Cek krisis bahaya diri (BR-20)
+      if (JEDA.Journal && JEDA.Journal.crisis(text)) {
+        cleanupModal();
+        JEDA.UI.showCareModal(
+          this,
+          () => {
+            JEDA.State.data.consentHeavy = true;
+            JEDA.State.data.easy.l1 = true;
+            JEDA.State.save();
+            JEDA.FX.transitionTo(this, 'Level1Scene', { easyMode: true });
+          },
+          () => {
+            JEDA.State.data.consentHeavy = false;
+            JEDA.State.save();
+            JEDA.FX.transitionTo(this, 'Level1Scene', { easyMode: false });
+          }
+        );
+        return;
+      }
+
+      // Validasi jumlah kalimat
+      const sentences = (JEDA.Journal && JEDA.Journal.split) ? JEDA.Journal.split(text) : [];
+      if (sentences.length < 3) {
+        JEDA.UI.toast(this, 'Tulis minimal 3 kalimat lengkap (akhiri tanda titik, seru, atau tanya).');
+        return;
+      }
+
+      // Bangun dek monster jurnal (BR-19)
+      const res = JEDA.Journal.build(text);
+      if (res.crisis) {
+        cleanupModal();
+        JEDA.UI.showCareModal(
+          this,
+          () => {
+            JEDA.State.data.consentHeavy = true;
+            JEDA.State.data.easy.l1 = true;
+            JEDA.State.save();
+            JEDA.FX.transitionTo(this, 'Level1Scene', { easyMode: true });
+          },
+          () => {
+            JEDA.State.data.consentHeavy = false;
+            JEDA.State.save();
+            JEDA.FX.transitionTo(this, 'Level1Scene', { easyMode: false });
+          }
+        );
+        return;
+      }
+
+      cleanupModal();
+      JEDA.UI.toast(this, `Misi Astronot dibuat dengan ${res.monsters.length} monster pikiran.`);
+
+      // Simpan ke state session
+      if (JEDA.State && JEDA.State.session) {
+        JEDA.State.session.journalMonsters = res.monsters;
+      }
+
+      // Buka Level 2 langsung dengan dek jurnal
+      this.time.delayedCall(400, () => {
+        JEDA.FX.transitionTo(this, 'Level2Scene', { monsters: res.monsters });
+      });
+    }, { primary: true, radius: 36, fontSize: 27 });
+
+    modal.add([titleT, noticeT, counterT, cancelBtn, submitBtn]);
+
+    // Pasang HTML textarea di atas kanvas
+    const textarea = document.createElement('textarea');
+    textarea.placeholder = 'Ketik 3 sampai 12 kalimat tentang apa yang ada di pikiranmu saat ini...\n\nContoh:\n- Besok aku harus mulai mengerjakan laporan akhir.\n- Bagaimana kalau aku gagal dalam ujian nanti?\n- Dulu waktu semester satu nilaiku jelek sekali.';
+    textarea.style.position = 'fixed';
+    textarea.style.left = '50%';
+    textarea.style.top = '48%';
+    textarea.style.transform = 'translate(-50%, -50%)';
+    textarea.style.width = 'min(840px, 80vw)';
+    textarea.style.height = '230px';
+    textarea.style.backgroundColor = '#0E102A';
+    textarea.style.color = '#FFFFFF';
+    textarea.style.fontFamily = "'Nunito', sans-serif";
+    textarea.style.fontSize = '18px';
+    textarea.style.lineHeight = '1.6';
+    textarea.style.padding = '18px 22px';
+    textarea.style.border = '2px solid #485278';
+    textarea.style.borderRadius = '18px';
+    textarea.style.outline = 'none';
+    textarea.style.boxShadow = '0 8px 32px rgba(0,0,0,0.55)';
+    textarea.style.zIndex = '9999';
+    textarea.style.resize = 'none';
+
+    textarea.addEventListener('input', () => {
+      if (JEDA.Journal && JEDA.Journal.split) {
+        const count = JEDA.Journal.split(textarea.value).length;
+        counterT.setText(`Terdeteksi: ${count} kalimat (minimal 3, maksimal 12 kalimat)`);
+        counterT.setColor(count >= 3 ? '#7FE0C3' : '#94A3B8');
+      }
+    });
+
+    document.body.appendChild(textarea);
+    textarea.focus();
+    this.activeTextarea = textarea;
+
+    // Listener Esc untuk menutup modal
+    const escListener = (event) => {
+      if (event.key === 'Escape') {
+        window.removeEventListener('keydown', escListener);
+        cleanupModal();
+      }
+    };
+    window.addEventListener('keydown', escListener);
   }
 
   /**

@@ -321,5 +321,40 @@ JEDA.DATA = {
     stop_s: 'Berhenti. Dunia ikut menunggu.',
     level_pass: 'Satu lentera menyala.',
     result_low: 'Perasaan bisa naik turun. Mengamatinya sudah bagian dari latihan.'
-  }
+  },
+
+  /**
+   * Leksikon Kata Kunci Mode Jurnal (PRD Bagian 15.6)
+   */
+  lexicon: {
+    'Cemas': [
+      'takut', 'khawatir', 'cemas', 'bagaimana kalau', 'gimana kalau', 'jangan-jangan',
+      'deg-degan', 'panik', 'pasti gagal', 'gagal', 'takutnya', 'was-was', 'gelisah',
+      'bingung', 'gugup', 'ragu', 'stres', 'stress', 'takut salah', 'menakutkan'
+    ],
+    'Rencana': [
+      'besok', 'nanti', 'harus', 'mau', 'akan', 'rencana', 'target', 'jadwal',
+      'kerjakan', 'cicil', 'sebelum jam', 'nanti sore', 'minggu depan', 'siap-siap',
+      'mulai', 'persiapan', 'agendakan', 'daftar', 'hubungi', 'belajar'
+    ],
+    'Menilai Diri': [
+      'aku bodoh', 'nggak becus', 'tidak becus', 'kenapa aku', 'selalu salah', 'tidak pernah',
+      'payah', 'malas', 'tidak pintar', 'tidak cocok', 'kurang', 'lemah', 'gagal total',
+      'lambat', 'payah banget', 'bego', 'bodohnya aku', 'nggak berguna', 'tidak berguna'
+    ],
+    'Kenangan': [
+      'dulu', 'kemarin', 'waktu itu', 'pernah', 'tadi', 'minggu lalu', 'masih ingat',
+      'semester lalu', 'waktu semester', 'bulan lalu', 'tadi pagi', 'kemarin aku',
+      'masa lalu', 'teringat', 'teringat saat', 'kejadian itu', 'tahun lalu'
+    ]
+  },
+
+  /**
+   * Kata Kunci Deteksi Krisis & Bahaya Diri (PRD Bagian 15.6 & BR-20)
+   */
+  crisis: [
+    'bunuh diri', 'ingin mati', 'akhiri hidup', 'mengakhiri hidup',
+    'menyakiti diri', 'tidak mau hidup', 'capek hidup', 'mau mati',
+    'pengen mati', 'suicide', 'self harm', 'potong nadi', 'lompat dari'
+  ]
 };

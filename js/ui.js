@@ -1007,7 +1007,9 @@ JEDA.UI = {
    * - Kotak kaca rounded ber-aksen toska (calm) dengan ekor penunjuk ke atas
    * - Maksimal 2 baris, font 27 px, lebar responsif proporsional
    */
-  speechBubble(scene, x, y, text) {
+  speechBubble(scene, x, y, text, options = {}) {
+    const maxW = options.maxWidth || 1000;
+    const wrapW = options.wrapWidth || Math.min(880, maxW - 96);
     const container = scene.add.container(x, y).setDepth(1500);
 
     const textObj = scene.add.text(0, 3, text, {
@@ -1016,22 +1018,29 @@ JEDA.UI = {
       fontStyle: '700',
       color: '#FFFFFF',
       align: 'center',
-      wordWrap: { width: 560 },
+      wordWrap: { width: wrapW },
       lineSpacing: 6
     }).setOrigin(0.5).setResolution(2);
 
     const padX = 48;
     const padY = 24;
-    const w = Math.max(360, Math.min(760, textObj.width + padX * 2));
+    const w = Math.max(360, Math.min(maxW, textObj.width + padX * 2));
     const h = textObj.height + padY * 2;
     const radius = 24;
+
+    // Pastikan tidak menyentuh header (y minimal 140, PRD Poin 2)
+    let actualY = y;
+    if (actualY - h / 2 < 140) {
+      actualY = 140 + h / 2;
+    }
+    container.setPosition(x, actualY);
 
     const bg = scene.add.graphics();
     // 1. Latar belakang kaca gelap solid (0x121538 alpha 0.96)
     bg.fillStyle(0x121538, 0.96);
     bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
 
-    // 2. Ekor segitiga runcing menunjuk ke arah orb di atas (-h / 2)
+    // 2. Ekor segitiga runcing menunjuk ke arah atas (-h / 2)
     bg.fillTriangle(-12, -h / 2, 12, -h / 2, 0, -h / 2 - 14);
 
     // 3. Garis tepi pendar toska tenang (0x7FE0C3)

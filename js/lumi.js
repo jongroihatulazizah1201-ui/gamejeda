@@ -189,16 +189,16 @@ JEDA.Lumi = (function() {
       // Hapus gelembung lama secara langsung
       this.clearBubble();
 
-      // Buat gelembung ucapan lewat komponen baku JEDA.UI
+      // Buat gelembung ucapan lewat komponen baku JEDA.UI (maks lebar 1000 px, PRD Poin 2)
       if (window.JEDA && JEDA.UI && JEDA.UI.speechBubble) {
-        bubbleContainer = JEDA.UI.speechBubble(currentScene, bubbleX, bubbleY, text);
+        bubbleContainer = JEDA.UI.speechBubble(currentScene, bubbleX, bubbleY, text, { maxWidth: 1000 });
       }
 
       if (!bubbleContainer) return false;
 
       // Animasi kemunculan lembut: alpha 0 -> 1, naik 8 px (Sine.easeOut 200 ms)
       bubbleContainer.setAlpha(0);
-      const targetY = bubbleY;
+      const targetY = bubbleContainer.y;
       bubbleContainer.y = targetY + 10;
 
       currentScene.tweens.add({
