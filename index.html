@@ -8,11 +8,14 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- Panggung 3D Three.js di latar belakang (PRD Bagian 13) -->
-  <div id="stage3d"></div>
+  <!-- Container Pembungkus Utama (Modern Flexbox Wrapper) -->
+  <div id="app-wrapper" class="game-wrapper">
+    <!-- Panggung 3D Three.js di latar belakang (PRD Bagian 13) -->
+    <div id="stage3d"></div>
 
-  <!-- Induk Game Phaser 2D di lapisan atas transparan -->
-  <div id="game-container"></div>
+    <!-- Induk Game Phaser 2D di lapisan atas transparan (Responsif Terpusat) -->
+    <div id="game-container" class="game-container"></div>
+  </div>
 
   <!-- Urutan pemuatan script sesuai PRD Bagian 14.6:
        phaser -> three -> config -> data -> state -> score -> guard -> stage3d -> layout -> fx -> ui -> scenes/* -> main -->

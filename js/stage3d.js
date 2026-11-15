@@ -710,13 +710,25 @@ JEDA.Stage3D = (function() {
   }
 
   /**
-   * Listener ukuran jendela (Window Resize).
+   * Listener ukuran jendela (Window Resize & Fullscreen).
+   * Menyesuaikan aspek rasio & FOV dinamis agar komposisi 3 pulau & rembulan tidak bergeser ('meceng').
    */
   function onWindowResize() {
     if (!renderer || !camera) return;
     const w = window.innerWidth;
     const h = window.innerHeight;
-    camera.aspect = w / h;
+    const aspect = w / h;
+    camera.aspect = aspect;
+
+    // Pertahankan bidang pandang horizontal (horizontal FOV) tetap stabil di semua rasio layar
+    // Basis 16:9 dengan FOV vertikal 50 -> tan(25 deg) * (16 / 9) = ~0.8288
+    if (aspect < (16 / 9)) {
+      const targetHalfFovRad = Math.atan(0.8288 / aspect);
+      camera.fov = targetHalfFovRad * 2 * (180 / Math.PI);
+    } else {
+      camera.fov = 50;
+    }
+
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
   }
