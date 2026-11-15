@@ -789,9 +789,9 @@ class Level3Scene extends Phaser.Scene {
     comps.forEach((c, idx) => {
       const bx = (idx - 1) * 280;
       const bgg = this.add.graphics();
-      bgg.fillStyle(0xFFFFFF, 0.08);
+      bgg.fillStyle(0x1A1D40, 0.95);
       bgg.fillRoundedRect(bx - compBoxW / 2, rowY - compBoxH / 2, compBoxW, compBoxH, 16);
-      bgg.lineStyle(1.5, JEDA.CFG.COLOR.panelLine, 0.25);
+      bgg.lineStyle(1.5, 0x485278, 0.7);
       bgg.strokeRoundedRect(bx - compBoxW / 2, rowY - compBoxH / 2, compBoxW, compBoxH, 16);
 
       const nameT = this.add.text(bx, rowY - 32, c.name, {

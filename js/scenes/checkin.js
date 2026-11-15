@@ -78,11 +78,11 @@ class CheckinScene extends Phaser.Scene {
     const panelH = 590;
     const panelY = 445;
 
-    // Panel kaca tengah berlatar gelap frosted glass agar teks dan tombol selalu terbaca jelas
+    // Panel kaca tengah berlatar gelap solid-frosted glass agar teks dan tombol selalu terbaca jelas (Prinsip UI/UX)
     const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
-    const fillColor = is3D ? 0x14142B : JEDA.CFG.COLOR.panel;
-    const fillAlpha = is3D ? 0.90 : 0.08;
-    JEDA.UI.createPanel(this, cx, panelY, panelW, panelH, 32, fillAlpha, 0.35, fillColor);
+    const fillColor = is3D ? 0x12142E : JEDA.CFG.COLOR.panel;
+    const fillAlpha = is3D ? 0.96 : 0.12;
+    JEDA.UI.createPanel(this, cx, panelY, panelW, panelH, 32, fillAlpha, 0.45, fillColor);
 
     // Judul & Subjudul
     this.add.text(cx, panelY - 240, 'JEDA', {
@@ -158,14 +158,14 @@ class CheckinScene extends Phaser.Scene {
     const drawBg = (selected, hover = false) => {
       bg.clear();
       if (selected) {
-        bg.fillStyle(JEDA.CFG.COLOR.calm, 0.9);
+        bg.fillStyle(JEDA.CFG.COLOR.calm, 1.0);
         bg.fillCircle(0, 0, radius);
-        bg.lineStyle(3, 0xFFFFFF, 0.9);
+        bg.lineStyle(3, 0xFFFFFF, 1.0);
         bg.strokeCircle(0, 0, radius);
       } else {
-        bg.fillStyle(JEDA.CFG.COLOR.panel, hover ? 0.22 : 0.08);
+        bg.fillStyle(hover ? 0x2A2E5C : 0x1E2148, 0.96);
         bg.fillCircle(0, 0, radius);
-        bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, hover ? 0.5 : 0.25);
+        bg.lineStyle(2, hover ? 0x7FE0C3 : 0x485278, hover ? 0.8 : 0.6);
         bg.strokeCircle(0, 0, radius);
       }
     };
@@ -245,18 +245,20 @@ class CheckinScene extends Phaser.Scene {
         this.selectedLabel = label;
         this.labelButtons.forEach(b => {
           const isThis = (b.labelName === label);
-          b.setAlpha(isThis ? 1.0 : 0.6);
+          b.setAlpha(1.0);
           b.bg.clear();
           if (isThis) {
-            b.bg.fillStyle(isSensitive ? 0xFF8FA3 : JEDA.CFG.COLOR.calm, 0.4);
+            b.bg.fillStyle(isSensitive ? 0xFF8FA3 : JEDA.CFG.COLOR.calm, 1.0);
             b.bg.fillRoundedRect(-b.w / 2, -b.h / 2, b.w, b.h, 23);
-            b.bg.lineStyle(2, 0xFFFFFF, 0.8);
+            b.bg.lineStyle(2, 0xFFFFFF, 1.0);
             b.bg.strokeRoundedRect(-b.w / 2, -b.h / 2, b.w, b.h, 23);
+            b.textObj.setColor('#12142E');
           } else {
-            b.bg.fillStyle(JEDA.CFG.COLOR.panel, 0.08);
+            b.bg.fillStyle(0x1E2148, 0.96);
             b.bg.fillRoundedRect(-b.w / 2, -b.h / 2, b.w, b.h, 23);
-            b.bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.2);
+            b.bg.lineStyle(2, 0x3F486E, 0.7);
             b.bg.strokeRoundedRect(-b.w / 2, -b.h / 2, b.w, b.h, 23);
+            b.textObj.setColor('#E2E8F0');
           }
         });
         this.checkStartButtonStatus();
@@ -353,11 +355,11 @@ class CheckinScene extends Phaser.Scene {
 
       // Background kartu
       const bg = this.add.graphics();
-      const cardColor = is3D ? 0x14142B : JEDA.CFG.COLOR.panel;
-      const cardFill = is3D ? (isUnlocked ? 0.88 : 0.65) : (isUnlocked ? 0.08 : 0.03);
+      const cardColor = is3D ? 0x141638 : JEDA.CFG.COLOR.panel;
+      const cardFill = is3D ? (isUnlocked ? 0.96 : 0.85) : (isUnlocked ? 0.12 : 0.05);
       bg.fillStyle(cardColor, cardFill);
       bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 24);
-      bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, isUnlocked ? 0.35 : 0.18);
+      bg.lineStyle(2, isUnlocked ? 0x7FE0C3 : 0x383D62, isUnlocked ? 0.55 : 0.35);
       bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 24);
 
       // Judul level

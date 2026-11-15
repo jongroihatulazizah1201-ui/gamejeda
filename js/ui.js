@@ -29,28 +29,29 @@ JEDA.UI = {
     const isDisabled = options.disabled || false;
     const fontSize = options.fontSize || JEDA.CFG.FONT.body;
 
-    // Background panel tombol
+    // Background panel tombol solid-frosted (Prinsip UI/UX: kontras tinggi, bebas tembus pandang)
     const bg = scene.add.graphics();
-    const updateBg = (fillAlpha, strokeAlpha, fillColor = JEDA.CFG.COLOR.panel) => {
+    const updateBg = (fillAlpha, strokeAlpha, fillColor, strokeColor) => {
       bg.clear();
       bg.fillStyle(fillColor, fillAlpha);
       bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
-      bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, strokeAlpha);
+      bg.lineStyle(2, strokeColor, strokeAlpha);
       bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
     };
 
-    const normalFillAlpha = isPrimary ? 0.25 : 0.08;
-    const normalStrokeAlpha = isPrimary ? 0.40 : 0.20;
-    const normalColor = isPrimary ? JEDA.CFG.COLOR.calm : JEDA.CFG.COLOR.panel;
+    const normalFillAlpha = 0.95;
+    const normalStrokeAlpha = isPrimary ? 0.85 : 0.65;
+    const normalColor = isPrimary ? 0x22554E : 0x181A3C;
+    const normalStrokeColor = isPrimary ? 0x7FE0C3 : 0x485278;
 
-    updateBg(normalFillAlpha, normalStrokeAlpha, normalColor);
+    updateBg(normalFillAlpha, normalStrokeAlpha, normalColor, normalStrokeColor);
 
     // Teks tombol (selalu menggunakan warna kontras terang #FFFFFF secara default)
-    const textColor = options.textColor || JEDA.CFG.COLOR.hex.text;
+    const textColor = options.textColor || '#FFFFFF';
     const textObj = scene.add.text(0, 0, label, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: fontSize + 'px',
-      fontStyle: '600',
+      fontStyle: '700',
       color: textColor,
       align: 'center'
     }).setOrigin(0.5).setResolution(2);
@@ -62,7 +63,7 @@ JEDA.UI = {
 
     // Status disabled
     if (isDisabled) {
-      container.setAlpha(0.4);
+      container.setAlpha(0.45);
       return container;
     }
 
@@ -82,7 +83,9 @@ JEDA.UI = {
         duration: 150,
         ease: 'Sine.easeOut'
       });
-      updateBg(normalFillAlpha + 0.12, normalStrokeAlpha + 0.2, normalColor);
+      const hoverColor = isPrimary ? 0x2C6C63 : 0x242854;
+      const hoverStroke = isPrimary ? 0x9BECD6 : 0x7FE0C3;
+      updateBg(0.98, 1.0, hoverColor, hoverStroke);
     });
 
     container.on('pointerout', () => {
@@ -94,7 +97,7 @@ JEDA.UI = {
         duration: 150,
         ease: 'Sine.easeOut'
       });
-      updateBg(normalFillAlpha, normalStrokeAlpha, normalColor);
+      updateBg(normalFillAlpha, normalStrokeAlpha, normalColor, normalStrokeColor);
     });
 
     container.on('pointerdown', () => {
@@ -249,7 +252,7 @@ JEDA.UI = {
     // Kotak Kiri: 119 ext. 8
     const boxLeftX = cx - 235;
     const bgL = scene.add.graphics();
-    bgL.fillStyle(0xFFFFFF, 0.08);
+    bgL.fillStyle(0x1A1D40, 0.95);
     bgL.fillRoundedRect(boxLeftX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
     bgL.lineStyle(2, 0x7FE0C3, 0.5);
     bgL.strokeRoundedRect(boxLeftX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
@@ -273,7 +276,7 @@ JEDA.UI = {
     // Kotak Kanan: healing119.id
     const boxRightX = cx + 235;
     const bgR = scene.add.graphics();
-    bgR.fillStyle(0xFFFFFF, 0.08);
+    bgR.fillStyle(0x1A1D40, 0.95);
     bgR.fillRoundedRect(boxRightX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
     bgR.lineStyle(2, 0x7FE0C3, 0.5);
     bgR.strokeRoundedRect(boxRightX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);

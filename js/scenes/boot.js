@@ -39,10 +39,17 @@ class BootScene extends Phaser.Scene {
       JEDA.Guard.attachVisibilityListener(this.game);
     }
 
-    // 7. Lanjut ke CheckinScene setelah animasi awal (PRD Bagian 3)
-    this.time.delayedCall(1200, () => {
-      JEDA.FX.transitionTo(this, 'CheckinScene');
-    });
+    // 7. Lanjut ke CheckinScene setelah animasi awal atau saat pemain mengklik layar (UX ramah)
+    let hasSkipped = false;
+    const proceed = () => {
+      if (!hasSkipped) {
+        hasSkipped = true;
+        JEDA.FX.transitionTo(this, 'CheckinScene');
+      }
+    };
+    this.input.once('pointerdown', proceed);
+    if (this.input.keyboard) this.input.keyboard.once('keydown', proceed);
+    this.time.delayedCall(1600, proceed);
   }
 
   /**
@@ -137,28 +144,36 @@ class BootScene extends Phaser.Scene {
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2;
 
-    this.titleText = this.add.text(cx, cy - 45, 'JEDA', {
+    // Posisi teks berada di bawah orb napas 3D agar tidak tabrakan (Prinsip UI/UX)
+    this.titleText = this.add.text(cx, cy + 85, 'JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: JEDA.CFG.FONT.title + 'px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
-    this.subtitleText = this.add.text(cx, cy + 45, 'Latihan berhenti sejenak', {
+    this.subtitleText = this.add.text(cx, cy + 155, 'Latihan berhenti sejenak', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: JEDA.CFG.FONT.body + 'px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
+    this.hintText = this.add.text(cx, cy + 215, 'Klik di mana saja untuk melanjutkan', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '16px',
+      fontStyle: '400',
+      color: '#94A3B8'
+    }).setOrigin(0.5).setResolution(2).setAlpha(0);
+
     // Animasi kemunculan lembut
     this.tweens.add({
-      targets: [this.titleText, this.subtitleText],
+      targets: [this.titleText, this.subtitleText, this.hintText],
       alpha: 1,
-      y: '-=15',
+      y: '-=12',
       duration: 800,
       ease: 'Sine.easeInOut',
-      stagger: 200
+      stagger: 180
     });
   }
 }

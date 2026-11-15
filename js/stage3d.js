@@ -76,16 +76,18 @@ JEDA.Stage3D = (function() {
 
   // Kamera & Parallax (Preset Sesuai PRD Bagian 13.3)
   const CAMERA_PRESETS = {
-    menu:   { x: 0,   y: 1.0,  z: 22.0, lookX: 0,   lookY: -0.5, lookZ: 0 },
+    menu:   { x: 0,   y: 0.6,  z: 21.5, lookX: 0,   lookY: -0.4, lookZ: 0 },
     l1:     { x: 0,   y: 0.0,  z: 11.2, lookX: 0,   lookY: 0.0,  lookZ: 0 },
     l2:     { x: 3.5, y: 2.2,  z: 15.0, lookX: 1.5, lookY: 2.5,  lookZ: -2 },
     l3:     { x: 0,   y: -0.6, z: 16.5, lookX: 0,   lookY: -1.5, lookZ: 0 },
     result: { x: 0,   y: 2.2,  z: 24.0, lookX: 0,   lookY: -0.8, lookZ: 0 }
   };
-  let currentCamPos = { x: 0, y: 1.0, z: 22.0 };
-  let targetCamPos = { x: 0, y: 1.0, z: 22.0 };
-  let currentLookAt = { x: 0, y: -0.5, z: 0 };
-  let targetLookAt = { x: 0, y: -0.5, z: 0 };
+  let currentCamPos = { x: 0, y: 0.6, z: 21.5 };
+  let targetCamPos = { x: 0, y: 0.6, z: 21.5 };
+  let currentLookAt = { x: 0, y: -0.4, z: 0 };
+  let targetLookAt = { x: 0, y: -0.4, z: 0 };
+  let currentOrbPos = { x: 0, y: 3.6, z: -1.0 };
+  let targetOrbPos = { x: 0, y: 3.6, z: -1.0 };
   let mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
   let currentMode = 'menu';
 
@@ -483,14 +485,22 @@ JEDA.Stage3D = (function() {
       particlesMesh.material.color.copy(currentColor);
     }
 
-    // 2. Interpolasi Skala Napas Orb & Redup Distraksi (Tabel 13.4)
+    // 2. Interpolasi Skala Napas Orb & Posisi Berdasarkan Mode (Harmonisasi UI/UX)
+    currentOrbPos.x += (targetOrbPos.x - currentOrbPos.x) * 0.05;
+    currentOrbPos.y += (targetOrbPos.y - currentOrbPos.y) * 0.05;
+    currentOrbPos.z += (targetOrbPos.z - currentOrbPos.z) * 0.05;
+
     breathScale += (targetBreathScale - breathScale) * 0.08;
     const finalOrbScale = breathScale + pulseEnergy * 0.3;
     if (orbGroup) {
+      orbGroup.position.set(currentOrbPos.x, currentOrbPos.y, currentOrbPos.z);
       orbGroup.scale.set(finalOrbScale, finalOrbScale, finalOrbScale);
       if (!reduceMotion) {
         orbGroup.rotation.y += 0.003 * timeScale;
       }
+    }
+    if (particlesMesh) {
+      particlesMesh.position.set(currentOrbPos.x, currentOrbPos.y, currentOrbPos.z);
     }
     if (haloSprite) {
       const haloScale = 4.8 * finalOrbScale;
@@ -872,26 +882,31 @@ JEDA.Stage3D = (function() {
       targetLookAt = { x: preset.lookX, y: preset.lookY, z: preset.lookZ };
 
       if (mode === 'menu') {
+        targetOrbPos = { x: 0, y: 3.6, z: -1.0 }; // Melayang anggun di langit atas, tidak menabrak kartu checkin
         targetBreathScale = 0.55;
         if (orbLight) orbLight.intensity = 0.7;
         if (haloMat) haloMat.opacity = 0.25;
         if (particlesMesh && particlesMesh.material) particlesMesh.material.opacity = 0.35;
       } else if (mode === 'l1') {
+        targetOrbPos = { x: 0, y: 0.0, z: 0.0 }; // Di pusat layar untuk latihan napas
         targetBreathScale = 0.95;
         if (orbLight) orbLight.intensity = 1.4;
         if (haloMat) haloMat.opacity = 0.6;
         if (particlesMesh && particlesMesh.material) particlesMesh.material.opacity = 0.85;
       } else if (mode === 'l2') {
+        targetOrbPos = { x: 2.5, y: 4.8, z: -4.0 }; // Tenang melayang di kejauhan langit
         targetBreathScale = 0.45;
         if (orbLight) orbLight.intensity = 0.5;
         if (haloMat) haloMat.opacity = 0.15;
         if (particlesMesh && particlesMesh.material) particlesMesh.material.opacity = 0.25;
       } else if (mode === 'l3') {
+        targetOrbPos = { x: 0, y: 2.8, z: -2.0 }; // Di atas taman kepulauan lentera
         targetBreathScale = 0.45;
         if (orbLight) orbLight.intensity = 0.5;
         if (haloMat) haloMat.opacity = 0.15;
         if (particlesMesh && particlesMesh.material) particlesMesh.material.opacity = 0.25;
       } else if (mode === 'result') {
+        targetOrbPos = { x: 0, y: 3.6, z: -1.0 }; // Menerangi seluruh taman lentera
         targetBreathScale = 0.7;
         if (orbLight) orbLight.intensity = 1.0;
         if (haloMat) haloMat.opacity = 0.4;

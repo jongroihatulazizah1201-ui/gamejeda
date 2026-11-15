@@ -67,10 +67,18 @@ JEDA.FX = {
    * Transisi halus keluar dan masuk antar scene sesuai Bagian 4 PRD (350 ms).
    */
   transitionTo(scene, nextSceneKey, data = {}) {
+    let transitioned = false;
+    const executeTransition = () => {
+      if (!transitioned) {
+        transitioned = true;
+        scene.scene.start(nextSceneKey, data);
+      }
+    };
+
     scene.cameras.main.fadeOut(350, 13, 13, 30);
-    scene.cameras.main.once('camerafadeoutcomplete', () => {
-      scene.scene.start(nextSceneKey, data);
-    });
+    scene.cameras.main.once('camerafadeoutcomplete', executeTransition);
+    // Safety fallback agar transisi tidak pernah macet
+    scene.time.delayedCall(450, executeTransition);
   },
 
   /**

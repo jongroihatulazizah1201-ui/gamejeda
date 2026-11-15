@@ -57,27 +57,39 @@ class Level1Scene extends Phaser.Scene {
     // 2. Tombol Navigasi Kiri Atas (Kembali ke Menu)
     this.createHeader(W);
 
-    // 3. Teks Petunjuk di atas Orb (y: cy - 250)
-    this.instructionText = this.add.text(cx, cy - 260, 'Tahan untuk menarik napas, lepas untuk menghembuskan.', {
+    // 3. Panel Petunjuk & Status di atas Orb (Prinsip UI/UX: Kontras tinggi, terbaca jelas)
+    const headerPill = this.add.graphics();
+    headerPill.fillStyle(0x12142E, 0.92);
+    headerPill.fillRoundedRect(cx - 450, cy - 288, 900, 104, 26);
+    headerPill.lineStyle(2, 0x3F486E, 0.7);
+    headerPill.strokeRoundedRect(cx - 450, cy - 288, 900, 104, 26);
+
+    this.instructionText = this.add.text(cx, cy - 255, 'Tahan untuk menarik napas, lepas untuk menghembuskan.', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '28px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.text
+      fontSize: '26px',
+      fontStyle: '700',
+      color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
     // Teks Status Umpan Balik Cepat ("Tarik napas...", "Pas", dll)
-    this.feedbackText = this.add.text(cx, cy - 205, 'Mulai dengan menekan dan menahan...', {
+    this.feedbackText = this.add.text(cx, cy - 208, 'Mulai dengan menekan dan menahan...', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '22px',
       fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.muted
+      color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
 
     // 4. Orb Tiga Lapis dengan Blend Mode ADD (Pusat di W/2, H/2)
     this.createGlowingOrb(cx, cy);
 
-    // 5. Enam Titik Indikator Siklus di bawah Orb (y: cy + 240)
-    this.createCycleIndicators(cx, cy + 240);
+    // 5. Enam Titik Indikator Siklus di bawah Orb berlatar kapsul gelap
+    const indPill = this.add.graphics();
+    indPill.fillStyle(0x12142E, 0.92);
+    indPill.fillRoundedRect(cx - 180, cy + 215, 360, 52, 26);
+    indPill.lineStyle(2, 0x3F486E, 0.7);
+    indPill.strokeRoundedRect(cx - 180, cy + 215, 360, 52, 26);
+
+    this.createCycleIndicators(cx, cy + 241);
 
     // 6. Setup Sistem Input (Mouse & Tombol Spasi)
     this.setupInputListeners();
@@ -643,9 +655,9 @@ class Level1Scene extends Phaser.Scene {
     comps.forEach((c, idx) => {
       const bx = (idx - 1) * 260;
       const bgg = this.add.graphics();
-      bgg.fillStyle(0xFFFFFF, 0.08);
+      bgg.fillStyle(0x1A1D40, 0.95);
       bgg.fillRoundedRect(bx - compBoxW / 2, rowY - compBoxH / 2, compBoxW, compBoxH, 16);
-      bgg.lineStyle(1.5, JEDA.CFG.COLOR.panelLine, 0.25);
+      bgg.lineStyle(1.5, 0x485278, 0.7);
       bgg.strokeRoundedRect(bx - compBoxW / 2, rowY - compBoxH / 2, compBoxW, compBoxH, 16);
 
       const nameT = this.add.text(bx, rowY - 32, c.name, {

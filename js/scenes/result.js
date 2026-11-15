@@ -171,9 +171,9 @@ class ResultScene extends Phaser.Scene {
     levelDetails.forEach((lvl, idx) => {
       const bx = cx + (idx - 1) * spacing;
       const bg = this.add.graphics();
-      bg.fillStyle(0xFFFFFF, 0.08);
+      bg.fillStyle(0x1A1D40, 0.95);
       bg.fillRoundedRect(bx - cardW / 2, y - cardH / 2, cardW, cardH, 20);
-      bg.lineStyle(1.5, JEDA.CFG.COLOR.panelLine, 0.25);
+      bg.lineStyle(1.5, 0x485278, 0.7);
       bg.strokeRoundedRect(bx - cardW / 2, y - cardH / 2, cardW, cardH, 20);
 
       const title = this.add.text(bx, y - 36, lvl.name, {
@@ -277,9 +277,9 @@ class ResultScene extends Phaser.Scene {
     const bg = this.add.graphics();
     const drawBg = (selected) => {
       bg.clear();
-      bg.fillStyle(selected ? JEDA.CFG.COLOR.calm : JEDA.CFG.COLOR.panel, selected ? 0.9 : 0.08);
+      bg.fillStyle(selected ? 0x7FE0C3 : 0x1E2148, 0.96);
       bg.fillCircle(0, 0, radius);
-      bg.lineStyle(2, selected ? 0xFFFFFF : JEDA.CFG.COLOR.panelLine, selected ? 0.9 : 0.25);
+      bg.lineStyle(2, selected ? 0xFFFFFF : 0x485278, selected ? 0.95 : 0.65);
       bg.strokeCircle(0, 0, radius);
     };
     drawBg(false);
@@ -288,7 +288,7 @@ class ResultScene extends Phaser.Scene {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '22px',
       fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.text
+      color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
     container.add([bg, numText]);
@@ -302,7 +302,7 @@ class ResultScene extends Phaser.Scene {
     container.on('pointerup', () => {
       this.endScoreButtons.forEach(b => {
         b.drawBg(b.val === value);
-        b.numText.setColor(b.val === value ? JEDA.CFG.COLOR.hex.bgTop : JEDA.CFG.COLOR.hex.text);
+        b.numText.setColor(b.val === value ? '#12142E' : '#FFFFFF');
       });
       onSelect(value);
     });

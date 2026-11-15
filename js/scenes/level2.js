@@ -99,25 +99,38 @@ class Level2Scene extends Phaser.Scene {
       JEDA.FX.transitionTo(this, 'CheckinScene');
     }, { fontSize: 20, radius: 25 });
 
+    // Panel Header Tengah Berlatar Gelap (Prinsip UI/UX: Kontras Tinggi, Terbaca Jelas)
+    const headerBg = this.add.graphics();
+    headerBg.fillStyle(0x12142E, 0.92);
+    headerBg.fillRoundedRect(W / 2 - 430, 25, 860, 92, 24);
+    headerBg.lineStyle(2, 0x3F486E, 0.7);
+    headerBg.strokeRoundedRect(W / 2 - 430, 25, 860, 92, 24);
+
     // Judul & Subjudul
-    this.add.text(W / 2, 55, 'Level 2: Awan Pikiran', {
+    this.add.text(W / 2, 54, 'Level 2: Awan Pikiran', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '32px',
+      fontSize: '30px',
       fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.text
+      color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
-    this.add.text(W / 2, 95, 'Amati pikiran yang melayang, lalu seret ke keranjang yang sesuai', {
+    this.add.text(W / 2, 92, 'Amati pikiran yang melayang, lalu seret ke keranjang yang sesuai', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '19px',
       fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.muted
+      color: '#CBD5E1'
     }).setOrigin(0.5).setResolution(2);
 
-    // Indikator Kemajuan
+    // Indikator Kemajuan dengan Kapsul Gelap
+    const counterBg = this.add.graphics();
+    counterBg.fillStyle(0x12142E, 0.92);
+    counterBg.fillRoundedRect(W - 270, 38, 220, 54, 27);
+    counterBg.lineStyle(2, 0x3F486E, 0.7);
+    counterBg.strokeRoundedRect(W - 270, 38, 220, 54, 27);
+
     this.counterText = this.add.text(W - 160, 65, `Terselesaikan: 0/10`, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '20px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
@@ -209,21 +222,29 @@ class Level2Scene extends Phaser.Scene {
   }
 
   /**
-   * Menggambar bentuk awan lembut untuk keranjang.
+   * Menggambar bentuk awan lembut bercahaya untuk keranjang (Prinsip UI/UX).
    */
   drawCloudShape(graphics, w, h, accentColor, isHovered) {
     graphics.clear();
-    const fillAlpha = isHovered ? 0.22 : 0.08;
-    const strokeAlpha = isHovered ? 0.8 : 0.25;
+    const fillAlpha = isHovered ? 0.35 : 0.16;
+    const strokeAlpha = isHovered ? 1.0 : 0.65;
+    const strokeW = isHovered ? 3.0 : 2.0;
 
-    graphics.fillStyle(0x16163A, 0.85);
+    // Lapisan dasar panel gelap frosted (100% terbaca)
+    graphics.fillStyle(0x131534, 0.96);
     graphics.fillRoundedRect(-w / 2, -h / 2, w, h, 28);
 
+    // Tint aksen kategori berpendar
     graphics.fillStyle(accentColor, fillAlpha);
     graphics.fillRoundedRect(-w / 2, -h / 2, w, h, 28);
 
-    graphics.lineStyle(2, isHovered ? 0xFFFFFF : accentColor, strokeAlpha);
+    // Garis tepi berpendar
+    graphics.lineStyle(strokeW, isHovered ? 0xFFFFFF : accentColor, strokeAlpha);
     graphics.strokeRoundedRect(-w / 2, -h / 2, w, h, 28);
+
+    // Garis kilau atas
+    graphics.lineStyle(1.5, 0xFFFFFF, isHovered ? 0.7 : 0.35);
+    graphics.lineBetween(-w / 2 + 20, -h / 2 + 3, w / 2 - 20, -h / 2 + 3);
   }
 
   /**
@@ -263,18 +284,18 @@ class Level2Scene extends Phaser.Scene {
     const bubbleW = 280;
     const bubbleH = 130;
 
-    // Bentuk gelembung kaca oval rounded
+    // Bentuk gelembung kaca oval rounded ber-efek pantulan kaca & pendar kategori (Prinsip UI/UX)
     const bg = this.add.graphics();
-    this.drawBubbleShape(bg, bubbleW, bubbleH, false);
+    this.drawBubbleShape(bg, bubbleW, bubbleH, false, thoughtData.category);
 
-    // Teks pikiran
+    // Teks pikiran (kontras tinggi, tajam)
     const textObj = this.add.text(0, 0, thoughtData.text, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '20px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.text,
+      fontStyle: '700',
+      color: '#FFFFFF',
       align: 'center',
-      wordWrap: { width: bubbleW - 40 }
+      wordWrap: { width: bubbleW - 44 }
     }).setOrigin(0.5).setResolution(2);
 
     container.add([bg, textObj]);
@@ -296,12 +317,34 @@ class Level2Scene extends Phaser.Scene {
     // Gerak melayang perlahan dari kiri ke kanan (30-40 detik)
     this.startDrifting(container, startX, W + 160);
 
+    // Animasi naik-turun lembut (floating bobbing) agar tampak hidup seperti gelembung sungguhan
+    container.bobTween = this.tweens.add({
+      targets: [bg, textObj],
+      y: '+=8',
+      duration: Phaser.Math.Between(1800, 2400),
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    container.pulseTween = this.tweens.add({
+      targets: container,
+      scaleX: 1.02,
+      scaleY: 0.98,
+      duration: Phaser.Math.Between(2200, 2800),
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
     // Event drag
     container.on('dragstart', () => {
       container.isBeingDragged = true;
       if (container.driftTween) container.driftTween.pause();
+      if (container.bobTween) container.bobTween.pause();
+      if (container.pulseTween) container.pulseTween.pause();
       container.setDepth(200);
-      this.tweens.add({ targets: container, scaleX: 1.08, scaleY: 1.08, duration: 150 });
+      this.tweens.add({ targets: container, scaleX: 1.1, scaleY: 1.1, duration: 150 });
     });
 
     container.on('drag', (pointer, dragX, dragY) => {
@@ -316,6 +359,8 @@ class Level2Scene extends Phaser.Scene {
       // Jika dilepas di luar keranjang (PRD: "lepas di luar keranjang, gelembung kembali melayang")
       if (!dropped) {
         container.isBeingDragged = false;
+        if (container.bobTween) container.bobTween.resume();
+        if (container.pulseTween) container.pulseTween.resume();
         this.tweens.add({
           targets: container,
           y: container.baseLaneY,
@@ -334,20 +379,59 @@ class Level2Scene extends Phaser.Scene {
   }
 
   /**
-   * Menggambar bentuk oval transparan untuk gelembung pikiran.
+   * Menggambar bentuk gelembung kaca organik (iridescent glass bubble) dengan pantulan cahaya.
    */
-  drawBubbleShape(graphics, w, h, isWhiteCloud = false) {
+  drawBubbleShape(graphics, w, h, isWhiteCloud = false, category = 'Cemas') {
     graphics.clear();
+    const radius = 38;
+
     if (isWhiteCloud) {
-      graphics.fillStyle(0xFFFFFF, 0.95);
-      graphics.fillRoundedRect(-w / 2, -h / 2, w, h, 36);
-      graphics.lineStyle(3, 0xFFFFFF, 1);
-      graphics.strokeRoundedRect(-w / 2, -h / 2, w, h, 36);
+      // Bentuk awan putih mekar lembut dan bergelombang
+      graphics.fillStyle(0xFFFFFF, 0.96);
+      graphics.fillCircle(0, -6, 52);
+      graphics.fillCircle(-52, 6, 38);
+      graphics.fillCircle(52, 6, 40);
+      graphics.fillCircle(-24, -22, 34);
+      graphics.fillCircle(24, -20, 36);
+      graphics.fillRoundedRect(-w / 2 + 15, 6, w - 30, 36, 18);
+
+      graphics.lineStyle(2, 0xE2E8F0, 0.85);
+      graphics.strokeRoundedRect(-w / 2 + 15, 6, w - 30, 36, 18);
     } else {
-      graphics.fillStyle(0xFFFFFF, 0.09);
-      graphics.fillRoundedRect(-w / 2, -h / 2, w, h, 32);
-      graphics.lineStyle(2, 0xFFFFFF, 0.35);
-      graphics.strokeRoundedRect(-w / 2, -h / 2, w, h, 32);
+      // Warna aura kategori (pastel berkelas)
+      const categoryAuras = {
+        'Cemas': 0xF4A261,        // Coral / Amber lembut
+        'Rencana': 0x7FE0C3,      // Mint / Teal tenang
+        'Menilai Diri': 0xC4B5FD, // Lilac / Lavender
+        'Kenangan': 0x93C5FD      // Biru langit lembut
+      };
+      const auraColor = categoryAuras[category] || 0x7FE0C3;
+
+      // 1. Lapisan dasar gelap frosted glass (100% terbaca, bebas tembus pandang)
+      graphics.fillStyle(0x131536, 0.94);
+      graphics.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+
+      // 2. Kilau gradasi dalam gelembung kaca
+      graphics.fillStyle(auraColor, 0.12);
+      graphics.fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, h - 8, radius - 2);
+
+      // 3. Garis tepi kaca berpendar (Dual Rim Stroke)
+      graphics.lineStyle(2.5, auraColor, 0.75);
+      graphics.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+
+      graphics.lineStyle(1.2, 0xFFFFFF, 0.45);
+      graphics.strokeRoundedRect(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6, radius - 2);
+
+      // 4. Kilau pantulan cahaya atas (Specular Highlight Khas Gelembung Kaca)
+      graphics.fillStyle(0xFFFFFF, 0.75);
+      graphics.fillRoundedRect(-w / 2 + 22, -h / 2 + 10, w * 0.44, 5, 2.5);
+
+      graphics.fillStyle(0xFFFFFF, 0.9);
+      graphics.fillCircle(-w / 2 + 32, -h / 2 + 24, 3.5);
+
+      // 5. Pantulan bawah (Subtle Bottom Sheen)
+      graphics.lineStyle(1.5, auraColor, 0.35);
+      graphics.strokeRoundedRect(-w / 2 + 6, -h / 2 + 6, w - 12, h - 12, radius - 4);
     }
   }
 
@@ -402,9 +486,11 @@ class Level2Scene extends Phaser.Scene {
 
       // 2. Animasi BENAR: "gelembung berubah menjadi awan putih dan terangkat ke atas lalu hilang" (PRD 5.3)
       if (bubble.driftTween) bubble.driftTween.stop();
+      if (bubble.bobTween) bubble.bobTween.stop();
+      if (bubble.pulseTween) bubble.pulseTween.stop();
       bubble.disableInteractive();
-      this.drawBubbleShape(bubble.bg, bubble.width, bubble.height, true);
-      bubble.textObj.setColor('#16163A');
+      this.drawBubbleShape(bubble.bg, bubble.width, bubble.height, true, bubble.thoughtData && bubble.thoughtData.category);
+      bubble.textObj.setColor('#131536');
 
       this.tweens.add({
         targets: bubble,
@@ -706,9 +792,9 @@ class Level2Scene extends Phaser.Scene {
     comps.forEach((c, idx) => {
       const bx = (idx - 1) * 270;
       const bgg = this.add.graphics();
-      bgg.fillStyle(0xFFFFFF, 0.08);
+      bgg.fillStyle(0x1A1D40, 0.95);
       bgg.fillRoundedRect(bx - compBoxW / 2, rowY - compBoxH / 2, compBoxW, compBoxH, 16);
-      bgg.lineStyle(1.5, JEDA.CFG.COLOR.panelLine, 0.25);
+      bgg.lineStyle(1.5, 0x485278, 0.7);
       bgg.strokeRoundedRect(bx - compBoxW / 2, rowY - compBoxH / 2, compBoxW, compBoxH, 16);
 
       const nameT = this.add.text(bx, rowY - 32, c.name, {
