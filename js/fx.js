@@ -18,15 +18,19 @@ JEDA.FX = {
     const H = JEDA.CFG.H;
     const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
 
-    // 1. Gambar latar gradasi (disembunyikan bila panggung 3D aktif)
+    if (is3D) {
+      // Dalam mode 3D, seluruh latar (gradasi senja, bintang, dan vinyet) digambar Three.js & CSS 100vw x 100vh tanpa batas 16:9
+      return { bg: null, dustGroup: [], vignette: null };
+    }
+
+    // 1. Gambar latar gradasi (khusus mode 2D)
     const bg = scene.add.image(W / 2, H / 2, 'bg_gradient').setDepth(-100);
-    if (is3D) bg.setAlpha(0);
 
     // 2. Debu melayang jika mode kurangi gerakan tidak aktif dan 3D tidak aktif
     const reduceMotion = JEDA.State && JEDA.State.data && JEDA.State.data.settings.reduceMotion;
     const dustGroup = [];
 
-    if (!is3D && !reduceMotion && scene.textures.exists('dust')) {
+    if (!reduceMotion && scene.textures.exists('dust')) {
       for (let i = 0; i < 40; i++) {
         const x = Phaser.Math.Between(W * 0.02, W * 0.98);
         const y = Phaser.Math.Between(H * 0.02, H * 0.98);
@@ -55,9 +59,9 @@ JEDA.FX = {
       }
     }
 
-    // 3. Lapisan vinyet gelap (bila 3D aktif, vinyet ditangani CSS layar penuh agar tidak ada garis batas 16:9)
+    // 3. Lapisan vinyet gelap (khusus mode 2D)
     const vignette = scene.add.image(W / 2, H / 2, 'vignette')
-      .setAlpha(is3D ? 0 : 0.35)
+      .setAlpha(0.35)
       .setDepth(-80);
 
     return { bg, dustGroup, vignette };
@@ -75,10 +79,15 @@ JEDA.FX = {
       }
     };
 
-    scene.cameras.main.fadeOut(350, 13, 13, 30);
+    const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
+    if (is3D) {
+      scene.cameras.main.fadeOut(250, 0, 0, 0);
+    } else {
+      scene.cameras.main.fadeOut(350, 13, 13, 30);
+    }
     scene.cameras.main.once('camerafadeoutcomplete', executeTransition);
     // Safety fallback agar transisi tidak pernah macet
-    scene.time.delayedCall(450, executeTransition);
+    scene.time.delayedCall(300, executeTransition);
   },
 
   /**

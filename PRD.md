@@ -4,6 +4,8 @@ Nov 15, 2026 · @popi
 
 Dokumen ini adalah satu-satunya sumber kebenaran untuk membangun demo JEDA: game mindfulness desktop 3 level, dibuat dengan Phaser 3, satu folder proyek, tanpa backend, dan siap di-deploy ke Netlify. Isi dokumen ini mengikuti Dokumen Rancangan JEDA. Bila ada selisih, **PRD ini yang berlaku** (lihat catatan keputusan di bagian 6).
 
+**Mencari tujuan belajar, level, skor, atau tantangan?** Semuanya ada di **bagian 1**, tepat di bawah tabel Ruang Lingkup. Rumus skor lengkap ada di bagian 6.
+
 ## 1. Ruang Lingkup
 
 |  | Isi |
@@ -16,7 +18,7 @@ Dokumen ini adalah satu-satunya sumber kebenaran untuk membangun demo JEDA: game
 
 **Layar demo (5):** Check-in, Level 1 Napas, Level 2 Awan Pikiran, Level 3 Jeda, Hasil. Layar Boot dan Pause bukan layar utama.
 
-### Tujuan belajar dan mekanik yang mewujudkannya
+### Tujuan Belajar dan Mekanik Permainan
 
 Setiap mekanik di PRD ada karena melatih satu tujuan belajar dari Dokumen Rancangan JEDA (bagian 2). Kode K = kognitif, A = afektif, P = psikomotorik.
 
@@ -34,6 +36,19 @@ Setiap mekanik di PRD ada karena melatih satu tujuan belajar dari Dokumen Rancan
 | P3 | Menjalankan urutan STOP dengan lancar | Level 3: STOP tanpa petunjuk. Mode ramah memberi petunjuk tambahan | Langkah STOP tanpa bantuan |
 
 **Tambahan yang diminta tabel ini:** Level 1 perlu satu kartu pengantar singkat (untuk K1), dengan isi sekitar tiga kalimat: apa itu mindfulness (memperhatikan saat ini tanpa menghakimi), kenapa napas jadi jangkar, dan cara bermain. Kartu muncul sekali sebelum siklus pertama dan bisa dilewati dengan tombol Lanjut.
+
+**Ringkasan mekanik: level, tantangan, dan skor**
+
+|  | Level 1: Napas | Level 2: Awan Pikiran | Level 3: Jeda di Situasi Nyata |
+| --- | --- | --- | --- |
+| **Tujuan belajar utama** | K1, P1, P2 | K2, A2, P2 | K3, K4, A3, P3 |
+| **Mekanik inti** | Tahan dan lepas tombol mengikuti orb (tarik 4 detik, hembus 6 detik), 6 siklus | Seret 10 gelembung pikiran ke 4 keranjang label | 3 skenario bercabang: Langsung bereaksi atau Jeda dengan STOP (4 langkah) |
+| **Tantangan** | Menjaga ritme dan tidak menekan notifikasi palsu | Melabeli pikiran dengan tepat dan tidak panik klik | Memilih jeda, mengenali emosi, dan memilih respons terbaik |
+| **Skor Sadar (0 sampai 100)** | 60% Sinkron, 30% Ketahanan, 10% Konsisten | 70% Akurasi, 20% Tenang, 10% Selesai | 40% Jeda, 40% Respons, 20% Observe |
+| **Syarat membuka level berikutnya** | Skor 60 atau lebih | Skor 60 atau lebih | Menutup permainan di layar Hasil |
+| **Bobot ke skor akhir** | 25% | 30% | 45% |
+
+**Progres dan hadiah:** bintang per level (60 sampai 79 satu bintang, 80 sampai 89 dua, 90 ke atas tiga), skor terbaik tersimpan, dan pada revisi 3D tiap level lulus menyalakan satu lentera di taman (bagian 13). **Tanpa timer yang menekan**, karena tekanan waktu bertentangan dengan tujuan mindfulness.
 
 ## 2. Keputusan Teknis
 
@@ -468,3 +483,167 @@ Tenggat: **Senin, 16 November, pukul 09.00 WIB**. Urutan kerja dan batas waktu:
 ### 13.7 Cara menjelaskannya saat interview
 
 Tampilan 3D bukan hiasan. Ia berfungsi sebagai **umpan balik visual** atas tujuan belajar: orb yang bernapas mengikuti ritme (P1), gangguan yang meredupkan orb melatih tidak bereaksi (P2), dan taman lentera yang menyala menunjukkan kemajuan (A3). Siapkan satu kalimat: "Visual 3D membuat kemajuan latihan terlihat, tetapi aturan dan skornya tetap sama sehingga hasil belajarnya bisa diukur."
+
+## 14. Gamifikasi "Penjaga Lentera" dan Prinsip UI/UX (Tambahan Revisi)
+
+**Alasan revisi:** gamifikasi awal hanya sistem nilai (skor, bintang, kunci level) sehingga terasa datar, dan tata letak layar tidak simetris. Bagian ini menambah cerita, karakter, ketegangan, hadiah, dan sistem tata letak yang memaksa semua elemen rapi. **Rumus skor dan aturan bisnis BR-01 sampai BR-14 tidak berubah.** Semua tambahan memakai penguatan positif dan tidak memakai hukuman, kelangkaan, atau streak.
+
+### 14.1 Cerita dan karakter
+
+Dunia **Hening** tertutup kabut **Bising**. Pemain adalah penjaga lentera, ditemani **Lumi**, orb pendamping yang sama dengan orb napas. Tiap level yang lulus menyalakan satu pulau di taman (bagian 13). Lumi menyampaikan kartu pengantar K1 dan semua umpan balik.
+
+**Gaya tulisan Lumi:** hangat, pendek (maksimal 2 baris dan 60 karakter), tidak menggurui, tidak menghakimi, tidak pernah menyebut pemain gagal atau buruk, dan tidak mengklaim menyembuhkan. Contoh yang benar: Napasmu pas. Rasakan pelan-pelannya. Contoh yang salah: Kamu gagal, coba lagi!
+
+### 14.2 Fitur gamifikasi
+
+| Kode | Fitur | Prioritas | Perilaku |
+| --- | --- | --- | --- |
+| G1 | **Lumi bicara** | P0 | Umpan balik tampil sebagai gelembung ucapan di bawah orb. Satu kalimat per kejadian, jeda minimal 4 detik antar ucapan, tampil 2,5 detik. Teks selalu menyertai warna (BR-12) |
+| G2 | **Meter Aliran** | P0 | Cincin tipis di sekeliling orb yang naik tiap siklus pas. Murni visual, tidak masuk skor |
+| G3 | **Badai Notifikasi** | P0 | Mini-boss di akhir Level 1: siklus 5 dan 6 dipenuhi notifikasi |
+| G4 | **Lencana positif** | P1 | Lima lencana untuk perilaku yang dilatih |
+| G5 | **Skin orb** | P2 | Warna orb baru terbuka sesuai total bintang |
+
+**G1: ucapan Lumi** (disimpan di `JEDA.DATA.lumi`, dipanggil lewat `JEDA.Lumi.say(key)`):
+
+| Kunci | Ucapan |
+| --- | --- |
+| intro\_l1 | Hai, aku Lumi. Ikuti napasku, tahan saat aku membesar. |
+| cycle\_good | Napasmu pas. Rasakan pelan-pelannya. |
+| cycle\_off | Tidak apa-apa. Kembali ke napas. |
+| distract\_hit | Perhatianmu tadi pergi. Kembali ke napas. |
+| storm | Badai datang. Tetap di napasmu. |
+| storm\_pass | Kamu melewati badai. Lenteranya makin terang. |
+| l2\_intro | Pikiran itu seperti awan. Beri nama, lalu biarkan lewat. |
+| l2\_correct | Pas. Awannya melayang pergi. |
+| l2\_wrong | Hampir. Coba lihat lagi isinya. |
+| panic | Pelan-pelan. Tarik napas dulu. |
+| l3\_intro | Kadang yang terbaik adalah berhenti sebentar. |
+| stop\_s | Berhenti. Dunia ikut menunggu. |
+| level\_pass | Satu lentera menyala. |
+| result\_low | Perasaan bisa naik turun. Mengamatinya sudah bagian dari latihan. |
+
+**G2: Meter Aliran.** Nilai 0 sampai 100. Level 1: naik 20 tiap siklus bernilai 0,75 atau lebih, naik 10 bila 0,5 sampai kurang dari 0,75, turun 15 bila kurang dari 0,5, turun 10 tiap notifikasi diklik. Level 2: naik 10 tiap label benar di percobaan pertama, turun 10 tiap salah, turun 20 tiap panik klik. Batas 0 dan 100, tidak pernah reset mendadak. Ambang 33, 66, 100 menyalakan cincin ke-1, ke-2, ke-3 dan memanggil `Stage3D.setCalm(nilai/100)` serta `pulse`.
+
+**G3: Badai Notifikasi.** Di siklus 5 dan 6 Level 1 interval munculnya notifikasi palsu menjadi sekitar 1,2 detik (biasanya 3 detik), kabut gelap alpha 0,25 menutupi latar, dan Lumi mengucap `storm`. Bila pemain melewati kedua siklus tanpa mengklik notifikasi, Lumi mengucap `storm_pass`, lentera level itu menyala 50% lebih terang, dan lencana Tidak Menoleh dicek. BR-03 tetap berlaku utuh: klik tetap mengurangi Ketahanan 20 poin.
+
+**G4: Lencana** (dicek di `score.js` lewat `JEDA.Score.badges(run)` dan disimpan di `state.badges`):
+
+| Lencana | Syarat |
+| --- | --- |
+| Tidak Menoleh | Level 1 dengan 0 notifikasi diklik |
+| Napas Penuh | Skor Level 1 sebesar 90 atau lebih |
+| Penamai Pikiran | Akurasi label Level 2 sebesar 80% atau lebih |
+| Jeda Sebelum Balas | Memilih STOP di ketiga skenario Level 3 |
+| Penjaga Lentera | Ketiga level lulus dalam satu run |
+
+Lencana muncul sebagai toast saat diraih dan sebagai lima slot di layar Hasil. Lencana terbuka berwarna, yang belum terbuka berupa siluet abu bergaris putus. **Tidak ada pesan negatif untuk lencana yang belum diraih.**
+
+**G5: Skin orb (opsional).** Tiga warna orb: Embun (bawaan), Fajar (terbuka di total 3 bintang), Aurora (terbuka di total 6 bintang). Pemain memilih di pengaturan. Skin hanya mengganti palet orb di `Stage3D` dan `JEDA.FX.orb`.
+
+**Tambahan state:** `badges: []` dan `skin: 'embun'` di kunci `jeda_v1`. Bila data lama tidak punya kolom ini, isi nilai awal tanpa error (BR-14).
+
+### 14.3 Prinsip UI/UX yang wajib diikuti
+
+**Penyebab umum tata letak tidak simetris:** (1) teks dan tombol memakai origin bawaan Phaser di pojok kiri atas, bukan tengah, (2) posisi ditulis sebagai angka tetap yang berbeda-beda, (3) lebar tombol mengikuti panjang teks sehingga tidak seragam, (4) jarak antar elemen tidak memakai skala yang konsisten, (5) tiap scene membuat gaya sendiri.
+
+| No | Prinsip | Aturan yang bisa diuji |
+| --- | --- | --- |
+| 1 | **Satu sumbu tengah** | Semua elemen utama berpusat di `x = W/2`. Teks, tombol, dan panel yang di tengah wajib `setOrigin(0.5)`. Dilarang menulis koordinat tetap |
+| 2 | **Grid 12 kolom** | Margin kiri dan kanan 120 px, jarak antar kolom (gutter) 24 px, lebar kolom 118 px. Elemen sejajar ke kolom, bukan ke angka acak |
+| 3 | **Skala jarak 8 px** | Semua jarak, padding, dan ukuran memakai 8, 16, 24, 32, 48, 64, 96, atau 128. Dilarang angka lain |
+| 4 | **Tiga zona vertikal** | Header y 0 sampai 120 (nama level di kiri, jeda dan pengaturan di kanan, sejajar margin). Konten y 120 sampai 900. Aksi y 900 sampai 1080 |
+| 5 | **Ukuran panel baku** | Lebar S 720, M 960, L 1200, selalu di tengah, padding dalam 48, sudut 32 |
+| 6 | **Tombol seragam** | Tinggi 88, lebar minimum 280, bentuk kapsul, teks 33 px di tengah horizontal dan vertikal. Tombol sejajar selalu sama lebar, jarak 32. Aksi utama di kanan, aksi sekunder di kiri |
+| 7 | **Satu aksi utama per layar** | Tombol utama bergradasi `calm`. Tombol sekunder berupa kaca bergaris. Tidak boleh ada dua tombol bergradasi di layar yang sama |
+| 8 | **Hierarki teks** | Maksimal 3 ukuran teks per layar. Ukuran minimum 27 px. Teks tengah hanya untuk maksimal 2 baris, lebih dari itu rata kiri. Panjang baris maksimal 56 karakter |
+| 9 | **Hukum Hick** | Maksimal 4 pilihan per keputusan dalam satu baris. Bila lebih (misalnya 7 label emosi), susun 4 baris atas dan 3 baris bawah, keduanya rata tengah |
+| 10 | **Kontras dan warna** | Kontras teks minimal 4,5:1. Teks gelap `#16163A` di atas tombol `calm`. Warna tidak pernah menjadi satu-satunya petunjuk (BR-12) |
+| 11 | **Fokus perhatian** | Orb di tengah adalah titik fokus. Elemen lain di tepi dan tidak lebih terang dari orb. Satu instruksi pada satu waktu, maksimal 2 kalimat |
+| 12 | **Umpan balik cepat** | Setiap hover atau klik direspons dalam 100 ms (naik 1,04, tekan 0,97, cahaya menguat) |
+| 13 | **Gerak** | Mikro 150 ms, panel 300 ms, transisi layar 450 ms. Easing `Sine.easeOut` untuk masuk dan `Sine.easeIn` untuk keluar. Hanya satu elemen bergerak menonjol pada satu waktu |
+| 14 | **Konsistensi komponen** | Scene hanya memakai komponen `JEDA.UI` (panel, button, chip, toast, modal, badgeSlot, meter). Dilarang membuat gaya baru di dalam scene |
+| 15 | **Keyboard** | Enter menekan aksi utama, Esc membuka Pause, Spasi menahan napas di Level 1. Elemen terfokus punya garis tepi terlihat |
+
+### 14.4 Sistem tata letak `JEDA.Layout` (supaya simetri otomatis)
+
+Buat `js/layout.js` yang menjadi satu-satunya sumber posisi.
+
+```js
+JEDA.Layout = {
+  W: 1920, H: 1080, M: 120, G: 24, COL: 118,
+  cx() { return this.W / 2; },
+  colLeft(c) { return this.M + (c - 1) * (this.COL + this.G); },      // c = 1..12
+  colSpan(c, n) { return n * this.COL + (n - 1) * this.G; },          // lebar n kolom
+  rowCenter(widths, gap) {},   // kembalikan array pusat x agar baris rata tengah dan simetris
+  stackCenter(heights, gap, centerY) {}, // kembalikan array pusat y untuk tumpukan vertikal
+  zone: { header: [0, 120], content: [120, 900], action: [900, 1080] }
+};
+```
+
+`rowCenter` menghitung total lebar (jumlah lebar ditambah gap) lalu mulai dari `W/2 - total/2`, sehingga baris selalu simetris terhadap sumbu tengah. **Mode debug (`?debug=1`, tombol `G`)** menggambar garis tengah, garis margin, kolom, dan zona agar penyimpangan langsung terlihat. Tiap komponen `JEDA.UI` menerima posisi dari `Layout`, tidak dari scene.
+
+### 14.5 Struktur tata letak per layar
+
+| Layar | Susunan dari atas ke bawah (semua berpusat di sumbu tengah) |
+| --- | --- |
+| Check-in | Logo JEDA (y 160), subjudul, panel M berisi pertanyaan, 5 tombol bulat 96 px dengan jarak 32 (`rowCenter`), label emosi baris 4 lalu 3. Tombol Mulai 48 px di bawah panel. Tiga kartu level sama lebar (`colSpan(…, 4)`) di zona aksi |
+| Level 1 | Header: nama level kiri, jeda dan pengaturan kanan. Orb di (W/2, 500). Gelembung Lumi di y 760. Enam titik siklus di y 860 (`rowCenter`). Meter Aliran sebagai cincin di sekeliling orb |
+| Level 2 | Header sama. Area gelembung y 200 sampai 760. Empat keranjang label sama lebar 360 dengan jarak 48 (`rowCenter`) di y 900 |
+| Level 3 | Huruf S, T, O, P di y 120 (`rowCenter`). Panel L berisi pemicu di y 400. Meter emosi lebar 720 di bawahnya. Dua tombol besar sama lebar 420 dengan jarak 48 di y 760 |
+| Hasil | Skor akhir di tengah, tiga bintang (`rowCenter`), tiga kartu skor level sama lebar, lima slot lencana (`rowCenter`), tombol Main lagi dan Menu sama lebar |
+
+### 14.6 Berkas tambahan
+
+`js/layout.js`, `js/lumi.js`, dan fungsi `badges` di `score.js`. Urutan `<script>`: `layout` sebelum `ui` dan `fx`, `lumi` sesudah `ui`.
+
+### 14.7 Fase dan prioritas
+
+Urutan gabungan dengan fase 3D (bagian 13) karena tenggat Senin 09.00 WIB. **Kerjakan berurutan dari atas dan berhenti bila waktu habis:**
+
+| Urutan | Fase | Isi | Perkiraan |
+| --- | --- | --- | --- |
+| 1 | G-1 | `layout.js`, rapikan semua scene yang ada ke `Layout` dan komponen `JEDA.UI`, mode debug grid | 45 sampai 60 menit |
+| 2 | G-2 | Lumi (G1) dan Meter Aliran (G2) | 60 menit |
+| 3 | 3D-1 | Panggung 3D dasar (bagian 13) | 2 jam |
+| 4 | G-3 | Badai Notifikasi (G3) dan lencana (G4) | 50 menit |
+| 5 | 3D-2 | Awan dan taman lentera | 1,5 jam |
+| 6 | 3D-3 | Animasi dan umpan balik | 1 jam |
+| 7 | G-4 | Skin orb (G5), hanya bila waktu sisa | 20 menit |
+
+**Alasan G-1 paling awal:** tata letak yang tidak simetris merusak kesan semua fitur lain, termasuk 3D. Memperbaikinya lebih dulu memberi dampak terbesar dengan biaya terkecil.
+
+### 14.8 Ceklis UI/UX
+
+- [ ] Dengan mode debug, garis tengah memotong tengah judul, panel, dan tombol utama di semua layar. Selisih maksimal 2 px.
+- [ ] Semua jarak antar elemen kelipatan 8 px.
+- [ ] Tombol yang sejajar punya lebar sama. Hanya ada satu tombol bergradasi per layar.
+- [ ] Tidak ada teks di bawah 27 px dan tidak ada teks yang terpotong atau keluar panel.
+- [ ] Margin kiri dan kanan sama (120 px) di semua layar.
+- [ ] Hover, tekan, dan status disabled terlihat jelas.
+- [ ] Ukuran jendela 1366x768, 1920x1080, dan 2560x1440: tata letak tetap proporsional dan terpusat.
+- [ ] Zoom browser 100% dan 125%: tidak ada yang tumpang tindih.
+- [ ] Lumi tidak berbicara lebih sering dari sekali tiap 4 detik, dan semua ucapan sesuai gaya 14.1.
+- [ ] Meter Aliran tidak pernah mengubah skor level.
+
+### 14.9 Prompt Antigravity
+
+**Prompt G-1 (layout dan simetri):**
+
+> Baca PRD.md bagian 14.3 sampai 14.5. Kerjakan fase G-1 saja. Buat js/layout.js sesuai kontrak 14.4 (W 1920, H 1080, margin 120, gutter 24, kolom 118, fungsi cx, colLeft, colSpan, rowCenter, stackCenter, zone). Refactor SEMUA scene yang sudah ada (Checkin, Level1, Level2, Level3, Result, Pause) agar semua posisi berasal dari JEDA.Layout dan komponen JEDA.UI, tanpa koordinat tetap. Semua teks dan tombol di tengah memakai setOrigin(0.5). Ikuti 15 prinsip di bagian 14.3 (skala jarak 8 px, tombol tinggi 88 dan lebar seragam, satu tombol utama per layar, tiga ukuran teks maksimal). Tambahkan mode debug (?debug=1, tombol G) yang menggambar garis tengah, margin, kolom, dan zona. Jangan mengubah logika, skor, atau aturan bisnis. Setelah selesai, daftar tiap layar dan bagian yang kamu ubah, dan jelaskan cara menguji simetri dengan mode debug.
+
+**Prompt G-2 (Lumi dan Meter Aliran):**
+
+> Fase G-2 dari PRD.md bagian 14. Tambahkan JEDA.DATA.lumi (14 ucapan di 14.2), js/lumi.js dengan JEDA.Lumi.say(key) (gelembung ucapan dari JEDA.UI di bawah orb, jeda minimal 4 detik, tampil 2,5 detik, maksimal 2 baris), dan Meter Aliran sesuai aturan G2 (cincin di sekeliling orb dengan tiga ambang 33, 66, 100). Hubungkan ke Level 1 dan Level 2. Meter Aliran tidak boleh mengubah skor. Ikuti gaya tulisan Lumi dan prinsip UI/UX di 14.3.
+
+**Prompt G-3 (Badai dan lencana):**
+
+> Fase G-3 dari PRD.md bagian 14. Implementasikan Badai Notifikasi (G3) di siklus 5 dan 6 Level 1, serta JEDA.Score.badges(run) untuk lima lencana (G4) dengan penyimpanan di state.badges dan tampilan lima slot di ResultScene memakai komponen JEDA.UI.badgeSlot. Lencana belum terbuka berupa siluet abu bergaris putus tanpa pesan negatif. BR-03 tetap utuh. Tambahkan pengisian nilai awal untuk data lama yang belum punya kolom badges dan skin.
+
+**Prompt G-4 (opsional, skin orb):**
+
+> Fase G-4 dari PRD.md bagian 14. Tambahkan tiga skin orb (Embun, Fajar, Aurora) dengan syarat total bintang 0, 3, dan 6, pilihan di pengaturan, tersimpan di state.skin. Skin hanya mengganti palet orb di JEDA.FX.orb dan Stage3D.
+
+**Prompt audit (pakai kapan pun tampilan terasa tidak rapi):**
+
+> Audit seluruh scene terhadap ceklis 14.8. Untuk setiap pelanggaran sebutkan file, baris, dan prinsip yang dilanggar. Perbaiki hanya pelanggaran itu dan jangan mengubah yang lain.

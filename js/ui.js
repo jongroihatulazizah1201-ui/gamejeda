@@ -7,29 +7,58 @@ window.JEDA = window.JEDA || {};
 
 JEDA.UI = {
   /**
-   * Menggambar panel kaca rounded rectangle.
+   * Menggambar panel kaca rounded rectangle (PRD Bagian 14.3 Prinsip 5).
+   * Standar ukuran: S: 720, M: 960, L: 1200, sudut: 32, padding: 48.
    */
-  createPanel(scene, x, y, w, h, radius = 24, fillAlpha = 0.08, strokeAlpha = 0.20, fillColor = JEDA.CFG.COLOR.panel) {
+  createPanel(scene, x, y, w, h, radius = 32, fillAlpha = 0.94, strokeAlpha = 0.40, fillColor = 0x141638) {
     const graphics = scene.add.graphics();
     graphics.fillStyle(fillColor, fillAlpha);
     graphics.fillRoundedRect(x - w / 2, y - h / 2, w, h, radius);
 
-    graphics.lineStyle(2, JEDA.CFG.COLOR.panelLine, strokeAlpha);
+    graphics.lineStyle(2, 0x3F486E, strokeAlpha);
     graphics.strokeRoundedRect(x - w / 2, y - h / 2, w, h, radius);
     return graphics;
   },
 
   /**
-   * Membuat tombol panel kaca interaktif dengan hover effect (PRD Bagian 4).
+   * Komponen Panel Baku JEDA.UI (PRD Bagian 14.3 Prinsip 5).
+   * Otomatis terpusat di sumbu tengah (Layout.cx()) dan mengikuti ukuran S/M/L.
    */
-  createButton(scene, x, y, w, h, label, onClick, options = {}) {
+  panel(scene, options = {}) {
+    const size = options.size || 'M';
+    let w = options.w;
+    if (!w) {
+      if (typeof size === 'number') w = size;
+      else if (window.JEDA && JEDA.Layout && JEDA.Layout.panelSize[size]) w = JEDA.Layout.panelSize[size];
+      else w = 960;
+    }
+    const h = options.h || 520;
+    const x = options.x !== undefined ? options.x : (window.JEDA && JEDA.Layout ? JEDA.Layout.cx() : JEDA.CFG.W / 2);
+    const y = options.y !== undefined ? options.y : (window.JEDA && JEDA.Layout ? JEDA.Layout.cy() : JEDA.CFG.H / 2);
+    const radius = options.radius || 32;
+    const fillAlpha = options.fillAlpha !== undefined ? options.fillAlpha : 0.95;
+    const strokeAlpha = options.strokeAlpha !== undefined ? options.strokeAlpha : 0.40;
+    const fillColor = options.fillColor || 0x141638;
+    const strokeColor = options.strokeColor || 0x3F486E;
+
+    return this.createPanel(scene, x, y, w, h, radius, fillAlpha, strokeAlpha, fillColor);
+  },
+
+  /**
+   * Membuat tombol baku JEDA.UI (PRD Bagian 14.3 Prinsip 6, 7, 10, 12).
+   * - Standar tinggi: 88 px, lebar minimal 280 px, bentuk kapsul (radius 44)
+   * - Aksi utama (primary: true): background calm 0x7FE0C3, teks gelap #16163A
+   * - Aksi sekunder (primary: false): kaca gelap bergaris, teks putih #FFFFFF
+   * - Respons cepat (<100ms): hover 1.04, tekan 0.97
+   */
+  createButton(scene, x, y, w = 280, h = 88, label, onClick, options = {}) {
     const container = scene.add.container(x, y);
-    const radius = options.radius || 24;
+    const radius = options.radius || (h >= 80 ? h / 2 : 24);
     const isPrimary = options.primary || false;
     const isDisabled = options.disabled || false;
-    const fontSize = options.fontSize || JEDA.CFG.FONT.body;
+    const fontSize = options.fontSize || 33;
 
-    // Background panel tombol solid-frosted (Prinsip UI/UX: kontras tinggi, bebas tembus pandang)
+    // Background panel tombol solid-frosted
     const bg = scene.add.graphics();
     const updateBg = (fillAlpha, strokeAlpha, fillColor, strokeColor) => {
       bg.clear();
@@ -39,18 +68,147 @@ JEDA.UI = {
       bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
     };
 
-    const normalFillAlpha = 0.95;
-    const normalStrokeAlpha = isPrimary ? 0.85 : 0.65;
-    const normalColor = isPrimary ? 0x22554E : 0x181A3C;
-    const normalStrokeColor = isPrimary ? 0x7FE0C3 : 0x485278;
+    // Prinsip 10: Bebas tembus pandang (fillAlpha 0.95 solid-frosted bahkan saat disabled)
+    const normalFillAlpha = isPrimary ? 1.0 : 0.95;
+    const normalStrokeAlpha = isPrimary ? 0.90 : 0.65;
+    const normalColor = isPrimary ? 0x7FE0C3 : 0x181A3C;
+    const normalStrokeColor = isPrimary ? 0xA2F5DD : 0x485278;
 
-    updateBg(normalFillAlpha, normalStrokeAlpha, normalColor, normalStrokeColor);
+    const disabledColor = 0x181B38;
+    const disabledStrokeColor = 0x383D62;
 
-    // Teks tombol (selalu menggunakan warna kontras terang #FFFFFF secara default)
-    const textColor = options.textColor || '#FFFFFF';
+    if (isDisabled) {
+      updateBg(0.96, 0.45, disabledColor, disabledStrokeColor);
+    } else {
+      updateBg(normalFillAlpha, normalStrokeAlpha, normalColor, normalStrokeColor);
+    }
+
+    const defaultTextColor = isPrimary ? '#16163A' : '#FFFFFF';
+    const textColor = options.textColor || (isDisabled ? '#64748B' : defaultTextColor);
     const textObj = scene.add.text(0, 0, label, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: fontSize + 'px',
+      fontStyle: '800',
+      color: textColor,
+      align: 'center'
+    }).setOrigin(0.5).setResolution(2);
+
+    container.add([bg, textObj]);
+    container.setSize(w, h);
+    container.bg = bg;
+    container.textObj = textObj;
+    container.w = w;
+    container.h = h;
+    container.isPrimary = isPrimary;
+
+    // Interaktivitas
+    container.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: !isDisabled
+    });
+
+    if (isDisabled) {
+      container.input.enabled = false;
+    }
+
+    container.on('pointerover', () => {
+      if (!container.input || !container.input.enabled) return;
+      scene.tweens.add({
+        targets: container,
+        scaleX: 1.04,
+        scaleY: 1.04,
+        y: y - 2,
+        duration: 100,
+        ease: 'Sine.easeOut'
+      });
+      const hoverColor = isPrimary ? 0x98F1D7 : 0x242854;
+      const hoverStroke = isPrimary ? 0xCAFAEE : 0x7FE0C3;
+      updateBg(1.0, 1.0, hoverColor, hoverStroke);
+    });
+
+    container.on('pointerout', () => {
+      if (!container.input || !container.input.enabled) return;
+      scene.tweens.add({
+        targets: container,
+        scaleX: 1.0,
+        scaleY: 1.0,
+        y: y,
+        duration: 100,
+        ease: 'Sine.easeOut'
+      });
+      updateBg(normalFillAlpha, normalStrokeAlpha, normalColor, normalStrokeColor);
+    });
+
+    container.on('pointerdown', () => {
+      if (!container.input || !container.input.enabled) return;
+      container.setScale(0.97);
+    });
+
+    container.on('pointerup', () => {
+      if (!container.input || !container.input.enabled) return;
+      container.setScale(1.04);
+      if (typeof onClick === 'function') {
+        onClick();
+      }
+    });
+
+    container.setEnabled = (enabled) => {
+      if (enabled) {
+        updateBg(normalFillAlpha, normalStrokeAlpha, normalColor, normalStrokeColor);
+        textObj.setColor(defaultTextColor);
+        container.input.enabled = true;
+      } else {
+        updateBg(0.96, 0.45, disabledColor, disabledStrokeColor);
+        textObj.setColor('#64748B');
+        container.input.enabled = false;
+      }
+    };
+
+    return container;
+  },
+
+  button(scene, x, y, w, h, label, onClick, options) {
+    return this.createButton(scene, x, y, w, h, label, onClick, options);
+  },
+
+  /**
+   * Komponen Chip Pilihan (PRD Bagian 14.3 Prinsip 9).
+   */
+  chip(scene, x, y, w, h, label, isSelected, onClick, options = {}) {
+    const container = scene.add.container(x, y);
+    const radius = options.radius || (h / 2);
+    const bg = scene.add.graphics();
+    const isSensitive = options.sensitive || false;
+
+    const updateBg = (selected, hover = false) => {
+      bg.clear();
+      if (selected) {
+        const selColor = isSensitive ? 0xFF8FA3 : 0x7FE0C3;
+        const selStroke = isSensitive ? 0xFFCAD4 : 0xA2F5DD;
+        bg.fillStyle(selColor, 1.0);
+        bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+        bg.lineStyle(2, selStroke, 1.0);
+        bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+      } else if (hover) {
+        bg.fillStyle(0x242854, 0.96);
+        bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+        bg.lineStyle(2, 0x7FE0C3, 0.85);
+        bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+      } else {
+        bg.fillStyle(0x181A3C, 0.94);
+        bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+        bg.lineStyle(2, 0x485278, 0.65);
+        bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+      }
+    };
+
+    updateBg(isSelected);
+
+    const textColor = isSelected ? '#16163A' : '#FFFFFF';
+    const textObj = scene.add.text(0, 0, label, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: (options.fontSize || 22) + 'px',
       fontStyle: '700',
       color: textColor,
       align: 'center'
@@ -60,14 +218,14 @@ JEDA.UI = {
     container.setSize(w, h);
     container.bg = bg;
     container.textObj = textObj;
+    container.isSelected = isSelected;
 
-    // Status disabled
-    if (isDisabled) {
-      container.setAlpha(0.45);
-      return container;
-    }
+    container.setSelected = (sel) => {
+      container.isSelected = sel;
+      updateBg(sel);
+      textObj.setColor(sel ? '#16163A' : '#FFFFFF');
+    };
 
-    // Interaktivitas dengan area sentuh terpusat (-w/2, -h/2)
     container.setInteractive({
       hitArea: new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
       hitAreaCallback: Phaser.Geom.Rectangle.Contains,
@@ -75,55 +233,16 @@ JEDA.UI = {
     });
 
     container.on('pointerover', () => {
-      scene.tweens.add({
-        targets: container,
-        scaleX: 1.04,
-        scaleY: 1.04,
-        y: y - 3,
-        duration: 150,
-        ease: 'Sine.easeOut'
-      });
-      const hoverColor = isPrimary ? 0x2C6C63 : 0x242854;
-      const hoverStroke = isPrimary ? 0x9BECD6 : 0x7FE0C3;
-      updateBg(0.98, 1.0, hoverColor, hoverStroke);
+      if (!container.isSelected) updateBg(false, true);
     });
 
     container.on('pointerout', () => {
-      scene.tweens.add({
-        targets: container,
-        scaleX: 1.0,
-        scaleY: 1.0,
-        y: y,
-        duration: 150,
-        ease: 'Sine.easeOut'
-      });
-      updateBg(normalFillAlpha, normalStrokeAlpha, normalColor, normalStrokeColor);
-    });
-
-    container.on('pointerdown', () => {
-      container.setScale(0.97);
+      updateBg(container.isSelected, false);
     });
 
     container.on('pointerup', () => {
-      container.setScale(1.04);
-      if (typeof onClick === 'function') {
-        onClick();
-      }
+      if (typeof onClick === 'function') onClick();
     });
-
-    container.setEnabled = (enabled) => {
-      if (enabled) {
-        container.setAlpha(1.0);
-        container.setInteractive({
-          hitArea: new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
-          hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-          useHandCursor: true
-        });
-      } else {
-        container.setAlpha(0.4);
-        container.disableInteractive();
-      }
-    };
 
     return container;
   },
@@ -309,18 +428,22 @@ JEDA.UI = {
     }).setOrigin(0.5).setResolution(2);
     modalContainer.add(noteText);
 
-    // 7. Dua tombol opsi per BR-09:
-    // Tombol 1: Latihan napas ringan (Level 1 mode ramah)
-    const btn1 = this.createButton(scene, cx - 220, cy + 245, 380, 68, 'Latihan Napas Ringan', () => {
+    // 7. Dua tombol opsi per BR-09 (Prinsip UI/UX: sama lebar, jarak 32, terpusat)
+    const btnWidths = [420, 420];
+    const btnXs = (window.JEDA && JEDA.Layout) ? JEDA.Layout.rowCenter(btnWidths, 32) : [cx - 226, cx + 226];
+    const btnY = cy + 245;
+
+    // Tombol Sekunder di Kiri: Latihan napas ringan
+    const btn1 = this.createButton(scene, btnXs[0], btnY, 420, 72, 'Latihan Napas Ringan', () => {
       modalContainer.destroy();
       if (typeof onLightBreath === 'function') onLightBreath();
-    }, { radius: 34, primary: true });
+    }, { radius: 36, fontSize: 24 });
 
-    // Tombol 2: Aku sudah lebih baik, lanjutkan
-    const btn2 = this.createButton(scene, cx + 220, cy + 245, 420, 68, 'Aku sudah lebih baik, lanjutkan', () => {
+    // Tombol Utama di Kanan: Aku sudah lebih baik, lanjutkan
+    const btn2 = this.createButton(scene, btnXs[1], btnY, 420, 72, 'Aku sudah lebih baik, lanjutkan', () => {
       modalContainer.destroy();
       if (typeof onContinue === 'function') onContinue();
-    }, { radius: 34 });
+    }, { radius: 36, primary: true, fontSize: 24 });
 
     modalContainer.add([btn1, btn2]);
 
@@ -484,16 +607,20 @@ JEDA.UI = {
       lineSpacing: 8
     }).setOrigin(0.5).setResolution(2);
 
-    const acceptBtn = this.createButton(scene, -155, 100, 270, 58, 'Gunakan Mode Ramah', () => {
-      modal.destroy();
-      if (typeof onAccept === 'function') onAccept();
-    }, { primary: true, radius: 29 });
-
-    const declineBtn = this.createButton(scene, 155, 100, 270, 58, 'Tetap Mode Normal', () => {
+    const btnW = 280;
+    const btnH = 68;
+    const btnGap = 32;
+    // Prinsip 6: Aksi utama di kanan, aksi sekunder di kiri, sama lebar
+    const declineBtn = this.createButton(scene, -(btnW / 2 + btnGap / 2), 100, btnW, btnH, 'Tetap Mode Normal', () => {
       modal.destroy();
       if (typeof onDecline === 'function') onDecline();
-    }, { radius: 29 });
+    }, { radius: 34, fontSize: 22 });
 
-    modal.add([bg, title, desc, acceptBtn, declineBtn]);
+    const acceptBtn = this.createButton(scene, (btnW / 2 + btnGap / 2), 100, btnW, btnH, 'Gunakan Mode Ramah', () => {
+      modal.destroy();
+      if (typeof onAccept === 'function') onAccept();
+    }, { primary: true, radius: 34, fontSize: 22 });
+
+    modal.add([bg, title, desc, declineBtn, acceptBtn]);
   }
 };

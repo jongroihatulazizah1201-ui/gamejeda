@@ -14,9 +14,8 @@ class Level3Scene extends Phaser.Scene {
   }
 
   create() {
-    const W = JEDA.CFG.W;
-    const H = JEDA.CFG.H;
-    const cx = W / 2;
+    const Layout = JEDA.Layout;
+    const cx = Layout.cx();
 
     // Ambil data dari data.js (Dilarang menulis teks skenario langsung di scene)
     this.scenarios = JEDA.DATA.scenarios || [];
@@ -34,17 +33,17 @@ class Level3Scene extends Phaser.Scene {
     }
     this.cameras.main.fadeIn(350);
 
-    // 2. Header
-    this.createHeader(W);
+    // 2. Header di Zona Header (0 - 120 px)
+    this.createHeader();
 
-    // 3. Meter Emosi Horizontal
-    this.createEmotionMeter(cx, 140);
-
-    // 4. Kontainer Utama Konten Skenario
+    // 3. Kontainer Utama Konten Skenario
     this.scenarioContainer = this.add.container(0, 0);
 
-    // 5. Muat Skenario Pertama
+    // 4. Muat Skenario Pertama
     this.loadScenario(this.currentScenarioIndex);
+
+    // 5. Pasang listener tombol debug grid 'G'
+    Layout.attachDebugKeyListener(this);
 
     // 6. Pengawas Idle (BR-06)
     if (JEDA.Guard && JEDA.Guard.startIdleMonitor) {
@@ -53,28 +52,37 @@ class Level3Scene extends Phaser.Scene {
   }
 
   /**
-   * Membuat header navigasi dan status skenario.
+   * Membuat header navigasi dan status skenario di Zona Header (y: 0 - 120 px).
    */
-  createHeader(W) {
-    JEDA.UI.createButton(this, 140, 65, 180, 50, '← Menu', () => {
+  createHeader() {
+    const Layout = JEDA.Layout;
+    const headerY = 64;
+    const btnW = 180;
+    const btnH = 50;
+
+    // Kiri: Tombol Menu (rata margin kiri 120 px)
+    const leftX = Layout.M + btnW / 2;
+    JEDA.UI.createButton(this, leftX, headerY, btnW, btnH, '← Menu', () => {
       if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
     }, { fontSize: 20, radius: 25 });
 
-    this.titleText = this.add.text(W / 2, 65, 'Level 3: Jeda S.T.O.P.', {
+    // Tengah: Judul Level
+    this.titleText = this.add.text(Layout.cx(), headerY, 'Level 3: Jeda S.T.O.P.', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '32px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    // Kapsul status skenario di kanan atas (simetris dengan tombol menu di kiri)
-    const scContainer = this.add.container(W - 140, 65);
+    // Kanan: Kapsul status skenario (rata margin kanan 1800 px)
+    const rightX = (Layout.W - Layout.M) - btnW / 2;
+    const scContainer = this.add.container(rightX, headerY);
     const scBg = this.add.graphics();
     scBg.fillStyle(0x181A3C, 0.95);
-    scBg.fillRoundedRect(-100, -25, 200, 50, 25);
+    scBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 25);
     scBg.lineStyle(2, 0x485278, 0.65);
-    scBg.strokeRoundedRect(-100, -25, 200, 50, 25);
+    scBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 25);
 
     this.stepCounterText = this.add.text(0, 0, 'Skenario 1 dari 3', {
       fontFamily: JEDA.CFG.FONT.family,
@@ -87,23 +95,24 @@ class Level3Scene extends Phaser.Scene {
 
   /**
    * Membuat Meter Emosi Horizontal (mulai 70).
+   * PRD 14.5: Meter emosi lebar 720 di bawah panel.
    */
   createEmotionMeter(cx, y) {
     this.meterContainer = this.add.container(cx, y);
-    const meterW = 560;
+    const meterW = 720;
     const meterH = 26;
 
     // Label meter
     this.meterLabel = this.add.text(0, -24, `Tingkat Emosi: ${this.emotionMeter}%`, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '20px',
-      fontStyle: '600',
+      fontStyle: '700',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
     // Track latar belakang
     const track = this.add.graphics();
-    track.fillStyle(0x0e0e24, 0.8);
+    track.fillStyle(0x0e0e24, 0.85);
     track.fillRoundedRect(-meterW / 2, -meterH / 2, meterW, meterH, 13);
     track.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
     track.strokeRoundedRect(-meterW / 2, -meterH / 2, meterW, meterH, 13);
@@ -115,6 +124,7 @@ class Level3Scene extends Phaser.Scene {
     this.renderMeterBar(this.emotionMeter);
 
     this.meterContainer.add([this.meterLabel, track, this.meterBar]);
+    this.scenarioContainer.add(this.meterContainer);
   }
 
   /**
@@ -188,40 +198,40 @@ class Level3Scene extends Phaser.Scene {
    * "Langsung bereaksi" vs "Jeda dengan STOP" (PRD Bagian 5.4).
    */
   showScenarioTrigger(scenario) {
-    const cx = JEDA.CFG.W / 2;
-    const cy = JEDA.CFG.H / 2 + 30;
+    const Layout = JEDA.Layout;
+    const cx = Layout.cx();
 
-    const cardW = 1050;
-    const cardH = 580;
+    // 1. Panel L Utama (Lebar 1200 px, tinggi 320 px, pusat di y = 380)
+    const cardW = Layout.panelSize.L; // 1200 px
+    const cardH = 320;
+    const cardY = 380;
 
-    // Panel kaca utama
     const bg = this.add.graphics();
-    bg.fillStyle(0x16163A, 0.92);
-    bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
-    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.25);
-    bg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    bg.fillStyle(0x16163A, 0.95);
+    bg.fillRoundedRect(cx - cardW / 2, cardY - cardH / 2, cardW, cardH, 32);
+    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
+    bg.strokeRoundedRect(cx - cardW / 2, cardY - cardH / 2, cardW, cardH, 32);
     this.scenarioContainer.add(bg);
 
-    // Judul Skenario
-    const title = this.add.text(cx, cy - cardH / 2 + 65, scenario.title, {
+    // Judul & Badge Pemicu
+    const title = this.add.text(cx, cardY - cardH / 2 + 48, scenario.title, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '34px',
+      fontSize: '32px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    // Label Pemicu
-    const badge = this.add.text(cx, cy - cardH / 2 + 125, 'SITUASI PEMICU', {
+    const badge = this.add.text(cx, cardY - cardH / 2 + 92, '◄ SITUASI PEMICU ►', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '18px',
+      fontSize: '17px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.warn
     }).setOrigin(0.5).setResolution(2);
 
     // Teks Situasi Pemicu dari data.js
-    const triggerText = this.add.text(cx, cy - 20, scenario.trigger, {
+    const triggerText = this.add.text(cx, cardY + 28, scenario.trigger, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '30px',
+      fontSize: '26px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.text,
       align: 'center',
@@ -229,28 +239,36 @@ class Level3Scene extends Phaser.Scene {
       lineSpacing: 10
     }).setOrigin(0.5).setResolution(2);
 
+    this.scenarioContainer.add([title, badge, triggerText]);
+
+    // 2. Meter Emosi Horizontal Lebar 720 di Bawah Panel (y = 590)
+    this.createEmotionMeter(cx, 590);
+
     // Pertanyaan pilihan jalur
-    const promptText = this.add.text(cx, cy + 110, 'Apa yang akan kamu lakukan sekarang?', {
+    const promptText = this.add.text(cx, 672, 'Apa yang akan kamu lakukan sekarang?', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '22px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
+    this.scenarioContainer.add(promptText);
 
-    // Dua Tombol Besar: Langsung Bereaksi vs Jeda dengan STOP
-    const btnY = cy + 195;
+    // 3. Dua Tombol Besar di y = 760 (sama lebar 420, jarak 48, rowCenter)
+    const btnWidths = [420, 420];
+    const btnXs = Layout.rowCenter(btnWidths, 48);
+    const btnY = 760;
 
-    // 1. Jalur Reaksi Langsung
-    const reactBtn = JEDA.UI.createButton(this, cx - 240, btnY, 400, 68, 'Langsung Bereaksi', () => {
+    // Kiri: Aksi Sekunder (Langsung Bereaksi)
+    const reactBtn = JEDA.UI.createButton(this, btnXs[0], btnY, 420, 88, 'Langsung Bereaksi', () => {
       this.handleReactionPath(scenario);
-    }, { radius: 34, textColor: JEDA.CFG.COLOR.hex.off });
+    }, { radius: 44, textColor: '#FF8FA3', fontSize: 26 });
 
-    // 2. Jalur STOP
-    const stopBtn = JEDA.UI.createButton(this, cx + 240, btnY, 400, 68, 'Jeda dengan STOP', () => {
+    // Kanan: Aksi Utama (Jeda dengan STOP)
+    const stopBtn = JEDA.UI.createButton(this, btnXs[1], btnY, 420, 88, 'Jeda dengan STOP', () => {
       this.handleStopPath(scenario);
-    }, { primary: true, radius: 34 });
+    }, { primary: true, radius: 44, fontSize: 26 });
 
-    this.scenarioContainer.add([title, badge, triggerText, promptText, reactBtn, stopBtn]);
+    this.scenarioContainer.add([reactBtn, stopBtn]);
   }
 
   /**
@@ -259,10 +277,11 @@ class Level3Scene extends Phaser.Scene {
    */
   handleReactionPath(scenario) {
     this.scenarioContainer.removeAll(true);
-    const cx = JEDA.CFG.W / 2;
-    const cy = JEDA.CFG.H / 2 + 30;
+    const Layout = JEDA.Layout;
+    const cx = Layout.cx();
+    const cy = Layout.cy();
 
-    const cardW = 950;
+    const cardW = 960;
     const cardH = 520;
 
     const bg = this.add.graphics();
@@ -307,9 +326,9 @@ class Level3Scene extends Phaser.Scene {
       observedCorrect: false
     });
 
-    const nextBtn = JEDA.UI.createButton(this, cx, cy + 180, 320, 64, 'Lanjutkan', () => {
+    const nextBtn = JEDA.UI.createButton(this, cx, cy + 180, 320, 88, 'Lanjutkan', () => {
       this.loadScenario(this.currentScenarioIndex + 1);
-    }, { primary: true, radius: 32 });
+    }, { primary: true, radius: 44, fontSize: 26 });
 
     this.scenarioContainer.add([title, consText, note, nextBtn]);
   }
@@ -327,39 +346,41 @@ class Level3Scene extends Phaser.Scene {
   }
 
   /**
-   * Indikator 4 Langkah STOP di bagian atas kartu.
+   * Indikator 4 Langkah STOP di y = 120 (PRD 14.5: rowCenter).
    */
   drawStepIndicator(cx, y, activeStep) {
+    const Layout = JEDA.Layout;
     const steps = [
       { key: 'S', name: 'Stop' },
       { key: 'T', name: 'Take a breath' },
       { key: 'O', name: 'Observe' },
       { key: 'P', name: 'Proceed' }
     ];
-    const spacing = 180;
-    const startX = cx - ((steps.length - 1) * spacing) / 2;
+    const stepWidths = [150, 150, 150, 150];
+    const stepXs = Layout.rowCenter(stepWidths, 24);
+    const indY = 120; // PRD 14.5: y = 120
 
     steps.forEach((st, idx) => {
-      const sx = startX + idx * spacing;
+      const sx = stepXs[idx];
       const isActive = (st.key === activeStep);
 
       const circle = this.add.graphics();
-      circle.fillStyle(isActive ? JEDA.CFG.COLOR.calm : 0xFFFFFF, isActive ? 0.9 : 0.1);
-      circle.fillCircle(sx, y, 22);
-      circle.lineStyle(2, isActive ? 0xFFFFFF : JEDA.CFG.COLOR.panelLine, isActive ? 0.9 : 0.3);
-      circle.strokeCircle(sx, y, 22);
+      circle.fillStyle(isActive ? JEDA.CFG.COLOR.calm : 0x181A3C, isActive ? 1.0 : 0.85);
+      circle.fillCircle(sx, indY, 24);
+      circle.lineStyle(2, isActive ? 0xFFFFFF : 0x485278, isActive ? 1.0 : 0.5);
+      circle.strokeCircle(sx, indY, 24);
 
-      const letter = this.add.text(sx, y, st.key, {
+      const letter = this.add.text(sx, indY, st.key, {
         fontFamily: JEDA.CFG.FONT.family,
         fontSize: '20px',
         fontStyle: '800',
-        color: isActive ? JEDA.CFG.COLOR.hex.bgTop : JEDA.CFG.COLOR.hex.text
+        color: isActive ? '#16163A' : '#FFFFFF'
       }).setOrigin(0.5).setResolution(2);
 
-      const label = this.add.text(sx, y + 36, st.name, {
+      const label = this.add.text(sx, indY + 38, st.name, {
         fontFamily: JEDA.CFG.FONT.family,
         fontSize: '15px',
-        fontStyle: '600',
+        fontStyle: '700',
         color: isActive ? JEDA.CFG.COLOR.hex.calm : JEDA.CFG.COLOR.hex.muted
       }).setOrigin(0.5).setResolution(2);
 
@@ -836,37 +857,46 @@ class Level3Scene extends Phaser.Scene {
 
     modal.add([title, stars, scoreText]);
 
-    const btnY = cardH / 2 - 80;
+    // Tombol Tindakan Baku (Tinggi 88, sama lebar 300, aksi utama di kanan)
+    const btnY = cardH / 2 - 76;
+    const btnW = 300;
+    const btnH = 88;
+    const btnGap = 32;
+
     if (result.passed) {
-      const nextBtn = JEDA.UI.createButton(this, 170, btnY, 280, 60, 'Lihat Hasil Akhir', () => {
+      // Kiri: Aksi sekunder (Ulangi Level 3)
+      const repeatBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Ulangi Level 3', () => {
+        if (JEDA.Stage3D) {
+          JEDA.Stage3D.setMode('l3');
+          JEDA.Stage3D.setLanterns(2);
+        }
+        this.scene.restart();
+      }, { radius: 44, fontSize: 24 });
+
+      // Kanan: Aksi utama (Lihat Hasil Akhir)
+      const nextBtn = JEDA.UI.createButton(this, (btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Lihat Hasil Akhir', () => {
         if (JEDA.Stage3D) JEDA.Stage3D.setMode('result');
         JEDA.FX.transitionTo(this, 'ResultScene');
-      }, { primary: true, radius: 30 });
+      }, { primary: true, radius: 44, fontSize: 24 });
 
-      const repeatBtn = JEDA.UI.createButton(this, -170, btnY, 280, 60, 'Ulangi Level 3', () => {
-        if (JEDA.Stage3D) {
-          JEDA.Stage3D.setMode('l3');
-          JEDA.Stage3D.setLanterns(2);
-        }
-        this.scene.restart();
-      }, { radius: 30 });
-
-      modal.add([nextBtn, repeatBtn]);
+      modal.add([repeatBtn, nextBtn]);
     } else {
-      const repeatBtn = JEDA.UI.createButton(this, 150, btnY, 260, 60, 'Ulangi Level 3', () => {
-        if (JEDA.Stage3D) {
-          JEDA.Stage3D.setMode('l3');
-          JEDA.Stage3D.setLanterns(2);
-        }
-        this.scene.restart();
-      }, { primary: true, radius: 30 });
-
-      const menuBtn = JEDA.UI.createButton(this, -150, btnY, 260, 60, 'Menu Utama', () => {
+      // Kiri: Menu Utama
+      const menuBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Menu Utama', () => {
         if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
         JEDA.FX.transitionTo(this, 'CheckinScene');
-      }, { radius: 30 });
+      }, { radius: 44, fontSize: 24 });
 
-      modal.add([repeatBtn, menuBtn]);
+      // Kanan: Ulangi Level 3
+      const repeatBtn = JEDA.UI.createButton(this, (btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Ulangi Level 3', () => {
+        if (JEDA.Stage3D) {
+          JEDA.Stage3D.setMode('l3');
+          JEDA.Stage3D.setLanterns(2);
+        }
+        this.scene.restart();
+      }, { primary: true, radius: 44, fontSize: 24 });
+
+      modal.add([menuBtn, repeatBtn]);
     }
 
     modal.setAlpha(0);

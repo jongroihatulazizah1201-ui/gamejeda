@@ -16,9 +16,10 @@ class Level2Scene extends Phaser.Scene {
   }
 
   create() {
-    const W = JEDA.CFG.W;
-    const H = JEDA.CFG.H;
-    const cx = W / 2;
+    const Layout = JEDA.Layout;
+    const W = Layout.W;
+    const H = Layout.H;
+    const cx = Layout.cx();
 
     // State permainan
     this.totalThoughts = 10;
@@ -43,11 +44,11 @@ class Level2Scene extends Phaser.Scene {
     this.currentCalm = 0.5;
     this.cameras.main.fadeIn(350);
 
-    // 2. Header & Navigasi
-    this.createHeader(W);
+    // 2. Header Simetris di Zona Header (0 - 120 px)
+    this.createHeader();
 
-    // 3. Empat Keranjang Awan di Bagian Bawah
-    this.createBaskets(cx, H - 110);
+    // 3. Empat Keranjang Awan di y = 900 (PRD 14.5: rowCenter([360, 360, 360, 360], 48))
+    this.createBaskets(cx, 900);
 
     // 4. Mulai memunculkan gelembung pertama
     this.spawnInitialBubbles();
@@ -61,7 +62,10 @@ class Level2Scene extends Phaser.Scene {
       }
     });
 
-    // 6. Pengawas Idle (BR-06)
+    // 6. Pasang listener tombol debug grid 'G'
+    Layout.attachDebugKeyListener(this);
+
+    // 7. Pengawas Idle (BR-06)
     if (JEDA.Guard && JEDA.Guard.startIdleMonitor) {
       JEDA.Guard.startIdleMonitor(this);
     }
@@ -90,45 +94,54 @@ class Level2Scene extends Phaser.Scene {
   }
 
   /**
-   * Membuat header navigasi dan counter progres.
+   * Membuat header navigasi dan counter progres di Zona Header (y: 0 - 120 px).
    */
-  createHeader(W) {
-    // Tombol Kembali
-    JEDA.UI.createButton(this, 140, 65, 180, 50, '← Menu', () => {
+  createHeader() {
+    const Layout = JEDA.Layout;
+    const headerY = 64;
+    const btnW = 180;
+    const btnH = 50;
+
+    // Tombol Kembali (rata margin kiri 120 px)
+    const leftX = Layout.M + btnW / 2;
+    JEDA.UI.createButton(this, leftX, headerY, btnW, btnH, '← Menu', () => {
       if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
     }, { fontSize: 20, radius: 25 });
 
-    // Panel Header Tengah Berlatar Gelap (Prinsip UI/UX: Kontras Tinggi, Terbaca Jelas)
+    // Panel Header Tengah Berlatar Gelap
+    const centerW = 860;
+    const centerH = 88;
     const headerBg = this.add.graphics();
-    headerBg.fillStyle(0x12142E, 0.92);
-    headerBg.fillRoundedRect(W / 2 - 430, 25, 860, 92, 24);
+    headerBg.fillStyle(0x12142E, 0.94);
+    headerBg.fillRoundedRect(Layout.cx() - centerW / 2, headerY - centerH / 2, centerW, centerH, 28);
     headerBg.lineStyle(2, 0x3F486E, 0.7);
-    headerBg.strokeRoundedRect(W / 2 - 430, 25, 860, 92, 24);
+    headerBg.strokeRoundedRect(Layout.cx() - centerW / 2, headerY - centerH / 2, centerW, centerH, 28);
 
     // Judul & Subjudul
-    this.add.text(W / 2, 54, 'Level 2: Awan Pikiran', {
+    this.add.text(Layout.cx(), headerY - 14, 'Level 2: Awan Pikiran', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '30px',
+      fontSize: '28px',
       fontStyle: '800',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
-    this.add.text(W / 2, 92, 'Amati pikiran yang melayang, lalu seret ke keranjang yang sesuai', {
+    this.add.text(Layout.cx(), headerY + 18, 'Amati pikiran yang melayang, lalu seret ke keranjang yang sesuai', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '19px',
+      fontSize: '18px',
       fontStyle: '600',
       color: '#CBD5E1'
     }).setOrigin(0.5).setResolution(2);
 
-    // Indikator Kemajuan dengan Kapsul Gelap
+    // Indikator Kemajuan di Kanan (rata margin kanan 1800 px)
+    const rightX = (Layout.W - Layout.M) - btnW / 2;
     const counterBg = this.add.graphics();
-    counterBg.fillStyle(0x12142E, 0.92);
-    counterBg.fillRoundedRect(W - 270, 38, 220, 54, 27);
-    counterBg.lineStyle(2, 0x3F486E, 0.7);
-    counterBg.strokeRoundedRect(W - 270, 38, 220, 54, 27);
+    counterBg.fillStyle(0x181A3C, 0.95);
+    counterBg.fillRoundedRect(rightX - btnW / 2, headerY - btnH / 2, btnW, btnH, 25);
+    counterBg.lineStyle(2, 0x485278, 0.65);
+    counterBg.strokeRoundedRect(rightX - btnW / 2, headerY - btnH / 2, btnW, btnH, 25);
 
-    this.counterText = this.add.text(W - 160, 65, `Terselesaikan: 0/10`, {
+    this.counterText = this.add.text(rightX, headerY, `Selesai: 0/10`, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '20px',
       fontStyle: '800',
@@ -137,10 +150,11 @@ class Level2Scene extends Phaser.Scene {
   }
 
   /**
-   * Membuat 4 keranjang label kategori di bagian bawah layar:
-   * Cemas, Rencana, Menilai Diri, Kenangan
+   * Membuat 4 keranjang label kategori di bagian bawah layar (PRD 14.5):
+   * Empat keranjang label sama lebar 360 dengan jarak 48 (rowCenter) di y 900.
    */
   createBaskets(cx, y) {
+    const Layout = JEDA.Layout;
     this.baskets = [];
     const categories = [
       { name: 'Cemas', desc: 'Khawatir masa depan', color: 0xFF8FA3 },
@@ -149,13 +163,14 @@ class Level2Scene extends Phaser.Scene {
       { name: 'Kenangan', desc: 'Memori masa lalu', color: 0xB9B5D6 }
     ];
 
-    const basketW = 380;
-    const basketH = 140;
-    const spacing = 410;
-    const startX = cx - ((categories.length - 1) * spacing) / 2;
+    const basketW = 360;
+    const basketH = 120;
+    const basketGap = 48;
+    const basketWidths = [basketW, basketW, basketW, basketW];
+    const basketXs = Layout.rowCenter(basketWidths, basketGap);
 
     categories.forEach((cat, idx) => {
-      const bx = startX + idx * spacing;
+      const bx = basketXs[idx];
       const basketContainer = this.add.container(bx, y);
 
       // Gambar bentuk awan panel
@@ -164,26 +179,26 @@ class Level2Scene extends Phaser.Scene {
 
       const title = this.add.text(0, -18, cat.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '28px',
+        fontSize: '26px',
         fontStyle: '800',
         color: JEDA.CFG.COLOR.hex.text
       }).setOrigin(0.5).setResolution(2);
 
-      const desc = this.add.text(0, 18, cat.desc, {
+      const desc = this.add.text(0, 16, cat.desc, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '18px',
+        fontSize: '17px',
         fontStyle: '600',
         color: JEDA.CFG.COLOR.hex.muted
       }).setOrigin(0.5).setResolution(2);
 
       // Teks petunjuk saat salah meletakkan pikiran
-      const hintText = this.add.text(0, -basketH / 2 - 40, '', {
+      const hintText = this.add.text(0, -basketH / 2 - 36, '', {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '18px',
+        fontSize: '17px',
         fontStyle: '600',
         color: JEDA.CFG.COLOR.hex.warn,
         align: 'center',
-        wordWrap: { width: 360 }
+        wordWrap: { width: 340 }
       }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
       basketContainer.add([bg, title, desc, hintText]);
@@ -830,37 +845,46 @@ class Level2Scene extends Phaser.Scene {
 
     modal.add([title, stars, scoreText]);
 
-    const btnY = cardH / 2 - 80;
+    // Tombol Tindakan Baku (Tinggi 88, sama lebar 300, aksi utama di kanan)
+    const btnY = cardH / 2 - 76;
+    const btnW = 300;
+    const btnH = 88;
+    const btnGap = 32;
+
     if (result.passed) {
-      const nextBtn = JEDA.UI.createButton(this, 170, btnY, 280, 60, 'Lanjut ke Level 3', () => {
+      // Kiri: Aksi sekunder (Ulangi Level 2)
+      const repeatBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Ulangi Level 2', () => {
+        if (JEDA.Stage3D) {
+          JEDA.Stage3D.setMode('l2');
+          JEDA.Stage3D.setLanterns(1);
+        }
+        this.scene.restart();
+      }, { radius: 44, fontSize: 24 });
+
+      // Kanan: Aksi utama (Lanjut ke Level 3)
+      const nextBtn = JEDA.UI.createButton(this, (btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Lanjut ke Level 3', () => {
         if (JEDA.Stage3D) JEDA.Stage3D.setMode('l3');
         JEDA.FX.transitionTo(this, 'Level3Scene');
-      }, { primary: true, radius: 30 });
+      }, { primary: true, radius: 44, fontSize: 24 });
 
-      const repeatBtn = JEDA.UI.createButton(this, -170, btnY, 280, 60, 'Ulangi Level 2', () => {
-        if (JEDA.Stage3D) {
-          JEDA.Stage3D.setMode('l2');
-          JEDA.Stage3D.setLanterns(1);
-        }
-        this.scene.restart();
-      }, { radius: 30 });
-
-      modal.add([nextBtn, repeatBtn]);
+      modal.add([repeatBtn, nextBtn]);
     } else {
-      const repeatBtn = JEDA.UI.createButton(this, 150, btnY, 260, 60, 'Ulangi Level 2', () => {
-        if (JEDA.Stage3D) {
-          JEDA.Stage3D.setMode('l2');
-          JEDA.Stage3D.setLanterns(1);
-        }
-        this.scene.restart();
-      }, { primary: true, radius: 30 });
-
-      const menuBtn = JEDA.UI.createButton(this, -150, btnY, 260, 60, 'Menu Utama', () => {
+      // Kiri: Menu Utama
+      const menuBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Menu Utama', () => {
         if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
         JEDA.FX.transitionTo(this, 'CheckinScene');
-      }, { radius: 30 });
+      }, { radius: 44, fontSize: 24 });
 
-      modal.add([repeatBtn, menuBtn]);
+      // Kanan: Ulangi Level 2
+      const repeatBtn = JEDA.UI.createButton(this, (btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Ulangi Level 2', () => {
+        if (JEDA.Stage3D) {
+          JEDA.Stage3D.setMode('l2');
+          JEDA.Stage3D.setLanterns(1);
+        }
+        this.scene.restart();
+      }, { primary: true, radius: 44, fontSize: 24 });
+
+      modal.add([menuBtn, repeatBtn]);
     }
 
     modal.setAlpha(0);

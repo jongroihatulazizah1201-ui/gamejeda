@@ -14,29 +14,25 @@ class BootScene extends Phaser.Scene {
     // 1. Buat tekstur prosedural lewat kode (sesuai PRD Bagian 4)
     this.createProceduralTextures();
 
-    // 2. Tampilkan latar gradasi senja terpusat (W/2, H/2)
-    this.bg = this.add.image(W / 2, H / 2, 'bg_gradient');
+    // 2. Tampilkan latar gradasi senja (hanya saat mode 2D aktif; mode 3D ditangani Three.js layar penuh)
     const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
     if (is3D) {
-      this.bg.setAlpha(0);
       if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
-    }
-
-    // 3. Tampilkan 40 titik debu bercahaya yang melayang lambat (bila 2D aktif)
-    if (!is3D) {
+    } else {
+      this.bg = this.add.image(W / 2, H / 2, 'bg_gradient');
       this.createFloatingDust();
+      this.vignette = this.add.image(W / 2, H / 2, 'vignette').setAlpha(0.35);
     }
-
-    // 4. Tampilkan lapisan vinyet gelap di tepi layar (bila 3D aktif, vinyet ditangani CSS layar penuh)
-    this.vignette = this.add.image(W / 2, H / 2, 'vignette')
-      .setAlpha(is3D ? 0 : 0.35);
 
     // 5. Tampilkan judul JEDA dan subjudul di atas latar
     this.showTitle();
 
-    // 6. Pasang pengawas visibilitas tab global (BR-08)
+    // 6. Pasang pengawas visibilitas tab global (BR-08) dan listener debug grid
     if (JEDA.Guard && JEDA.Guard.attachVisibilityListener) {
       JEDA.Guard.attachVisibilityListener(this.game);
+    }
+    if (JEDA.Layout && JEDA.Layout.attachDebugKeyListener) {
+      JEDA.Layout.attachDebugKeyListener(this);
     }
 
     // 7. Lanjut ke CheckinScene setelah animasi awal atau saat pemain mengklik layar (UX ramah)
@@ -145,7 +141,7 @@ class BootScene extends Phaser.Scene {
     const cy = JEDA.CFG.H / 2;
 
     // Posisi teks tepat di tengah ruang langit (bebas tabrakan dari orb di atas dan pulau di bawah)
-    this.titleText = this.add.text(cx, cy - 65, 'JEDA', {
+    this.titleText = this.add.text(cx, cy - 75, 'JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '76px',
       fontStyle: '800',
@@ -153,7 +149,7 @@ class BootScene extends Phaser.Scene {
       shadow: { offsetX: 0, offsetY: 3, blur: 14, color: 'rgba(5, 5, 20, 0.9)', fill: true }
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
-    this.subtitleText = this.add.text(cx, cy + 10, 'Latihan berhenti sejenak', {
+    this.subtitleText = this.add.text(cx, cy - 5, 'Latihan berhenti sejenak', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '28px',
       fontStyle: '600',
@@ -161,8 +157,8 @@ class BootScene extends Phaser.Scene {
       shadow: { offsetX: 0, offsetY: 2, blur: 10, color: 'rgba(5, 5, 20, 0.85)', fill: true }
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
-    // Kapsul petunjuk interaksi (frosted pill beraksen tenang)
-    this.hintContainer = this.add.container(cx, cy + 85).setAlpha(0);
+    // Kapsul petunjuk interaksi (frosted pill beraksen tenang, bebas tabrakan dari lentera pulau)
+    this.hintContainer = this.add.container(cx, cy + 70).setAlpha(0);
     const pillW = 380;
     const pillH = 48;
     const pillBg = this.add.graphics();
