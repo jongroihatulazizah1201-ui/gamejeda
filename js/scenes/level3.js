@@ -480,7 +480,7 @@ class Level3Scene extends Phaser.Scene {
 
       const label = this.add.text(sx, indY + 38, st.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '27px',
+        fontSize: '20px',
         fontStyle: '700',
         color: isActive ? JEDA.CFG.COLOR.hex.calm : JEDA.CFG.COLOR.hex.muted
       }).setOrigin(0.5).setResolution(2);
@@ -827,15 +827,16 @@ class Level3Scene extends Phaser.Scene {
     ]);
 
     const startY = cy - 40;
-    const itemH = 88;
-    const spacingY = 104;
+    const btnW = cardW - 128; // 1200 - 128 = 1072 px (Kelipatan 8, padding 64 px di kiri & kanan)
+    const itemH = 88; // Kelipatan 8
+    const spacingY = 104; // Kelipatan 8 (13 * 8)
 
     let isHandled = false;
     const buttons = [];
 
     responses.forEach((resp, idx) => {
       const ry = startY + idx * spacingY;
-      const btn = JEDA.UI.createButton(this, cx, ry, cardW - 140, itemH, resp.text, () => {
+      const btn = JEDA.UI.createButton(this, cx, ry, btnW, itemH, resp.text, () => {
         if (isHandled) return;
         isHandled = true;
 
@@ -847,9 +848,9 @@ class Level3Scene extends Phaser.Scene {
         const highlightColor = resp.score === 100 ? JEDA.CFG.COLOR.calm : (resp.score === 60 ? 0x6E85B7 : 0x884A5D);
         btn.bg.clear();
         btn.bg.fillStyle(highlightColor, 0.35);
-        btn.bg.fillRoundedRect(-(cardW - 140) / 2, -itemH / 2, cardW - 140, itemH, 24);
+        btn.bg.fillRoundedRect(-btnW / 2, -itemH / 2, btnW, itemH, 24);
         btn.bg.lineStyle(2, resp.score === 100 ? JEDA.CFG.COLOR.calm : (resp.score === 60 ? 0x93B5C6 : 0xFF8FA3), 0.9);
-        btn.bg.strokeRoundedRect(-(cardW - 140) / 2, -itemH / 2, cardW - 140, itemH, 24);
+        btn.bg.strokeRoundedRect(-btnW / 2, -itemH / 2, btnW, itemH, 24);
 
         // Catat skor respons (100, 60, atau 0)
         this.stopData.responseScore = resp.score;
@@ -875,7 +876,7 @@ class Level3Scene extends Phaser.Scene {
         this.time.delayedCall(1200, () => {
           this.loadScenario(this.currentScenarioIndex + 1);
         });
-      }, { fontSize: 27, radius: 24 });
+      }, { fontSize: 24, radius: 24 });
 
       buttons.push(btn);
       this.scenarioContainer.add(btn);

@@ -1322,8 +1322,8 @@ class Level2Scene extends Phaser.Scene {
     const cy = Layout.cy();
 
     const modal = this.add.container(cx, cy).setDepth(3500);
-    const cardW = 920;
-    const cardH = 620;
+    const cardW = 960; // Panel M (PRD 14.3)
+    const cardH = 624; // Skala 8 px (78 * 8)
 
     const bg = this.add.graphics();
     bg.fillStyle(0x141638, 0.96);
@@ -1353,9 +1353,9 @@ class Level2Scene extends Phaser.Scene {
       { name: 'Selesai (10%)', val: `${result.selesai}%`, desc: `${this.defeatedCount} / ${this.totalThoughts} dijinakkan` }
     ];
 
-    const mCardW = 250;
-    const mCardH = 150;
-    const mGap = 28;
+    const mCardW = 256; // Kelipatan 8 (32 * 8)
+    const mCardH = 152; // Kelipatan 8 (19 * 8)
+    const mGap = 24; // Kelipatan 8 (3 * 8)
     const mXs = JEDA.Layout.rowCenter([mCardW, mCardW, mCardW], mGap);
     const rowY = -12;
 
@@ -1400,9 +1400,9 @@ class Level2Scene extends Phaser.Scene {
     modal.add([title, stars, scoreText]);
 
     const btnY = cardH / 2 - 76;
-    const btnW = 300;
-    const btnH = 88;
-    const btnGap = 32;
+    const btnW = 288; // Kelipatan 8 (36 * 8)
+    const btnH = 88; // Kelipatan 8 (11 * 8)
+    const btnGap = 32; // Kelipatan 8 (4 * 8)
 
     if (result.passed) {
       const repeatBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Ulangi Level 2', () => {

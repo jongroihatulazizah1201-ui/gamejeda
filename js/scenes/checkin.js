@@ -312,9 +312,9 @@ class CheckinScene extends Phaser.Scene {
       .setInteractive();
     modal.add(backdrop);
 
-    // Panel Kaca Modal (Lebar 980, tinggi 680)
-    const cardW = 980;
-    const cardH = 680;
+    // Panel Kaca Modal (Panel M: Lebar 960 px, tinggi 680 px)
+    const cardW = Layout.panelSize.M; // 960 px (PRD 14.3)
+    const cardH = 680; // Kelipatan 8 (85 * 8)
     const cardBg = this.add.graphics();
     cardBg.fillStyle(0x131535, 0.96);
     cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
@@ -442,7 +442,7 @@ class CheckinScene extends Phaser.Scene {
     textarea.style.left = '50%';
     textarea.style.top = '48%';
     textarea.style.transform = 'translate(-50%, -50%)';
-    textarea.style.width = 'min(840px, 80vw)';
+    textarea.style.width = 'min(864px, 80vw)';
     textarea.style.height = '230px';
     textarea.style.backgroundColor = '#0E102A';
     textarea.style.color = '#FFFFFF';

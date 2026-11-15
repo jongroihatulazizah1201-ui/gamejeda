@@ -888,7 +888,7 @@ class Level1Scene extends Phaser.Scene {
     const modal = this.add.container(cx, cy).setDepth(2000);
 
     const cardW = Layout.panelSize.M; // 960 px
-    const cardH = 620;
+    const cardH = 624; // Skala 8 px (78 * 8)
 
     const bg = this.add.graphics();
     bg.fillStyle(0x16163A, 0.96);
@@ -917,10 +917,10 @@ class Level1Scene extends Phaser.Scene {
 
     // Komponen Skor (3 kotak berjarak simetris)
     const rowY = -cardH / 2 + 220;
-    const compBoxW = 250;
-    const compBoxH = 120;
+    const compBoxW = 256; // Kelipatan 8 (32 * 8)
+    const compBoxH = 120; // Kelipatan 8 (15 * 8)
     const compWidths = [compBoxW, compBoxW, compBoxW];
-    const compXs = [-282, 0, 282]; // Relatif terhadap pusat modal
+    const compXs = [-280, 0, 280]; // Relatif terhadap pusat modal (kelipatan 8)
 
     const comps = [
       { name: 'Sinkron', val: `${result.sinkron}%`, desc: 'Kesesuaian Ritme' },

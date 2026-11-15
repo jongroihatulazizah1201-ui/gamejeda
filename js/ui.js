@@ -228,6 +228,32 @@ JEDA.UI = {
       align: 'center'
     }).setOrigin(0.5).setResolution(2);
 
+    // Fungsi otomatis pas-kan teks (fitText & wrap) agar tidak pernah keluar dari tombol (Prinsip UI/UX PRD 14.3)
+    const fitButtonText = () => {
+      const maxTextW = Math.max(60, w - 48); // Padding minimal 24 px di kiri & kanan
+      let currentSize = fontSize;
+      textObj.setFontSize(currentSize + 'px');
+      textObj.setWordWrapWidth(0);
+
+      // 1. Turunkan ukuran font bertahap jika teks melebihi lebar tombol
+      while (textObj.width > maxTextW && currentSize > 18) {
+        currentSize -= 1;
+        textObj.setFontSize(currentSize + 'px');
+      }
+
+      // 2. Jika masih melebihi batas (teks panjang/kalimat), aktifkan wordWrap dan sesuaikan tinggi
+      if (textObj.width > maxTextW) {
+        textObj.setWordWrapWidth(maxTextW, true);
+        textObj.setAlign('center');
+        textObj.setLineSpacing(4);
+        while (textObj.height > (h - 16) && currentSize > 14) {
+          currentSize -= 1;
+          textObj.setFontSize(currentSize + 'px');
+        }
+      }
+    };
+    fitButtonText();
+
     container.add([bg, textObj]);
     container.setSize(w, h);
     container.bg = bg;
@@ -235,6 +261,12 @@ JEDA.UI = {
     container.w = w;
     container.h = h;
     container.isPrimary = isPrimary;
+    container.fitText = fitButtonText;
+
+    container.setText = (newLabel) => {
+      textObj.setText(newLabel);
+      fitButtonText();
+    };
 
     // Interaktivitas
     container.setInteractive({
@@ -341,13 +373,22 @@ JEDA.UI = {
     updateBg(isSelected);
 
     const textColor = isSelected ? '#16163A' : '#FFFFFF';
+    const baseFontSize = options.fontSize || 27;
     const textObj = scene.add.text(0, 0, label, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: (options.fontSize || 27) + 'px',
+      fontSize: baseFontSize + 'px',
       fontStyle: '700',
       color: textColor,
       align: 'center'
     }).setOrigin(0.5).setResolution(2);
+
+    // Pastikan teks chip tidak keluar batas (padding 20 px)
+    const maxChipTextW = Math.max(40, w - 24);
+    let chipFontSize = baseFontSize;
+    while (textObj.width > maxChipTextW && chipFontSize > 18) {
+      chipFontSize -= 1;
+      textObj.setFontSize(chipFontSize + 'px');
+    }
 
     container.add([bg, textObj]);
     container.setSize(w, h);
@@ -464,9 +505,9 @@ JEDA.UI = {
       .setInteractive(); // Blokir klik ke bawah
     modalContainer.add(backdrop);
 
-    // 2. Kartu kaca utama modal peduli
-    const cardW = 1050;
-    const cardH = 680;
+    // 2. Kartu kaca utama modal peduli (Skala 8 px: 1056 x 680)
+    const cardW = 1056; // Kelipatan 8 (132 * 8)
+    const cardH = 680; // Kelipatan 8 (85 * 8)
     const cx = W / 2;
     const cy = H / 2;
 
@@ -699,51 +740,51 @@ JEDA.UI = {
         }
         card.add(swatchG);
 
-        // 3. Nama Tema & Suasana (PRD 14.3: minimal 27px)
-        const nameText = scene.add.text(0, -cardH / 2 + 48, theme.name, {
+        // 3. Nama Tema & Suasana (Prinsip 8: Hierarki Teks)
+        const nameText = scene.add.text(0, -cardH / 2 + 46, theme.name, {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '24px',
           fontStyle: '800',
           color: isUnlocked ? '#FFFFFF' : '#757D99'
         }).setOrigin(0.5).setResolution(2);
 
-        const moodText = scene.add.text(0, -cardH / 2 + 76, theme.mood, {
+        const moodText = scene.add.text(0, -cardH / 2 + 74, theme.mood, {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '18px',
           fontStyle: '600',
           color: isUnlocked ? JEDA.CFG.COLOR.hex.muted : '#555C75'
         }).setOrigin(0.5).setResolution(2);
         card.add([nameText, moodText]);
 
-        // 4. Status Pill di Bawah Kartu
-        const pillY = -cardH / 2 + 110;
-        const pillW = Math.min(cardW - 44, 150);
-        const pillH = 30;
+        // 4. Status Pill di Bawah Kartu (Skala 8 px: tinggi 32 px, radius 16 px)
+        const pillY = -cardH / 2 + 108;
+        const pillW = 144; // Kelipatan 8 (18 * 8)
+        const pillH = 32; // Kelipatan 8
         const pillG = scene.add.graphics();
 
         if (isUnlocked) {
           if (isActive) {
             pillG.fillStyle(theme.btnAccent.fromHex, 0.20);
-            pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+            pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 16);
             pillG.lineStyle(1.5, theme.btnAccent.fromHex, 0.9);
-            pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+            pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 16);
 
             const activeLabel = scene.add.text(0, pillY, '✓ Aktif', {
               fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '27px',
+              fontSize: '20px',
               fontStyle: '800',
               color: theme.btnAccent.from
             }).setOrigin(0.5).setResolution(2);
             card.add([pillG, activeLabel]);
           } else {
             pillG.fillStyle(0x222752, 0.92);
-            pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+            pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 16);
             pillG.lineStyle(1.2, 0x485280, 0.7);
-            pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+            pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 16);
 
             const useLabel = scene.add.text(0, pillY, 'Gunakan', {
               fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '27px',
+              fontSize: '20px',
               fontStyle: '700',
               color: '#FFFFFF'
             }).setOrigin(0.5).setResolution(2);
@@ -752,13 +793,13 @@ JEDA.UI = {
         } else {
           // Terkunci
           pillG.fillStyle(0x161830, 0.8);
-          pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+          pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 16);
           pillG.lineStyle(1.2, 0x363C5C, 0.5);
-          pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+          pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 16);
 
           const lockLabel = scene.add.text(0, pillY, `🔒 ${theme.reqStars} ★`, {
             fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '27px',
+            fontSize: '20px',
             fontStyle: '700',
             color: JEDA.CFG.COLOR.hex.warn
           }).setOrigin(0.5).setResolution(2);
@@ -823,8 +864,8 @@ JEDA.UI = {
       .setInteractive();
     container.add(backdrop);
 
-    const cardW = 860;
-    const cardH = 700;
+    const cardW = 864; // Kelipatan 8 (108 * 8)
+    const cardH = 704; // Kelipatan 8 (88 * 8)
     const cx = W / 2;
     const cy = H / 2;
 
