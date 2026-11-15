@@ -45,6 +45,14 @@ class Level1Scene extends Phaser.Scene {
     this.maxHoldTimer = null;
     this.isFinished = false;
 
+    // State Badai Notifikasi (PRD 14.2 G3)
+    this.isStormActive = false;
+    this.stormDistractHits = 0;
+    this.stormTimer = null;
+    this.stormFog = null;
+    this.stormPassedAwarded = false;
+    this.scheduledDistractTimers = [];
+
     // 1. Latar Belakang & Vinyet
     JEDA.FX.createBackground(this);
     if (JEDA.Stage3D) {
@@ -116,6 +124,14 @@ class Level1Scene extends Phaser.Scene {
     }
 
     this.events.on('shutdown', () => {
+      if (this.stormTimer) {
+        this.stormTimer.remove(false);
+        this.stormTimer = null;
+      }
+      if (this.stormFog) {
+        this.stormFog.destroy();
+        this.stormFog = null;
+      }
       if (JEDA.Lumi) JEDA.Lumi.destroy();
     });
   }
@@ -474,6 +490,11 @@ class Level1Scene extends Phaser.Scene {
       this.cycleCounterText.setText(`Siklus ${this.currentCycle}/${this.totalCycles}`);
     }
 
+    // G3: Memicu Badai Notifikasi pada Siklus 5 dan 6 (PRD 14.2 G3)
+    if (this.currentCycle === 5) {
+      this.startStorm();
+    }
+
     if (this.currentCycle > this.totalCycles) {
       this.finishLevel();
     }
@@ -498,26 +519,148 @@ class Level1Scene extends Phaser.Scene {
       'Info Terkini: Jangan lupa tugas!'
     ];
 
-    const times = [6000, 18000, 30000, 44000];
+    this.scheduledDistractTimers = [];
+    // Notifikasi normal pada siklus 1-4 (muncul di detik 6, 16, 26)
+    const times = [6000, 16000, 26000];
     times.forEach((ms, idx) => {
-      this.time.delayedCall(ms, () => {
-        if (!this.isFinished) {
-          this.spawnDistractionCard(Layout.W, distractMessages[idx % distractMessages.length]);
+      const timer = this.time.delayedCall(ms, () => {
+        if (!this.isFinished && !this.isStormActive) {
+          this.spawnDistractionCard(Layout.W, distractMessages[idx % distractMessages.length], 190, 5000);
         }
       });
+      this.scheduledDistractTimers.push(timer);
     });
+  }
+
+  /**
+   * Memicu Badai Notifikasi pada Siklus 5 dan 6 (PRD 14.2 G3).
+   * - Interval notifikasi palsu menjadi ~1.2 detik (biasanya 3 detik)
+   * - Kabut gelap alpha 0.25 menutupi latar
+   * - Karakter Lumi mengucap 'storm'
+   */
+  startStorm() {
+    if (this.isStormActive || this.isFinished) return;
+    this.isStormActive = true;
+    this.stormDistractHits = 0;
+
+    const Layout = JEDA.Layout;
+
+    // 1. Kabut gelap alpha 0.25 menutupi latar belakang
+    this.stormFog = this.add.graphics().setDepth(20);
+    this.stormFog.fillStyle(0x06081A, 1.0);
+    this.stormFog.fillRect(0, 0, Layout.W, Layout.H);
+    this.stormFog.setAlpha(0);
+
+    this.tweens.add({
+      targets: this.stormFog,
+      alpha: 0.25,
+      duration: 800,
+      ease: 'Sine.easeOut'
+    });
+
+    // 2. Karakter Lumi mengucap dialog resmi 'storm'
+    if (JEDA.Lumi) {
+      JEDA.Lumi.say('storm');
+    }
+
+    // 3. Batalkan jadwal jeda distraksi normal yang tersisa
+    if (this.scheduledDistractTimers) {
+      this.scheduledDistractTimers.forEach(t => t && t.remove && t.remove(false));
+      this.scheduledDistractTimers = [];
+    }
+
+    // 4. Badai notifikasi palsu berkecepatan tinggi (~1.2 detik per notifikasi)
+    const stormMessages = [
+      'Grup Kelas: PING!',
+      'Diskon 50% berakhir!',
+      'Kamu punya 12 pesan baru',
+      'Info Terkini: Jangan lupa tugas!',
+      'Notifikasi: 3 pesan mendesak',
+      'Trending: Berita terkini hari ini',
+      'Temanmu baru saja menandaimu'
+    ];
+    let stormMsgIdx = 0;
+
+    this.stormTimer = this.time.addEvent({
+      delay: 1200,
+      callback: () => {
+        if (!this.isFinished && this.isStormActive) {
+          const msg = stormMessages[stormMsgIdx % stormMessages.length];
+          stormMsgIdx++;
+          // Variasi posisi Y berjenjang (160, 240, 320) di atas batas orb (y = 500)
+          const stormY = 160 + ((stormMsgIdx % 3) * 80);
+          this.spawnDistractionCard(Layout.W, msg, stormY, 3000);
+        }
+      },
+      loop: true
+    });
+  }
+
+  /**
+   * Mengakhiri Badai Notifikasi dan mengevaluasi hasil ketahanan.
+   */
+  endStorm() {
+    if (!this.isStormActive) return;
+    this.isStormActive = false;
+
+    if (this.stormTimer) {
+      this.stormTimer.remove(false);
+      this.stormTimer = null;
+    }
+
+    if (this.stormFog) {
+      this.tweens.add({
+        targets: this.stormFog,
+        alpha: 0,
+        duration: 600,
+        ease: 'Sine.easeIn',
+        onComplete: () => {
+          if (this.stormFog) {
+            this.stormFog.destroy();
+            this.stormFog = null;
+          }
+        }
+      });
+    }
+
+    // Evaluasi keberhasilan: bila pemain melewati badai tanpa mengklik notifikasi (PRD 14.2 G3)
+    if (this.stormDistractHits === 0 && !this.stormPassedAwarded) {
+      this.stormPassedAwarded = true;
+
+      // 1. Lumi mengucap storm_pass
+      if (JEDA.Lumi) {
+        this.time.delayedCall(400, () => {
+          JEDA.Lumi.say('storm_pass');
+        });
+      }
+
+      // 2. Lentera level itu menyala 50% lebih terang
+      if (JEDA.Stage3D && JEDA.Stage3D.boostLantern) {
+        JEDA.Stage3D.boostLantern(0);
+      }
+
+      // 3. Cek lencana Tidak Menoleh jika 0 klik sepanjang permainan
+      if (this.distractHits === 0 && JEDA.State && JEDA.State.unlockBadge) {
+        const unlocked = JEDA.State.unlockBadge('no_distract');
+        if (unlocked) {
+          this.time.delayedCall(1200, () => {
+            JEDA.UI.toast(this, 'Lencana Diraih: Tidak Menoleh 🛡️');
+          });
+        }
+      }
+    }
   }
 
   /**
    * Memunculkan satu kartu notifikasi palsu dari tepi kanan (BR-03).
    */
-  spawnDistractionCard(W, message) {
+  spawnDistractionCard(W, message, yPos = 190, lifeMs = 5000) {
     const Layout = JEDA.Layout;
     const cardW = 380;
     const cardH = 80;
     const startX = W + 220;
     const targetX = Layout.W - Layout.M - cardW / 2;
-    const targetY = 190;
+    const targetY = yPos;
 
     const container = this.add.container(startX, targetY).setDepth(500);
     const bg = this.add.graphics();
@@ -553,7 +696,7 @@ class Level1Scene extends Phaser.Scene {
       duration: 350,
       ease: 'Sine.easeOut',
       onComplete: () => {
-        this.time.delayedCall(JEDA.CFG.L1.distractLife || 5000, () => {
+        this.time.delayedCall(lifeMs, () => {
           if (container.active) {
             this.tweens.add({
               targets: container,
@@ -575,6 +718,10 @@ class Level1Scene extends Phaser.Scene {
   handleDistractionClicked(container) {
     container.destroy();
     this.distractHits++;
+
+    if (this.isStormActive) {
+      this.stormDistractHits++;
+    }
 
     if (JEDA.Lumi) {
       JEDA.Lumi.addFlow(-10);
@@ -620,12 +767,20 @@ class Level1Scene extends Phaser.Scene {
     if (this.isFinished) return;
     this.isFinished = true;
 
+    // Akhiri Badai Notifikasi jika masih berjalan (PRD 14.2 G3)
+    this.endStorm();
+
     if (JEDA.Stage3D) {
       JEDA.Stage3D.setBreath(0.35);
       JEDA.Stage3D.pulse(0.7);
     }
 
     const result = JEDA.Score.calcL1(this.completedCycles, this.distractHits);
+
+    // Simpan metrik performa ke sesi untuk evaluasi lencana (PRD 14.2 G4)
+    JEDA.State.session.distractHits = this.distractHits;
+    JEDA.State.session.l1Passed = result.passed;
+    JEDA.State.session.levelScores.l1 = result.score;
 
     if (result.passed) {
       if (JEDA.Lumi) JEDA.Lumi.say('level_pass');
@@ -641,8 +796,24 @@ class Level1Scene extends Phaser.Scene {
       if (JEDA.Lumi) JEDA.Lumi.say('result_low');
       JEDA.State.data.fails.l1 = (JEDA.State.data.fails.l1 || 0) + 1;
     }
-    JEDA.State.session.levelScores.l1 = result.score;
     JEDA.State.save();
+
+    // Evaluasi lencana yang relevan dengan Level 1 (Tidak Menoleh & Napas Penuh)
+    if (window.JEDA && JEDA.Score && JEDA.Score.badges) {
+      const badgeRes = JEDA.Score.badges({
+        l1Score: result.score,
+        distractHits: this.distractHits,
+        l1Passed: result.passed
+      });
+      if (badgeRes.newlyUnlocked && badgeRes.newlyUnlocked.length > 0) {
+        const badgeObj = JEDA.Score.BADGES.find(b => b.id === badgeRes.newlyUnlocked[0]);
+        if (badgeObj) {
+          this.time.delayedCall(1200, () => {
+            JEDA.UI.toast(this, `Lencana Diraih: ${badgeObj.name} ${badgeObj.icon}`);
+          });
+        }
+      }
+    }
 
     if (!result.passed && JEDA.State.data.fails.l1 >= 3 && !JEDA.State.data.easy.l1) {
       this.time.delayedCall(800, () => {

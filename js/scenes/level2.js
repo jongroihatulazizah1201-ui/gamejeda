@@ -768,6 +768,9 @@ class Level2Scene extends Phaser.Scene {
       JEDA.State.data.fails.l2 = (JEDA.State.data.fails.l2 || 0) + 1;
     }
     JEDA.State.session.levelScores.l2 = result.score;
+    JEDA.State.session.l2FirstTry = this.firstTryCorrect;
+    JEDA.State.session.l2Accuracy = (this.firstTryCorrect / 10) * 100;
+    JEDA.State.session.l2Passed = result.passed;
     JEDA.State.save();
 
     // Tawaran Mode Ramah jika gagal 3 kali berturut-turut (BR-07)

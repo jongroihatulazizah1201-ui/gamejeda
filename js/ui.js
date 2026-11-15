@@ -673,5 +673,151 @@ JEDA.UI = {
     container.bubbleH = h;
 
     return container;
+  },
+
+  /**
+   * Slot Lencana Positif (PRD Bagian 14.2 G4 & 14.5).
+   * Menampilkan slot lencana berukuran seragam.
+   * - Terbuka: Berwarna cerah dengan pendar toska tenang, nama jelas, dan aksen terbuka.
+   * - Belum Terbuka: Siluet abu bergaris putus tanpa pesan negatif.
+   * @param {Phaser.Scene} scene
+   * @param {number} x
+   * @param {number} y
+   * @param {Object} badge - { id, name, desc, icon }
+   * @param {boolean} isUnlocked
+   * @param {Object} options - { width: 172, height: 76 }
+   * @returns {Phaser.GameObjects.Container}
+   */
+  badgeSlot(scene, x, y, badge, isUnlocked, options = {}) {
+    const w = options.width || 172;
+    const h = options.height || 76;
+    const radius = 20;
+
+    const container = scene.add.container(x, y).setDepth(options.depth || 50);
+    const bg = scene.add.graphics();
+
+    if (isUnlocked) {
+      // 1. Lencana Terbuka: Latar solid beraksen toska menyala
+      bg.fillStyle(0x181A3C, 0.96);
+      bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+
+      bg.lineStyle(2, 0x7FE0C3, 0.9);
+      bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+
+      // Kilau sudut lembut
+      bg.fillStyle(0x7FE0C3, 0.12);
+      bg.fillCircle(-w / 2 + 28, 0, 22);
+
+      const icon = scene.add.text(-w / 2 + 28, 0, badge.icon || '✦', {
+        fontSize: '26px'
+      }).setOrigin(0.5);
+
+      const name = scene.add.text(-w / 2 + 56, -11, badge.name, {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '14px',
+        fontStyle: '800',
+        color: '#FFFFFF',
+        wordWrap: { width: w - 66 }
+      }).setOrigin(0, 0.5).setResolution(2);
+
+      const status = scene.add.text(-w / 2 + 56, 12, 'Terbuka ✦', {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '12px',
+        fontStyle: '700',
+        color: JEDA.CFG.COLOR.hex.calm
+      }).setOrigin(0, 0.5).setResolution(2);
+
+      container.add([bg, icon, name, status]);
+    } else {
+      // 2. Lencana Belum Terbuka: Siluet abu bergaris putus tanpa pesan negatif (PRD 14.2 G4)
+      bg.fillStyle(0x111326, 0.55);
+      bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+
+      // Garis putus-putus presisi
+      const dash = 6;
+      const gap = 5;
+      bg.lineStyle(1.5, 0x485278, 0.65);
+
+      const drawDashedSegment = (x1, y1, x2, y2) => {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        const steps = Math.floor(len / (dash + gap));
+        const ux = dx / len;
+        const uy = dy / len;
+        for (let i = 0; i < steps; i++) {
+          const sx = x1 + (i * (dash + gap)) * ux;
+          const sy = y1 + (i * (dash + gap)) * uy;
+          const ex = sx + dash * ux;
+          const ey = sy + dash * uy;
+          bg.lineBetween(sx, sy, ex, ey);
+        }
+      };
+
+      // 4 sisi bergaris putus
+      drawDashedSegment(-w / 2 + radius, -h / 2, w / 2 - radius, -h / 2);
+      drawDashedSegment(w / 2, -h / 2 + radius, w / 2, h / 2 - radius);
+      drawDashedSegment(w / 2 - radius, h / 2, -w / 2 + radius, h / 2);
+      drawDashedSegment(-w / 2, h / 2 - radius, -w / 2, -h / 2 + radius);
+
+      // Ikon siluet redup
+      const icon = scene.add.text(-w / 2 + 28, 0, badge.icon || '✦', {
+        fontSize: '24px'
+      }).setOrigin(0.5).setAlpha(0.24);
+
+      const name = scene.add.text(-w / 2 + 56, -11, badge.name, {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '14px',
+        fontStyle: '700',
+        color: '#64748B',
+        wordWrap: { width: w - 66 }
+      }).setOrigin(0, 0.5).setResolution(2);
+
+      // Pesan status netral dan ramah (tanpa penghakiman / pesan negatif)
+      const status = scene.add.text(-w / 2 + 56, 12, 'Belum Terbuka', {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '11px',
+        fontStyle: '600',
+        color: '#475569'
+      }).setOrigin(0, 0.5).setResolution(2);
+
+      container.add([bg, icon, name, status]);
+    }
+
+    container.setSize(w, h);
+    container.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
+
+    // Umpan balik hover mikro (150 ms)
+    container.on('pointerover', () => {
+      scene.tweens.add({
+        targets: container,
+        scaleX: 1.04,
+        scaleY: 1.04,
+        duration: 120,
+        ease: 'Sine.easeOut'
+      });
+    });
+
+    container.on('pointerout', () => {
+      scene.tweens.add({
+        targets: container,
+        scaleX: 1.0,
+        scaleY: 1.0,
+        duration: 120,
+        ease: 'Sine.easeOut'
+      });
+    });
+
+    // Menampilkan toast syarat lencana saat diklik
+    container.on('pointerup', () => {
+      const statusNote = isUnlocked ? '✦ Lencana ini telah kamu raih!' : '○ Syarat:';
+      JEDA.UI.toast(scene, `${badge.name}: ${badge.desc} (${statusNote})`);
+    });
+
+    return container;
   }
 };

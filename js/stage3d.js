@@ -1101,6 +1101,20 @@ JEDA.Stage3D = (function() {
     },
 
     /**
+     * Meningkatkan intensitas cahaya lentera 50% lebih terang (PRD 14.2 G3 Badai Berhasil).
+     * @param {number} idx - Indeks pulau/lentera (0 untuk Level 1)
+     */
+    boostLantern(idx = 0) {
+      if (!active || !islands || !islands[idx]) return;
+      const isl = islands[idx];
+      const l = isl.lantern;
+      l.targetEmissive = 3.0; // 50% lebih terang dari normal (2.0)
+      l.targetLight = 2.4;    // 50% lebih terang dari normal (1.6)
+      l.targetHaloOpacity = 1.0;
+      spawnLanternBeam(isl);
+    },
+
+    /**
      * Mengatur kecerahan suasana (0..1) (Fase 3D-2).
      * @param {number} v - 0.0 s.d. 1.0
      */

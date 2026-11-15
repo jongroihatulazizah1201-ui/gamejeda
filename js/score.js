@@ -193,5 +193,101 @@ JEDA.Score = {
     if (score >= thresholds[1]) return 2;
     if (score >= thresholds[0]) return 1;
     return 0;
+  },
+
+  /**
+   * Definisi 5 Lencana Positif Mindfulness (PRD Bagian 14.2 G4).
+   */
+  BADGES: [
+    {
+      id: 'no_distract',
+      name: 'Tidak Menoleh',
+      desc: 'Level 1 dengan 0 notifikasi diklik',
+      icon: '🛡️',
+      check: (run) => (run.distractHits === 0 && (run.l1Passed || run.l1Score >= 60))
+    },
+    {
+      id: 'full_breath',
+      name: 'Napas Penuh',
+      desc: 'Skor Level 1 sebesar 90 atau lebih',
+      icon: '✨',
+      check: (run) => (run.l1Score >= 90)
+    },
+    {
+      id: 'thought_namer',
+      name: 'Penamai Pikiran',
+      desc: 'Akurasi label Level 2 sebesar 80% atau lebih',
+      icon: '💭',
+      check: (run) => (run.l2Accuracy >= 80 || run.l2FirstTry >= 8)
+    },
+    {
+      id: 'pause_before_react',
+      name: 'Jeda Sebelum Balas',
+      desc: 'Memilih STOP di ketiga skenario Level 3',
+      icon: '🛑',
+      check: (run) => (run.l3AllStop === true || run.l3StopCount >= 3)
+    },
+    {
+      id: 'lantern_keeper',
+      name: 'Penjaga Lentera',
+      desc: 'Ketiga level lulus dalam satu run',
+      icon: '🏮',
+      check: (run) => (run.l1Passed && run.l2Passed && run.l3Passed)
+    }
+  ],
+
+  /**
+   * Evaluasi dan pembaharuan status 5 Lencana (PRD 14.2 G4).
+   * @param {Object} run - Data performa run saat ini
+   * @returns {Object} { badges, earned, newlyUnlocked }
+   */
+  badges(run = {}) {
+    const session = (window.JEDA && JEDA.State && JEDA.State.session) || {};
+    const state = (window.JEDA && JEDA.State && JEDA.State.data) || {};
+    const passScore = (window.JEDA && JEDA.CFG && JEDA.CFG.PASS) || 60;
+
+    const l1Score = run.l1Score ?? session.levelScores?.l1 ?? state.best?.l1 ?? 0;
+    const l2Score = run.l2Score ?? session.levelScores?.l2 ?? state.best?.l2 ?? 0;
+    const l3Score = run.l3Score ?? session.levelScores?.l3 ?? state.best?.l3 ?? 0;
+
+    const runData = {
+      l1Score,
+      l2Score,
+      l3Score,
+      distractHits: run.distractHits ?? session.distractHits ?? 0,
+      l1Passed: run.l1Passed ?? (l1Score >= passScore),
+      l2FirstTry: run.l2FirstTry ?? session.l2FirstTry ?? 0,
+      l2Accuracy: run.l2Accuracy ?? session.l2Accuracy ?? (session.l2FirstTry ? (session.l2FirstTry / 10) * 100 : 0),
+      l2Passed: run.l2Passed ?? (l2Score >= passScore),
+      l3StopCount: run.l3StopCount ?? session.l3StopCount ?? 0,
+      l3AllStop: run.l3AllStop ?? (session.l3AllStop ?? (session.l3StopCount === 3)),
+      l3Passed: run.l3Passed ?? (l3Score >= passScore)
+    };
+
+    const earned = [];
+    const newlyUnlocked = [];
+    const existingBadges = (state.badges && Array.isArray(state.badges)) ? state.badges : [];
+
+    for (const b of this.BADGES) {
+      const qualifies = b.check(runData);
+      const wasEarnedBefore = existingBadges.includes(b.id);
+
+      if (qualifies || wasEarnedBefore) {
+        earned.push(b.id);
+      }
+
+      if (qualifies && !wasEarnedBefore) {
+        newlyUnlocked.push(b.id);
+        if (window.JEDA && JEDA.State && JEDA.State.unlockBadge) {
+          JEDA.State.unlockBadge(b.id);
+        }
+      }
+    }
+
+    return {
+      badges: this.BADGES,
+      earned,
+      newlyUnlocked
+    };
   }
 };

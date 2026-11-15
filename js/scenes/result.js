@@ -344,44 +344,46 @@ class ResultScene extends Phaser.Scene {
   }
 
   /**
-   * Lima Slot Lencana (PRD 14.5: rowCenter).
+   * Lima Slot Lencana (PRD 14.2 G4 & 14.5: rowCenter).
+   * Menggunakan komponen baku JEDA.UI.badgeSlot.
    */
   createBadgeSlots(cx, y) {
     const Layout = JEDA.Layout;
-    const badgeNames = [
-      'Tidak Menoleh',
-      'Napas Penuh',
-      'Penamai Pikiran',
-      'Jeda Sebelum Balas',
-      'Penjaga Lentera'
-    ];
-    const slotW = 160;
-    const slotH = 50;
+    const badgeResult = (window.JEDA && JEDA.Score && JEDA.Score.badges)
+      ? JEDA.Score.badges()
+      : { badges: [], earned: [], newlyUnlocked: [] };
+
+    const badges = badgeResult.badges || [];
+    const earned = badgeResult.earned || [];
+
+    // Label judul bagian lencana
+    this.add.text(cx, y - 50, 'Lencana Sikap Positif', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '20px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.text
+    }).setOrigin(0.5).setResolution(2);
+
+    const slotW = 180;
+    const slotH = 76;
     const slotWidths = [slotW, slotW, slotW, slotW, slotW];
-    const slotXs = Layout.rowCenter(slotWidths, 20);
+    const slotXs = Layout.rowCenter(slotWidths, 24);
 
-    const userBadges = (JEDA.State.data && JEDA.State.data.badges) || [];
-
-    badgeNames.forEach((name, idx) => {
+    badges.forEach((b, idx) => {
       const bx = slotXs[idx];
-      const isEarned = userBadges.includes(name);
-
-      const slot = this.add.container(bx, y);
-      const bg = this.add.graphics();
-      bg.fillStyle(0x181A3C, isEarned ? 0.95 : 0.6);
-      bg.fillRoundedRect(-slotW / 2, -slotH / 2, slotW, slotH, 16);
-      bg.lineStyle(1.5, isEarned ? 0x7FE0C3 : 0x383D62, isEarned ? 0.8 : 0.4);
-      bg.strokeRoundedRect(-slotW / 2, -slotH / 2, slotW, slotH, 16);
-
-      const text = this.add.text(0, 0, name, {
-        fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '13px',
-        fontStyle: '700',
-        color: isEarned ? JEDA.CFG.COLOR.hex.calm : JEDA.CFG.COLOR.hex.muted
-      }).setOrigin(0.5).setResolution(2);
-
-      slot.add([bg, text]);
+      const isUnlocked = earned.includes(b.id) || earned.includes(b.name);
+      JEDA.UI.badgeSlot(this, bx, y + 2, b, isUnlocked, { width: slotW, height: slotH });
     });
+
+    // Umpan balik toast jika ada lencana baru yang berhasil diraih di run ini
+    if (badgeResult.newlyUnlocked && badgeResult.newlyUnlocked.length > 0) {
+      const firstNew = badges.find(b => b.id === badgeResult.newlyUnlocked[0]);
+      if (firstNew) {
+        this.time.delayedCall(700, () => {
+          JEDA.UI.toast(this, `Lencana Diraih: ${firstNew.name} ${firstNew.icon}`);
+        });
+      }
+    }
   }
 
   /**

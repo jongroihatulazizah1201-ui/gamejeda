@@ -17,11 +17,18 @@ JEDA.State = {
     checkinLabel: '',
     levelScores: { l1: 0, l2: 0, l3: 0 },
     distractHits: 0,
-    panicHits: 0
+    panicHits: 0,
+    l1Passed: false,
+    l2FirstTry: 0,
+    l2Accuracy: 0,
+    l2Passed: false,
+    l3StopCount: 0,
+    l3AllStop: false,
+    l3Passed: false
   },
 
   /**
-   * Mengembalikan objek data default sesuai skema PRD Bagian 9.
+   * Mengembalikan objek data default sesuai skema PRD Bagian 9 & 14.2 (Fase G-3).
    */
   getDefaultData() {
     const today = new Date().toISOString().split('T')[0];
@@ -33,7 +40,9 @@ JEDA.State = {
       easy: { l1: false, l2: false, l3: false },
       settings: { reduceMotion: false, sound: false },
       runs: { date: today, count: 0 },
-      consentHeavy: false // True jika pemain memilih 'Latihan napas ringan' di modal peduli
+      consentHeavy: false, // True jika pemain memilih 'Latihan napas ringan' di modal peduli
+      badges: [],          // PRD 14.2: Daftar lencana positif yang diraih
+      skin: 'embun'        // PRD 14.2: Skin visual orb aktif ('embun' | 'fajar' | 'aurora')
     };
   },
 
@@ -62,8 +71,10 @@ JEDA.State = {
         throw new Error('Skema data tidak valid');
       }
 
-      // Pastikan semua properti wajib ada
+      // Pastikan semua properti wajib ada, termasuk migrasi kolom badges & skin untuk data lama (PRD 14.2 & BR-14)
       const defaults = this.getDefaultData();
+      const needsMigration = !Array.isArray(parsed.badges) || typeof parsed.skin !== 'string';
+
       this.data = {
         ...defaults,
         ...parsed,
@@ -72,14 +83,48 @@ JEDA.State = {
         fails: { ...defaults.fails, ...(parsed.fails || {}) },
         easy: { ...defaults.easy, ...(parsed.easy || {}) },
         settings: { ...defaults.settings, ...(parsed.settings || {}) },
-        runs: { ...defaults.runs, ...(parsed.runs || {}) }
+        runs: { ...defaults.runs, ...(parsed.runs || {}) },
+        badges: Array.isArray(parsed.badges) ? parsed.badges : [],
+        skin: (typeof parsed.skin === 'string' && parsed.skin) ? parsed.skin : 'embun'
       };
+
+      // Simpan pembaruan jika data lama belum punya kolom badges dan skin
+      if (needsMigration) {
+        this.save();
+      }
     } catch (err) {
       console.warn('[JEDA.State] Gagal memuat data, memulihkan ke kondisi awal:', err);
       this.recoveredFromCorrupt = true;
       this.data = this.getDefaultData();
       this.save();
     }
+  },
+
+  /**
+   * Mengecek apakah lencana tertentu sudah pernah diraih.
+   * @param {string} badgeId
+   * @returns {boolean}
+   */
+  hasBadge(badgeId) {
+    return Array.isArray(this.data && this.data.badges) && this.data.badges.includes(badgeId);
+  },
+
+  /**
+   * Membuka lencana baru dan menyimpannya ke state.
+   * @param {string} badgeId
+   * @returns {boolean} true jika baru pertama kali diraih
+   */
+  unlockBadge(badgeId) {
+    if (!this.data) return false;
+    if (!Array.isArray(this.data.badges)) {
+      this.data.badges = [];
+    }
+    if (!this.data.badges.includes(badgeId)) {
+      this.data.badges.push(badgeId);
+      this.save();
+      return true;
+    }
+    return false;
   },
 
   /**

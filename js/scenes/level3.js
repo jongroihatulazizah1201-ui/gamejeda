@@ -740,6 +740,11 @@ class Level3Scene extends Phaser.Scene {
     // Hitung skor menggunakan fungsi murni JEDA.Score.calcL3 (Bagian 6 PRD)
     const result = JEDA.Score.calcL3(this.scenarioResults);
 
+    const stopCount = this.scenarioResults.filter(r => r.choseStop).length;
+    JEDA.State.session.l3StopCount = stopCount;
+    JEDA.State.session.l3AllStop = (stopCount === (this.scenarios.length || 3));
+    JEDA.State.session.l3Passed = result.passed;
+
     // Simpan progres jika lulus (skor >= 60)
     if (result.passed) {
       JEDA.State.saveLevelScore(3, result.score, result.stars);
