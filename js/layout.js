@@ -189,7 +189,7 @@ JEDA.Layout = {
       // Label nomor kolom
       const colLabel = scene.add.text(xLeft + this.COL / 2, 140, `${c}`, {
         fontFamily: 'Arial, sans-serif',
-        fontSize: '14px',
+        fontSize: '27px',
         color: '#38BDF8',
         fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(99999);
@@ -216,16 +216,16 @@ JEDA.Layout = {
 
     // Label penjelas zona
     const zoneLabels = [
-      { text: '◄ ZONA HEADER (y: 0 - 120) ►', y: 20, color: '#F59E0B' },
-      { text: '◄ ZONA KONTEN (y: 120 - 900) ►', y: 130, color: '#F59E0B' },
-      { text: '◄ ZONA AKSI (y: 900 - 1080) ►', y: 910, color: '#F59E0B' },
+      { text: '◄ ZONA HEADER (y: 0 - 120) ►', y: 24, color: '#F59E0B' },
+      { text: '◄ ZONA KONTEN (y: 120 - 900) ►', y: 136, color: '#F59E0B' },
+      { text: '◄ ZONA AKSI (y: 900 - 1080) ►', y: 912, color: '#F59E0B' },
       { text: '▲ SUMBU TENGAH x=960 ▲', y: 540, color: '#10B981' }
     ];
 
     zoneLabels.forEach(item => {
       const txt = scene.add.text(this.cx(), item.y, item.text, {
         fontFamily: 'Arial, sans-serif',
-        fontSize: '13px',
+        fontSize: '27px',
         color: item.color,
         fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(99999);

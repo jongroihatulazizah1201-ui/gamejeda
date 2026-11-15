@@ -45,6 +45,141 @@ JEDA.UI = {
   },
 
   /**
+   * Menjamin tekstur logo resmi JEDA (Zen Pause Emblem) telah dibuat di memori tekstur Phaser.
+   * Dibuat secara prosedural pada kanvas 128x128 Retina untuk ketajaman subpixel sempurna.
+   * Logo terdiri atas:
+   * 1. Aura pendaran luar Zen (soft teal glow)
+   * 2. Piringan dasar emblem (slate-teal gradient)
+   * 3. Ring beraksen elegan (mindful breath circle)
+   * 4. Dua kapsul jeda vertikal bersudut membulat (simbol jeda zen)
+   * @param {Phaser.Scene} scene
+   * @returns {string} Key tekstur: 'logo_jeda'
+   */
+  ensureLogoTexture(scene) {
+    if (scene.textures && scene.textures.exists('logo_jeda')) {
+      return 'logo_jeda';
+    }
+
+    const size = 128;
+    const canvas = scene.textures.createCanvas('logo_jeda', size, size);
+    const ctx = canvas.context;
+    const cx = size / 2;
+    const cy = size / 2;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // 1. Pendaran Luar Zen (Glow Halus)
+    const glowGrad = ctx.createRadialGradient(cx, cy, 34, cx, cy, 62);
+    glowGrad.addColorStop(0, 'rgba(127, 224, 195, 0.32)');
+    glowGrad.addColorStop(0.65, 'rgba(127, 224, 195, 0.08)');
+    glowGrad.addColorStop(1, 'rgba(127, 224, 195, 0.0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 62, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Piringan Emblem Zen (Gradasi Slate Teal Elegan)
+    const baseGrad = ctx.createLinearGradient(cx - 48, cy - 48, cx + 48, cy + 48);
+    baseGrad.addColorStop(0, '#1c3e47');
+    baseGrad.addColorStop(0.5, '#132832');
+    baseGrad.addColorStop(1, '#0c1a22');
+    ctx.fillStyle = baseGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 48, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Lingkaran Ring Luar (Aura Napas JEDA)
+    ctx.strokeStyle = '#7FE0C3';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 48, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 4. Dua Batang Jeda Bersudut Bulat Penuh (Simbol Jeda / Zen Pause Capsules)
+    const barW = 12;
+    const barH = 42;
+    const barRadius = 6;
+    const barGap = 12;
+
+    const barGrad = ctx.createLinearGradient(0, cy - barH / 2, 0, cy + barH / 2);
+    barGrad.addColorStop(0, '#A7F3D0'); // Aksen cerah lembut di pucuk
+    barGrad.addColorStop(1, '#7FE0C3'); // Warna utama brand
+    ctx.fillStyle = barGrad;
+
+    const drawPill = (x, y, w, h, r) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    // Batang Kiri
+    const leftX = cx - (barGap / 2) - barW;
+    const barY = cy - (barH / 2);
+    drawPill(leftX, barY, barW, barH, barRadius);
+
+    // Batang Kanan
+    const rightX = cx + (barGap / 2);
+    drawPill(rightX, barY, barW, barH, barRadius);
+
+    canvas.refresh();
+    return 'logo_jeda';
+  },
+
+  /**
+   * Membuat lencana identitas resmi JEDA (Logo + Tipografi) berstandar profesional.
+   * Menggantikan teks darurat/bintang dengan logo mark vektor Zen Pause yang presisi.
+   * @param {Phaser.Scene} scene
+   * @param {number} x
+   * @param {number} y
+   * @param {object} options - { width: 200, height: 50, radius: 25 }
+   * @returns {Phaser.GameObjects.Container}
+   */
+  brandBadge(scene, x, y, options = {}) {
+    this.ensureLogoTexture(scene);
+    const w = options.width || 216;
+    const h = options.height || 48;
+    const radius = options.radius || 24;
+    const container = scene.add.container(x, y);
+
+    // 1. Kapsul Latar Belakang Kaca Frosted Simetris
+    const bg = scene.add.graphics();
+    bg.fillStyle(0x141838, 0.94);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+    bg.lineStyle(1.5, 0x3F486E, 0.65);
+    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+
+    // 2. Logo Mark Zen Pause (Retina crisp 128x128 di skala ke 30x30)
+    const iconSize = 30;
+    const logoImg = scene.add.image(0, 0, 'logo_jeda');
+    logoImg.setDisplaySize(iconSize, iconSize);
+
+    // 3. Tipografi "JEDA" Modern Berjarak Rapi
+    const brandText = scene.add.text(0, 0, 'JEDA', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '27px',
+      fontStyle: '800',
+      color: '#FFFFFF'
+    }).setOrigin(0, 0.5).setResolution(2);
+
+    // 4. Penataan Posisi Simetris Optik di Tengah Kapsul
+    const gap = 10;
+    const totalContentW = iconSize + gap + brandText.width;
+    const startX = -totalContentW / 2;
+
+    logoImg.setPosition(startX + iconSize / 2, 0);
+    brandText.setPosition(startX + iconSize + gap, 0);
+
+    container.add([bg, logoImg, brandText]);
+    return container;
+  },
+
+  /**
    * Membuat tombol baku JEDA.UI (PRD Bagian 14.3 Prinsip 6, 7, 10, 12).
    * - Standar tinggi: 88 px, lebar minimal 280 px, bentuk kapsul (radius 44)
    * - Aksi utama (primary: true): background calm 0x7FE0C3, teks gelap #16163A
@@ -208,7 +343,7 @@ JEDA.UI = {
     const textColor = isSelected ? '#16163A' : '#FFFFFF';
     const textObj = scene.add.text(0, 0, label, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: (options.fontSize || 22) + 'px',
+      fontSize: (options.fontSize || 27) + 'px',
       fontStyle: '700',
       color: textColor,
       align: 'center'
@@ -376,16 +511,16 @@ JEDA.UI = {
     bgL.lineStyle(2, 0x7FE0C3, 0.5);
     bgL.strokeRoundedRect(boxLeftX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
 
-    const titleL = scene.add.text(boxLeftX, boxY - 30, 'Telepon Siaga (24 Jam)', {
+    const titleL = scene.add.text(boxLeftX, boxY - 32, 'Telepon Siaga (24 Jam)', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
 
-    const contactL = scene.add.text(boxLeftX, boxY + 15, '119 ext. 8', {
+    const contactL = scene.add.text(boxLeftX, boxY + 16, '119 ext. 8', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '38px',
+      fontSize: '44px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
@@ -400,16 +535,16 @@ JEDA.UI = {
     bgR.lineStyle(2, 0x7FE0C3, 0.5);
     bgR.strokeRoundedRect(boxRightX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
 
-    const titleR = scene.add.text(boxRightX, boxY - 30, 'Konseling Online Kemenkes', {
+    const titleR = scene.add.text(boxRightX, boxY - 32, 'Konseling Online Kemenkes', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
 
-    const contactR = scene.add.text(boxRightX, boxY + 15, 'healing119.id', {
+    const contactR = scene.add.text(boxRightX, boxY + 16, 'healing119.id', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '34px',
+      fontSize: '44px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
@@ -420,7 +555,7 @@ JEDA.UI = {
     const disclaimerText = 'Layanan di atas disediakan tenaga profesional independen.\nJEDA adalah media latihan kesadaran, bukan pengganti perawatan medis atau konseling darurat.';
     const noteText = scene.add.text(cx, cy + 145, disclaimerText, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted,
       align: 'center',
@@ -434,16 +569,16 @@ JEDA.UI = {
     const btnY = cy + 245;
 
     // Tombol Sekunder di Kiri: Latihan napas ringan
-    const btn1 = this.createButton(scene, btnXs[0], btnY, 420, 72, 'Latihan Napas Ringan', () => {
+    const btn1 = this.createButton(scene, btnXs[0], btnY, 420, 88, 'Latihan Napas Ringan', () => {
       modalContainer.destroy();
       if (typeof onLightBreath === 'function') onLightBreath();
-    }, { radius: 36, fontSize: 24 });
+    }, { radius: 44, fontSize: 33 });
 
     // Tombol Utama di Kanan: Aku sudah lebih baik, lanjutkan
-    const btn2 = this.createButton(scene, btnXs[1], btnY, 420, 72, 'Aku sudah lebih baik, lanjutkan', () => {
+    const btn2 = this.createButton(scene, btnXs[1], btnY, 420, 88, 'Aku sudah lebih baik, lanjutkan', () => {
       modalContainer.destroy();
       if (typeof onContinue === 'function') onContinue();
-    }, { radius: 36, primary: true, fontSize: 24 });
+    }, { radius: 44, primary: true, fontSize: 33 });
 
     modalContainer.add([btn1, btn2]);
 
@@ -490,14 +625,14 @@ JEDA.UI = {
     // 1. Judul & Subjudul
     const title = scene.add.text(cx, cy - cardH / 2 + 54, 'Pengaturan JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '34px',
+      fontSize: '44px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    const subtitle = scene.add.text(cx, cy - cardH / 2 + 90, 'Kustomisasi Visual & Aksesibilitas', {
+    const subtitle = scene.add.text(cx, cy - cardH / 2 + 96, 'Kustomisasi Visual & Aksesibilitas', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '18px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
@@ -507,7 +642,7 @@ JEDA.UI = {
     const totalStars = (JEDA.State && JEDA.State.getTotalStars) ? JEDA.State.getTotalStars() : 0;
     const skinLabel = scene.add.text(cx, cy - 195, `Skin Orb Napas (Koleksi: ${totalStars}/9 ★)`, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '27px',
       fontStyle: '800',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
@@ -521,10 +656,10 @@ JEDA.UI = {
       const currentSkinId = (JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
       const skins = (JEDA.CFG && JEDA.CFG.SKINS) || {};
       const skinKeys = ['embun', 'fajar', 'aurora'];
-      const skinBtnW = 220;
-      const skinBtnH = 68;
-      const skinBtnXs = Layout ? Layout.rowCenter([skinBtnW, skinBtnW, skinBtnW], 24) : [cx - 244, cx, cx + 244];
-      const skinBtnY = cy - 138;
+      const skinBtnW = 240;
+      const skinBtnH = 76;
+      const skinBtnXs = Layout ? Layout.rowCenter([skinBtnW, skinBtnW, skinBtnW], 24) : [cx - 264, cx, cx + 264];
+      const skinBtnY = cy - 132;
 
       skinKeys.forEach((key, idx) => {
         const skin = skins[key];
@@ -545,16 +680,16 @@ JEDA.UI = {
             btnBg.strokeRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
 
             const dot = scene.add.circle(-skinBtnW / 2 + 24, 0, 8, skin.color, 1.0);
-            const nameText = scene.add.text(-skinBtnW / 2 + 42, -9, skin.name, {
+            const nameText = scene.add.text(-skinBtnW / 2 + 42, -12, skin.name, {
               fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '18px',
+              fontSize: '27px',
               fontStyle: '800',
               color: '#FFFFFF'
             }).setOrigin(0, 0.5).setResolution(2);
 
-            const activeLabel = scene.add.text(-skinBtnW / 2 + 42, 13, '✓ Aktif', {
+            const activeLabel = scene.add.text(-skinBtnW / 2 + 42, 16, '✓ Aktif', {
               fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '13px',
+              fontSize: '27px',
               fontStyle: '700',
               color: skin.hex
             }).setOrigin(0, 0.5).setResolution(2);
@@ -567,16 +702,16 @@ JEDA.UI = {
             btnBg.strokeRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
 
             const dot = scene.add.circle(-skinBtnW / 2 + 24, 0, 7, skin.color, 0.5);
-            const nameText = scene.add.text(-skinBtnW / 2 + 42, -9, skin.name, {
+            const nameText = scene.add.text(-skinBtnW / 2 + 42, -12, skin.name, {
               fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '18px',
+              fontSize: '27px',
               fontStyle: '700',
               color: '#FFFFFF'
             }).setOrigin(0, 0.5).setResolution(2);
 
-            const useLabel = scene.add.text(-skinBtnW / 2 + 42, 13, 'Gunakan', {
+            const useLabel = scene.add.text(-skinBtnW / 2 + 42, 16, 'Gunakan', {
               fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '13px',
+              fontSize: '27px',
               fontStyle: '600',
               color: JEDA.CFG.COLOR.hex.muted
             }).setOrigin(0, 0.5).setResolution(2);
@@ -612,17 +747,17 @@ JEDA.UI = {
           btnBg.lineStyle(1.5, 0x343956, 0.5);
           btnBg.strokeRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
 
-          const icon = scene.add.text(-skinBtnW / 2 + 24, 0, '🔒', { fontSize: '18px' }).setOrigin(0.5);
-          const nameText = scene.add.text(-skinBtnW / 2 + 42, -9, skin.name, {
+          const icon = scene.add.text(-skinBtnW / 2 + 24, 0, '🔒', { fontSize: '28px' }).setOrigin(0.5);
+          const nameText = scene.add.text(-skinBtnW / 2 + 42, -12, skin.name, {
             fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '17px',
+            fontSize: '27px',
             fontStyle: '700',
             color: '#6B7280'
           }).setOrigin(0, 0.5).setResolution(2);
 
-          const reqLabel = scene.add.text(-skinBtnW / 2 + 42, 13, `Butuh ${skin.reqStars} ★`, {
+          const reqLabel = scene.add.text(-skinBtnW / 2 + 42, 16, `Butuh ${skin.reqStars} ★`, {
             fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '13px',
+            fontSize: '27px',
             fontStyle: '600',
             color: '#4B5578'
           }).setOrigin(0, 0.5).setResolution(2);
@@ -649,7 +784,7 @@ JEDA.UI = {
     // 3. Opsi Kurangi Gerakan (BR-12)
     const isReduceMotion = JEDA.State.data.settings.reduceMotion;
     const motionBtnText = isReduceMotion ? 'Kurangi Gerakan: [AKTIF]' : 'Kurangi Gerakan: [NONAKTIF]';
-    const motionBtn = this.createButton(scene, cx, cy - 20, 560, 64, motionBtnText, () => {
+    const motionBtn = this.createButton(scene, cx, cy - 20, 560, 72, motionBtnText, () => {
       JEDA.State.data.settings.reduceMotion = !JEDA.State.data.settings.reduceMotion;
       JEDA.State.save();
       if (JEDA.Stage3D && JEDA.Stage3D.setReduceMotion) {
@@ -657,22 +792,22 @@ JEDA.UI = {
       }
       motionBtn.textObj.setText(JEDA.State.data.settings.reduceMotion ? 'Kurangi Gerakan: [AKTIF]' : 'Kurangi Gerakan: [NONAKTIF]');
       JEDA.UI.toast(scene, 'Pengaturan animasi diperbarui.');
-    });
+    }, { fontSize: 33, radius: 36 });
     container.add(motionBtn);
 
     // 4. Opsi Hapus Data Saya (BR-13)
-    const deleteBtn = this.createButton(scene, cx, cy + 64, 560, 64, 'Hapus Data Saya', () => {
+    const deleteBtn = this.createButton(scene, cx, cy + 68, 560, 72, 'Hapus Data Saya', () => {
       JEDA.State.resetData();
       JEDA.UI.toast(scene, 'Seluruh data lokal berhasil dihapus.');
       container.destroy();
       if (typeof onDataReset === 'function') onDataReset();
-    }, { textColor: '#FF8FA3' });
+    }, { textColor: '#FF8FA3', fontSize: 33, radius: 36 });
     container.add(deleteBtn);
 
     // 5. Tombol Tutup
-    const closeBtn = this.createButton(scene, cx, cy + 165, 260, 60, 'Tutup', () => {
+    const closeBtn = this.createButton(scene, cx, cy + 172, 280, 72, 'Tutup', () => {
       container.destroy();
-    });
+    }, { fontSize: 33, radius: 36 });
     container.add(closeBtn);
 
     return container;
@@ -748,33 +883,33 @@ JEDA.UI = {
 
     const title = scene.add.text(0, -cardH / 2 + 55, 'Tawaran Mode Ramah', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '32px',
+      fontSize: '44px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
 
     const desc = scene.add.text(0, -20, `Kamu sudah berlatih beberapa kali di ${levelName}.\nIngin mencoba dengan Mode Ramah (ritme lebih santai)?`, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.text,
       align: 'center',
       lineSpacing: 8
     }).setOrigin(0.5).setResolution(2);
 
-    const btnW = 280;
-    const btnH = 68;
+    const btnW = 320;
+    const btnH = 88;
     const btnGap = 32;
     // Prinsip 6: Aksi utama di kanan, aksi sekunder di kiri, sama lebar
     const declineBtn = this.createButton(scene, -(btnW / 2 + btnGap / 2), 100, btnW, btnH, 'Tetap Mode Normal', () => {
       modal.destroy();
       if (typeof onDecline === 'function') onDecline();
-    }, { radius: 34, fontSize: 22 });
+    }, { radius: 44, fontSize: 33 });
 
     const acceptBtn = this.createButton(scene, (btnW / 2 + btnGap / 2), 100, btnW, btnH, 'Gunakan Mode Ramah', () => {
       modal.destroy();
       if (typeof onAccept === 'function') onAccept();
-    }, { primary: true, radius: 34, fontSize: 22 });
+    }, { primary: true, radius: 44, fontSize: 33 });
 
     modal.add([bg, title, desc, declineBtn, acceptBtn]);
   },
@@ -783,24 +918,24 @@ JEDA.UI = {
    * Gelembung Ucapan Lumi (PRD Bagian 14.1 & 14.2 G1).
    * - Menampilkan pesan hangat Lumi di bawah orb (PRD 14.5: y = 760 di L1)
    * - Kotak kaca rounded ber-aksen toska (calm) dengan ekor penunjuk ke atas
-   * - Maksimal 2 baris, font 24 px, lebar responsif proporsional
+   * - Maksimal 2 baris, font 27 px, lebar responsif proporsional
    */
   speechBubble(scene, x, y, text) {
     const container = scene.add.container(x, y).setDepth(1500);
 
     const textObj = scene.add.text(0, 3, text, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '24px',
+      fontSize: '27px',
       fontStyle: '700',
       color: '#FFFFFF',
       align: 'center',
-      wordWrap: { width: 580 },
+      wordWrap: { width: 560 },
       lineSpacing: 6
     }).setOrigin(0.5).setResolution(2);
 
-    const padX = 42;
-    const padY = 22;
-    const w = Math.max(340, Math.min(720, textObj.width + padX * 2));
+    const padX = 48;
+    const padY = 24;
+    const w = Math.max(360, Math.min(760, textObj.width + padX * 2));
     const h = textObj.height + padY * 2;
     const radius = 24;
 
@@ -819,7 +954,7 @@ JEDA.UI = {
     bg.lineBetween(0, -h / 2 - 14, 12, -h / 2);
 
     // 4. Ikon pendar kecil Lumi di samping kiri teks
-    const glowDot = scene.add.circle(-w / 2 + 28, 0, 7, 0x7FE0C3, 0.9);
+    const glowDot = scene.add.circle(-w / 2 + 28, 0, 8, 0x7FE0C3, 0.9);
 
     container.add([bg, glowDot, textObj]);
     container.textObj = textObj;
@@ -840,13 +975,13 @@ JEDA.UI = {
    * @param {number} y
    * @param {Object} badge - { id, name, desc, icon }
    * @param {boolean} isUnlocked
-   * @param {Object} options - { width: 172, height: 76 }
+   * @param {Object} options - { width: 304, height: 88 }
    * @returns {Phaser.GameObjects.Container}
    */
   badgeSlot(scene, x, y, badge, isUnlocked, options = {}) {
-    const w = options.width || 172;
-    const h = options.height || 76;
-    const radius = 20;
+    const w = options.width || 304;
+    const h = options.height || 88;
+    const radius = 24;
 
     const container = scene.add.container(x, y).setDepth(options.depth || 50);
     const bg = scene.add.graphics();
@@ -861,23 +996,23 @@ JEDA.UI = {
 
       // Kilau sudut lembut
       bg.fillStyle(0x7FE0C3, 0.12);
-      bg.fillCircle(-w / 2 + 28, 0, 22);
+      bg.fillCircle(-w / 2 + 36, 0, 26);
 
-      const icon = scene.add.text(-w / 2 + 28, 0, badge.icon || '✦', {
-        fontSize: '26px'
+      const icon = scene.add.text(-w / 2 + 36, 0, badge.icon || '✦', {
+        fontSize: '28px'
       }).setOrigin(0.5);
 
-      const name = scene.add.text(-w / 2 + 56, -11, badge.name, {
+      const name = scene.add.text(-w / 2 + 76, -14, badge.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '14px',
+        fontSize: '27px',
         fontStyle: '800',
         color: '#FFFFFF',
-        wordWrap: { width: w - 66 }
+        wordWrap: { width: w - 90 }
       }).setOrigin(0, 0.5).setResolution(2);
 
-      const status = scene.add.text(-w / 2 + 56, 12, 'Terbuka ✦', {
+      const status = scene.add.text(-w / 2 + 76, 18, 'Terbuka ✓', {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '12px',
+        fontSize: '27px',
         fontStyle: '700',
         color: JEDA.CFG.COLOR.hex.calm
       }).setOrigin(0, 0.5).setResolution(2);
@@ -916,22 +1051,22 @@ JEDA.UI = {
       drawDashedSegment(-w / 2, h / 2 - radius, -w / 2, -h / 2 + radius);
 
       // Ikon siluet redup
-      const icon = scene.add.text(-w / 2 + 28, 0, badge.icon || '✦', {
-        fontSize: '24px'
+      const icon = scene.add.text(-w / 2 + 36, 0, badge.icon || '✦', {
+        fontSize: '28px'
       }).setOrigin(0.5).setAlpha(0.24);
 
-      const name = scene.add.text(-w / 2 + 56, -11, badge.name, {
+      const name = scene.add.text(-w / 2 + 76, -14, badge.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '14px',
+        fontSize: '27px',
         fontStyle: '700',
         color: '#64748B',
-        wordWrap: { width: w - 66 }
+        wordWrap: { width: w - 90 }
       }).setOrigin(0, 0.5).setResolution(2);
 
       // Pesan status netral dan ramah (tanpa penghakiman / pesan negatif)
-      const status = scene.add.text(-w / 2 + 56, 12, 'Belum Terbuka', {
+      const status = scene.add.text(-w / 2 + 76, 18, 'Belum Terbuka', {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '11px',
+        fontSize: '27px',
         fontStyle: '600',
         color: '#475569'
       }).setOrigin(0, 0.5).setResolution(2);
@@ -969,7 +1104,7 @@ JEDA.UI = {
 
     // Menampilkan toast syarat lencana saat diklik
     container.on('pointerup', () => {
-      const statusNote = isUnlocked ? '✦ Lencana ini telah kamu raih!' : '○ Syarat:';
+      const statusNote = isUnlocked ? '✓ Lencana ini telah kamu raih!' : '○ Syarat:';
       JEDA.UI.toast(scene, `${badge.name}: ${badge.desc} (${statusNote})`);
     });
 

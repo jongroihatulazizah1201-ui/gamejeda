@@ -143,7 +143,7 @@ class BootScene extends Phaser.Scene {
     // Posisi teks tepat di tengah ruang langit (bebas tabrakan dari orb di atas dan pulau di bawah)
     this.titleText = this.add.text(cx, cy - 75, 'JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '76px',
+      fontSize: '66px',
       fontStyle: '800',
       color: '#FFFFFF',
       shadow: { offsetX: 0, offsetY: 3, blur: 14, color: 'rgba(5, 5, 20, 0.9)', fill: true }
@@ -151,7 +151,7 @@ class BootScene extends Phaser.Scene {
 
     this.subtitleText = this.add.text(cx, cy - 5, 'Latihan berhenti sejenak', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '28px',
+      fontSize: '33px',
       fontStyle: '600',
       color: '#CBD5E1',
       shadow: { offsetX: 0, offsetY: 2, blur: 10, color: 'rgba(5, 5, 20, 0.85)', fill: true }
@@ -159,17 +159,17 @@ class BootScene extends Phaser.Scene {
 
     // Kapsul petunjuk interaksi (frosted pill beraksen tenang, bebas tabrakan dari lentera pulau)
     this.hintContainer = this.add.container(cx, cy + 70).setAlpha(0);
-    const pillW = 380;
-    const pillH = 48;
+    const pillW = 520;
+    const pillH = 56;
     const pillBg = this.add.graphics();
     pillBg.fillStyle(0x141738, 0.92);
-    pillBg.fillRoundedRect(-pillW / 2, -pillH / 2, pillW, pillH, 24);
+    pillBg.fillRoundedRect(-pillW / 2, -pillH / 2, pillW, pillH, 28);
     pillBg.lineStyle(2, 0x7FE0C3, 0.7);
-    pillBg.strokeRoundedRect(-pillW / 2, -pillH / 2, pillW, pillH, 24);
+    pillBg.strokeRoundedRect(-pillW / 2, -pillH / 2, pillW, pillH, 28);
 
     const hintText = this.add.text(0, 0, 'Klik di mana saja untuk melanjutkan', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '18px',
+      fontSize: '27px',
       fontStyle: '700',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);

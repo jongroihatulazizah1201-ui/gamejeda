@@ -74,16 +74,16 @@ class Level1Scene extends Phaser.Scene {
     headerPill.lineStyle(2, 0x3F486E, 0.7);
     headerPill.strokeRoundedRect(cx - pillW / 2, 250 - pillH / 2, pillW, pillH, 28);
 
-    this.instructionText = this.add.text(cx, 234, 'Tahan untuk menarik napas, lepas untuk menghembuskan.', {
+    this.instructionText = this.add.text(cx, 232, 'Tahan untuk menarik napas, lepas untuk menghembuskan.', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '26px',
+      fontSize: '33px',
       fontStyle: '700',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
     this.feedbackText = this.add.text(cx, 268, 'Mulai dengan menekan dan menahan...', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
@@ -142,21 +142,21 @@ class Level1Scene extends Phaser.Scene {
   createHeader() {
     const Layout = JEDA.Layout;
     const headerY = 64;
-    const btnW = 180;
-    const btnH = 50;
+    const btnW = 200;
+    const btnH = 48;
 
     // Kiri: Tombol Menu (rata margin kiri 120 px)
     const leftX = Layout.M + btnW / 2;
     JEDA.UI.createButton(this, leftX, headerY, btnW, btnH, '← Menu', () => {
       if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
-    }, { fontSize: 20, radius: 25 });
+    }, { fontSize: 27, radius: 24 });
 
-    // Tengah: Judul Level
+    // Tengah: Judul Level (Prinsip 8: Hierarki teks 33 px)
     const modeTitle = this.easyMode ? 'Level 1: Napas (Mode Ramah)' : 'Level 1: Napas';
     this.titleText = this.add.text(Layout.cx(), headerY, modeTitle, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '32px',
+      fontSize: '33px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
@@ -166,13 +166,13 @@ class Level1Scene extends Phaser.Scene {
     const progContainer = this.add.container(rightX, headerY);
     const progBg = this.add.graphics();
     progBg.fillStyle(0x181A3C, 0.95);
-    progBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 25);
+    progBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 24);
     progBg.lineStyle(2, 0x485278, 0.65);
-    progBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 25);
+    progBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 24);
 
     this.cycleCounterText = this.add.text(0, 0, `Siklus 1/${this.totalCycles}`, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '27px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
@@ -670,10 +670,10 @@ class Level1Scene extends Phaser.Scene {
     bg.lineStyle(2, JEDA.CFG.COLOR.warn, 0.6);
     bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
 
-    const icon = this.add.text(-cardW / 2 + 25, 0, '🔔', { fontSize: '26px' }).setOrigin(0, 0.5);
+    const icon = this.add.text(-cardW / 2 + 25, 0, '🔔', { fontSize: '28px' }).setOrigin(0, 0.5);
     const text = this.add.text(-cardW / 2 + 65, 0, message, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0, 0.5).setResolution(2);
@@ -856,7 +856,7 @@ class Level1Scene extends Phaser.Scene {
     const titleStr = result.passed ? 'Latihan Napas Selesai' : 'Perlu Latihan Lagi';
     const title = this.add.text(0, -cardH / 2 + 65, titleStr, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '40px',
+      fontSize: '44px',
       fontStyle: '800',
       color: result.passed ? JEDA.CFG.COLOR.hex.calm : JEDA.CFG.COLOR.hex.warn
     }).setOrigin(0.5).setResolution(2);
@@ -893,21 +893,21 @@ class Level1Scene extends Phaser.Scene {
 
       const nameT = this.add.text(bx, rowY - 32, c.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '20px',
+        fontSize: '27px',
         fontStyle: '600',
         color: JEDA.CFG.COLOR.hex.muted
       }).setOrigin(0.5).setResolution(2);
 
-      const valT = this.add.text(bx, rowY + 3, c.val, {
+      const valT = this.add.text(bx, rowY + 6, c.val, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '32px',
+        fontSize: '33px',
         fontStyle: '800',
         color: JEDA.CFG.COLOR.hex.text
       }).setOrigin(0.5).setResolution(2);
 
-      const descT = this.add.text(bx, rowY + 36, c.desc, {
+      const descT = this.add.text(bx, rowY + 42, c.desc, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '15px',
+        fontSize: '27px',
         fontStyle: '400',
         color: JEDA.CFG.COLOR.hex.muted
       }).setOrigin(0.5).setResolution(2);
@@ -915,17 +915,17 @@ class Level1Scene extends Phaser.Scene {
       modal.add([bgg, nameT, valT, descT]);
     });
 
-    // Total Skor
+    // Total Skor (Prinsip 8: Hierarki teks 33 px)
     const scoreText = this.add.text(0, rowY + 125, `Skor Akhir Level 1: ${result.score}`, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '32px',
+      fontSize: '33px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
     modal.add([title, stars, scoreText]);
 
-    // Tombol Tindakan Baku (Tinggi 88, sama lebar 300, aksi utama di kanan)
+    // Tombol Tindakan Baku (Tinggi 88, sama lebar 300, teks 33 px, aksi utama di kanan)
     const btnY = cardH / 2 - 76;
     const btnW = 300;
     const btnH = 88;
@@ -939,13 +939,13 @@ class Level1Scene extends Phaser.Scene {
           JEDA.Stage3D.setSync('good');
         }
         this.scene.restart();
-      }, { radius: 44, fontSize: 24 });
+      }, { radius: 44, fontSize: 33 });
 
       // Kanan: Aksi utama (Lanjut ke Level 2)
       const nextBtn = JEDA.UI.createButton(this, (btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Lanjut ke Level 2', () => {
         if (JEDA.Stage3D) JEDA.Stage3D.setMode('l2');
         JEDA.FX.transitionTo(this, 'Level2Scene');
-      }, { primary: true, radius: 44, fontSize: 24 });
+      }, { primary: true, radius: 44, fontSize: 33 });
 
       modal.add([repeatBtn, nextBtn]);
     } else {
@@ -953,7 +953,7 @@ class Level1Scene extends Phaser.Scene {
       const menuBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Menu Utama', () => {
         if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
         JEDA.FX.transitionTo(this, 'CheckinScene');
-      }, { radius: 44, fontSize: 24 });
+      }, { radius: 44, fontSize: 33 });
 
       // Kanan: Ulangi Latihan
       const repeatBtn = JEDA.UI.createButton(this, (btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Ulangi Latihan', () => {
@@ -962,7 +962,7 @@ class Level1Scene extends Phaser.Scene {
           JEDA.Stage3D.setSync('good');
         }
         this.scene.restart();
-      }, { primary: true, radius: 44, fontSize: 24 });
+      }, { primary: true, radius: 44, fontSize: 33 });
 
       modal.add([menuBtn, repeatBtn]);
     }

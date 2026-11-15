@@ -37,21 +37,21 @@ class PauseScene extends Phaser.Scene {
     // 3. Judul & Subjudul (PRD Bagian 5.6)
     const title = this.add.text(cx, cy - 110, 'Dijeda.', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '52px',
+      fontSize: '44px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
     const sub = this.add.text(cx, cy - 42, 'Lanjut kapan pun kamu siap.', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '26px',
+      fontSize: '33px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
 
-    const hint = this.add.text(cx, cy + 12, 'Tarik napas sejenak sebelum kembali melanjutkan latihan.', {
+    const hint = this.add.text(cx, cy + 16, 'Tarik napas sejenak sebelum kembali melanjutkan latihan.', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '18px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
@@ -70,12 +70,12 @@ class PauseScene extends Phaser.Scene {
         this.scene.stop(this.returnTo);
       }
       this.scene.start('CheckinScene');
-    }, { radius: 44, fontSize: 24 });
+    }, { radius: 44, fontSize: 33 });
 
     // Kanan: Aksi Utama (Lanjut)
     const resumeBtn = JEDA.UI.createButton(this, btnXs[1], btnY, btnW, btnH, 'Lanjut', () => {
       this.resumeGame();
-    }, { primary: true, radius: 44, fontSize: 28 });
+    }, { primary: true, radius: 44, fontSize: 33 });
 
     // 5. Dukungan Keyboard (Prinsip 15: Esc / Enter untuk lanjut)
     if (this.input.keyboard) {
