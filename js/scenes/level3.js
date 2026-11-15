@@ -94,6 +94,18 @@ class Level3Scene extends Phaser.Scene {
   }
 
   /**
+   * Membersihkan kontainer skenario dengan aman dan mereset referensi grafis.
+   */
+  clearScenarioContainer() {
+    this.meterBar = null;
+    this.meterLabel = null;
+    this.meterContainer = null;
+    if (this.scenarioContainer) {
+      this.scenarioContainer.removeAll(true);
+    }
+  }
+
+  /**
    * Membuat Meter Emosi Horizontal (mulai 70).
    * PRD 14.5: Meter emosi lebar 720 di bawah panel.
    */
@@ -128,37 +140,51 @@ class Level3Scene extends Phaser.Scene {
   }
 
   /**
-   * Render ulang bar isi meter emosi.
+   * Render ulang bar isi meter emosi secara aman.
    */
   renderMeterBar(value) {
-    this.meterBar.clear();
-    const clamped = Phaser.Math.Clamp(value, 0, 100);
-    const w = (clamped / 100) * (this.meterW - 4);
-    const h = this.meterH - 4;
-
-    let color = JEDA.CFG.COLOR.calm;
-    if (clamped > 65) {
-      color = JEDA.CFG.COLOR.off;
-    } else if (clamped > 35) {
-      color = JEDA.CFG.COLOR.warn;
+    if (!this.meterBar || !this.meterBar.scene || !this.meterBar.active) {
+      return;
     }
+    try {
+      this.meterBar.clear();
+      const clamped = Phaser.Math.Clamp(value, 0, 100);
+      const w = (clamped / 100) * (this.meterW - 4);
+      const h = this.meterH - 4;
 
-    if (w > 0) {
-      this.meterBar.fillStyle(color, 0.9);
-      this.meterBar.fillRoundedRect(-this.meterW / 2 + 2, -this.meterH / 2 + 2, w, h, 11);
-    }
+      let color = JEDA.CFG.COLOR.calm;
+      if (clamped > 65) {
+        color = JEDA.CFG.COLOR.off;
+      } else if (clamped > 35) {
+        color = JEDA.CFG.COLOR.warn;
+      }
 
-    if (this.meterLabel) {
-      this.meterLabel.setText(`Tingkat Emosi: ${Math.round(clamped)}%`);
+      if (w > 0) {
+        this.meterBar.fillStyle(color, 0.9);
+        this.meterBar.fillRoundedRect(-this.meterW / 2 + 2, -this.meterH / 2 + 2, w, h, 11);
+      }
+
+      if (this.meterLabel && this.meterLabel.scene && this.meterLabel.active) {
+        this.meterLabel.setText(`Tingkat Emosi: ${Math.round(clamped)}%`);
+      }
+    } catch (e) {
+      // Safe fallback jika grafis dibersihkan selama loop tween
     }
   }
 
   /**
-   * Mengubah nilai meter emosi dengan animasi tween halus.
+   * Mengubah nilai meter emosi dengan animasi tween halus jika meter terlihat.
    */
   animateMeterDelta(delta, onComplete) {
     const targetValue = Phaser.Math.Clamp(this.emotionMeter + delta, 0, 100);
     const startVal = this.emotionMeter;
+    this.emotionMeter = targetValue; // Selalu perbarui nilai numerik segera
+
+    // Jika meterBar tidak ada di layar (misalnya saat langkah S/T/O/P), langsung selesaikan
+    if (!this.meterBar || !this.meterBar.scene || !this.meterBar.active) {
+      if (typeof onComplete === 'function') onComplete();
+      return;
+    }
 
     this.tweens.addCounter({
       from: startVal,
@@ -170,7 +196,6 @@ class Level3Scene extends Phaser.Scene {
         this.renderMeterBar(current);
       },
       onComplete: () => {
-        this.emotionMeter = targetValue;
         if (typeof onComplete === 'function') onComplete();
       }
     });
@@ -187,7 +212,7 @@ class Level3Scene extends Phaser.Scene {
 
     this.currentScenarioIndex = idx;
     this.stepCounterText.setText(`Skenario ${idx + 1} dari ${this.scenarios.length}`);
-    this.scenarioContainer.removeAll(true);
+    this.clearScenarioContainer();
 
     const scenario = this.scenarios[idx];
     this.showScenarioTrigger(scenario);
@@ -258,13 +283,19 @@ class Level3Scene extends Phaser.Scene {
     const btnXs = Layout.rowCenter(btnWidths, 48);
     const btnY = 760;
 
+    let isTriggerHandled = false;
+
     // Kiri: Aksi Sekunder (Langsung Bereaksi)
     const reactBtn = JEDA.UI.createButton(this, btnXs[0], btnY, 420, 88, 'Langsung Bereaksi', () => {
+      if (isTriggerHandled) return;
+      isTriggerHandled = true;
       this.handleReactionPath(scenario);
     }, { radius: 44, textColor: '#FF8FA3', fontSize: 26 });
 
     // Kanan: Aksi Utama (Jeda dengan STOP)
     const stopBtn = JEDA.UI.createButton(this, btnXs[1], btnY, 420, 88, 'Jeda dengan STOP', () => {
+      if (isTriggerHandled) return;
+      isTriggerHandled = true;
       this.handleStopPath(scenario);
     }, { primary: true, radius: 44, fontSize: 26 });
 
@@ -276,7 +307,7 @@ class Level3Scene extends Phaser.Scene {
    * Tampil konsekuensi, meter naik 15, lalu skenario berikutnya.
    */
   handleReactionPath(scenario) {
-    this.scenarioContainer.removeAll(true);
+    this.clearScenarioContainer();
     const Layout = JEDA.Layout;
     const cx = Layout.cx();
     const cy = Layout.cy();
@@ -326,7 +357,10 @@ class Level3Scene extends Phaser.Scene {
       observedCorrect: false
     });
 
+    let isNextHandled = false;
     const nextBtn = JEDA.UI.createButton(this, cx, cy + 180, 320, 88, 'Lanjutkan', () => {
+      if (isNextHandled) return;
+      isNextHandled = true;
       this.loadScenario(this.currentScenarioIndex + 1);
     }, { primary: true, radius: 44, fontSize: 26 });
 
@@ -392,7 +426,7 @@ class Level3Scene extends Phaser.Scene {
    * LANGKAH 1: S (Stop) - Tekan tombol Stop, orb membeku (PRD Bagian 5.4).
    */
   startStepS() {
-    this.scenarioContainer.removeAll(true);
+    this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 30;
     const cardW = 950;
@@ -435,7 +469,11 @@ class Level3Scene extends Phaser.Scene {
     });
 
     // Tombol STOP
+    let isHandled = false;
     const stopBtn = JEDA.UI.createButton(this, cx, cy + 180, 320, 64, 'Berhenti (STOP)', () => {
+      if (isHandled) return;
+      isHandled = true;
+
       // Orb membeku
       pulse.stop();
       orb.setScale(1.0);
@@ -463,7 +501,7 @@ class Level3Scene extends Phaser.Scene {
    * LANGKAH 2: T (Take a breath) - Satu siklus napas mini (PRD Bagian 5.4).
    */
   startStepT() {
-    this.scenarioContainer.removeAll(true);
+    this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 30;
     const cardW = 950;
@@ -519,6 +557,18 @@ class Level3Scene extends Phaser.Scene {
     let breathDone = false;
     let countTimer = null;
 
+    const cleanupStepT = () => {
+      this.input.off('pointerup', onPointerUp);
+      if (spaceKey) {
+        spaceKey.off('down', startHold);
+        spaceKey.off('up', onSpaceUp);
+      }
+      if (countTimer) countTimer.remove(false);
+    };
+
+    const onPointerUp = () => endHold(false);
+    const onSpaceUp = () => endHold(false);
+
     const startHold = () => {
       if (breathDone || isHolding) return;
       isHolding = true;
@@ -555,6 +605,7 @@ class Level3Scene extends Phaser.Scene {
 
       if (duration >= 3000 || isAutoSuccess) {
         breathDone = true;
+        cleanupStepT();
         timerText.setText('✓');
         breathBtn.textObj.setText('Hembuskan napas perlahan...');
         this.tweens.killTweensOf(orb);
@@ -582,15 +633,15 @@ class Level3Scene extends Phaser.Scene {
 
     // Bisa ditahan lewat tombol ATAU orb langsung
     breathBtn.on('pointerdown', startHold);
-    breathBtn.on('pointerup', () => endHold(false));
+    breathBtn.on('pointerup', onPointerUp);
     orb.on('pointerdown', startHold);
-    orb.on('pointerup', () => endHold(false));
-    this.input.on('pointerup', () => endHold(false));
+    orb.on('pointerup', onPointerUp);
+    this.input.on('pointerup', onPointerUp);
 
     // Dukungan tombol Spasi keyboard
     const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     spaceKey.on('down', startHold);
-    spaceKey.on('up', () => endHold(false));
+    spaceKey.on('up', onSpaceUp);
 
     this.scenarioContainer.add([title, desc, orb, timerText, breathBtn]);
   }
@@ -599,7 +650,7 @@ class Level3Scene extends Phaser.Scene {
    * LANGKAH 3: O (Observe) - Pilih emosi yang dirasakan (PRD Bagian 5.4 & 8.2).
    */
   startStepO() {
-    this.scenarioContainer.removeAll(true);
+    this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 30;
     const cardW = 950;
@@ -637,9 +688,20 @@ class Level3Scene extends Phaser.Scene {
     const startX = cx - ((emotionOptions.length - 1) * spacing) / 2;
     const pillY = cy + 60;
 
+    let isHandled = false;
+    const pills = [];
+
     emotionOptions.forEach((emo, idx) => {
       const px = startX + idx * spacing;
       const pill = JEDA.UI.createButton(this, px, pillY, 170, 56, emo, () => {
+        if (isHandled) return;
+        isHandled = true;
+
+        // Nonaktifkan klik berulang
+        pills.forEach((p) => {
+          if (p.disableInteractive) p.disableInteractive();
+        });
+
         // Cek kecocokan emosi dengan kunci skenario (Observe = 100 jika cocok)
         const isMatch = scenario.keys.includes(emo);
         this.stopData.observedCorrect = isMatch;
@@ -656,6 +718,7 @@ class Level3Scene extends Phaser.Scene {
         });
       }, { fontSize: 22, radius: 28 });
 
+      pills.push(pill);
       this.scenarioContainer.add(pill);
     });
   }
@@ -664,7 +727,7 @@ class Level3Scene extends Phaser.Scene {
    * LANGKAH 4: P (Proceed) - Pilih 1 dari 3 respons sadar (PRD Bagian 5.4 & 8.2).
    */
   startStepP() {
-    this.scenarioContainer.removeAll(true);
+    this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 30;
     const cardW = 1080;
@@ -700,9 +763,27 @@ class Level3Scene extends Phaser.Scene {
     const itemH = 75;
     const spacingY = 95;
 
+    let isHandled = false;
+    const buttons = [];
+
     responses.forEach((resp, idx) => {
       const ry = startY + idx * spacingY;
       const btn = JEDA.UI.createButton(this, cx, ry, cardW - 140, itemH, resp.text, () => {
+        if (isHandled) return;
+        isHandled = true;
+
+        // Beri highlight pada tombol yang dipilih & matikan interaksi tombol lainnya
+        buttons.forEach((b) => {
+          if (b.disableInteractive) b.disableInteractive();
+        });
+
+        const highlightColor = resp.score === 100 ? JEDA.CFG.COLOR.calm : (resp.score === 60 ? 0x6E85B7 : 0x884A5D);
+        btn.bg.clear();
+        btn.bg.fillStyle(highlightColor, 0.35);
+        btn.bg.fillRoundedRect(-(cardW - 140) / 2, -itemH / 2, cardW - 140, itemH, 20);
+        btn.bg.lineStyle(2, resp.score === 100 ? JEDA.CFG.COLOR.calm : (resp.score === 60 ? 0x93B5C6 : 0xFF8FA3), 0.9);
+        btn.bg.strokeRoundedRect(-(cardW - 140) / 2, -itemH / 2, cardW - 140, itemH, 20);
+
         // Catat skor respons (100, 60, atau 0)
         this.stopData.responseScore = resp.score;
 
@@ -729,6 +810,7 @@ class Level3Scene extends Phaser.Scene {
         });
       }, { fontSize: 20, radius: 20 });
 
+      buttons.push(btn);
       this.scenarioContainer.add(btn);
     });
   }
@@ -780,7 +862,7 @@ class Level3Scene extends Phaser.Scene {
    * Menampilkan panel ringkasan hasil skor Level 3.
    */
   showResultSummary(result) {
-    this.scenarioContainer.removeAll(true);
+    this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 20;
 
