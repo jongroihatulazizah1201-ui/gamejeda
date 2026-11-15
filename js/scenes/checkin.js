@@ -73,12 +73,49 @@ class CheckinScene extends Phaser.Scene {
         JEDA.UI.toast(this, 'Data diatur ulang ke kondisi awal.');
       });
     }
+
+    // 10. Kartu Pembuka saat game pertama kali dibuka (PRD 15.2 / BR-15)
+    if (!JEDA.State.hasSeen('intro')) {
+      this.time.delayedCall(400, () => {
+        this.showIntroCard();
+      });
+    }
+  }
+
+  /**
+   * Menampilkan kartu petunjuk pembuka 3 halaman (PRD 15.2 & BR-15).
+   */
+  showIntroCard() {
+    JEDA.UI.helpCard(this, {
+      type: 'intro',
+      title: 'Selamat Datang di JEDA',
+      pages: [
+        {
+          pageTitle: 'Penjaga Lentera',
+          text: 'Selamat datang di JEDA. Kamu penjaga lentera. Tugasmu berhenti sejenak sebelum bereaksi.',
+          badge: 'Tugas Utama'
+        },
+        {
+          pageTitle: 'Tiga Perjalanan Sadar',
+          text: 'Ada tiga level: Napas, Misi Astronot, dan Jeda di Situasi Nyata. Level baru terbuka setelah level sebelumnya lulus.',
+          badge: '3 Tingkatan'
+        },
+        {
+          pageTitle: 'Ruang Aman Tanpa Tekanan',
+          text: 'Tidak ada timer dan tidak ada hukuman. Skor hanya untuk melihat kemajuanmu.',
+          badge: 'Tanpa Hukuman'
+        }
+      ],
+      onDone: () => {
+        JEDA.State.markSeen('intro');
+      }
+    });
   }
 
   /**
    * Membuat header simetris di Zona Header (y: 0 - 120 px).
    * Kiri: Identitas brand JEDA sejajar margin 120 px.
-   * Kanan: Tombol Pengaturan sejajar margin kanan (W - 120 px).
+   * Kanan: Tombol Bantuan (?) dan Pengaturan sejajar margin kanan (W - 120 px).
    */
   createHeaderButtons() {
     const Layout = JEDA.Layout;
@@ -103,9 +140,16 @@ class CheckinScene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2);
     brandContainer.add([bgL, brandText]);
 
-    // Tombol Pengaturan Kanan Atas (rata margin kanan 1800)
-    const rightX = (Layout.W - Layout.M) - btnW / 2;
-    JEDA.UI.createButton(this, rightX, headerY, btnW, btnH, 'Pengaturan ⚙', () => {
+    // Kanan: Tombol Bantuan (?) dan Pengaturan (sejajar margin kanan 1800)
+    const helpBtnSize = 48;
+    const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1800 - 24 = 1776
+    JEDA.UI.createButton(this, helpBtnX, headerY, helpBtnSize, helpBtnSize, '?', () => {
+      this.showIntroCard();
+    }, { fontSize: 27, radius: 24 });
+
+    const settingsW = 210;
+    const settingsX = helpBtnX - helpBtnSize / 2 - 16 - settingsW / 2;
+    JEDA.UI.createButton(this, settingsX, headerY, settingsW, btnH, 'Pengaturan ⚙', () => {
       JEDA.UI.showSettingsModal(this, () => {
         this.renderLevelCards();
       });

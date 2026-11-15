@@ -98,7 +98,11 @@ class Level1Scene extends Phaser.Scene {
     this.setupInputListeners();
 
     // 7. Penjadwalan Notifikasi Palsu (BR-03)
-    this.scheduleDistractions();
+    this.distractionsScheduled = false;
+    if (JEDA.State.hasSeen('l1')) {
+      this.scheduleDistractions();
+      this.distractionsScheduled = true;
+    }
 
     // 8. Pasang listener debug grid 'G'
     Layout.attachDebugKeyListener(this);
@@ -120,6 +124,14 @@ class Level1Scene extends Phaser.Scene {
       });
       this.time.delayedCall(700, () => {
         if (!this.isFinished) JEDA.Lumi.say('intro_l1');
+      });
+    }
+
+    // 11. Tampilkan kartu petunjuk otomatis saat pertama kali dibuka (PRD 15.2 & BR-15)
+    this.isHelpOpen = false;
+    if (!JEDA.State.hasSeen('l1')) {
+      this.time.delayedCall(350, () => {
+        this.showHelpModal();
       });
     }
 
@@ -161,14 +173,21 @@ class Level1Scene extends Phaser.Scene {
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    // Kanan: Kapsul status siklus (rata margin kanan 1800 px)
-    const rightX = (Layout.W - Layout.M) - btnW / 2;
-    const progContainer = this.add.container(rightX, headerY);
+    // Kanan: Tombol Bantuan (?) dan Kapsul status siklus (rata margin kanan 1800 px)
+    const helpBtnSize = 48;
+    const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1800 - 24 = 1776
+    this.helpButton = JEDA.UI.createButton(this, helpBtnX, headerY, helpBtnSize, helpBtnSize, '?', () => {
+      this.showHelpModal();
+    }, { fontSize: 27, radius: 24 });
+
+    const progW = 180;
+    const progX = helpBtnX - helpBtnSize / 2 - 16 - progW / 2; // 1752 - 16 - 90 = 1646
+    const progContainer = this.add.container(progX, headerY);
     const progBg = this.add.graphics();
     progBg.fillStyle(0x181A3C, 0.95);
-    progBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 24);
+    progBg.fillRoundedRect(-progW / 2, -btnH / 2, progW, btnH, 24);
     progBg.lineStyle(2, 0x485278, 0.65);
-    progBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 24);
+    progBg.strokeRoundedRect(-progW / 2, -btnH / 2, progW, btnH, 24);
 
     this.cycleCounterText = this.add.text(0, 0, `Siklus 1/${this.totalCycles}`, {
       fontFamily: JEDA.CFG.FONT.family,
@@ -177,6 +196,32 @@ class Level1Scene extends Phaser.Scene {
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
     progContainer.add([progBg, this.cycleCounterText]);
+  }
+
+  /**
+   * Menampilkan kartu petunjuk Level 1 (PRD 15.2 & BR-15).
+   */
+  showHelpModal() {
+    this.isHelpOpen = true;
+    JEDA.UI.helpCard(this, {
+      type: 'l1',
+      title: 'Petunjuk Level 1: Napas',
+      subtitle: 'Pengantar K1: Memperhatikan saat ini tanpa menghakimi.',
+      steps: [
+        { num: 1, text: 'Tahan Spasi atau klik kiri saat Lumi membesar.', key: 'Tahan Spasi / Klik' },
+        { num: 2, text: 'Lepas saat Lumi mengecil.', key: 'Lepas' },
+        { num: 3, text: 'Abaikan notifikasi yang muncul. Tetap di napasmu.', key: 'Fokus' }
+      ],
+      keys: ['Spasi', 'Klik Kiri'],
+      onDone: () => {
+        this.isHelpOpen = false;
+        JEDA.State.markSeen('l1');
+        if (!this.distractionsScheduled && !this.isFinished) {
+          this.scheduleDistractions();
+          this.distractionsScheduled = true;
+        }
+      }
+    });
   }
 
   /**
@@ -308,7 +353,7 @@ class Level1Scene extends Phaser.Scene {
    * Pemain mulai menahan (tarik napas).
    */
   handleActionStart() {
-    if (this.isFinished || this.isHolding) return;
+    if (this.isFinished || this.isHolding || this.isHelpOpen) return;
 
     if (this.state === 'RELEASING' && this.releaseStartTime > 0) {
       const releaseDuration = Date.now() - this.releaseStartTime;

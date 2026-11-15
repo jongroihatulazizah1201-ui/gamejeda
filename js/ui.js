@@ -1109,5 +1109,591 @@ JEDA.UI = {
     });
 
     return container;
+  },
+
+  /**
+   * Kartu Petunjuk Bermain (Pop-up Onboarding - PRD Bagian 15.2 & BR-15).
+   * - Menampilkan panduan onboarding di tengah layar (Panel M: 960 px, radius 32)
+   * - Redup di belakangnya dengan alpha 0.55
+   * - Mendukung maksimal 3 langkah (<= 14 kata per langkah) atau multi-halaman pembuka (3 halaman)
+   * - Animasi pendek yang memperagakan mekanik (orb bernapas, bidikan astronot, urutan STOP, lentera)
+   * - Ikon tombol digambar dengan kapsul
+   * - Tombol 'Lewati' di kiri dan 'Mulai' di kanan berukuran seragam 88 px (Prinsip 6 & 7 Bagian 14.3)
+   * - Bisa dilewati dengan tombol Esc
+   * @param {Phaser.Scene} scene
+   * @param {object} options - { title, subtitle, type, steps, pages, keys, onDone }
+   * @returns {Phaser.GameObjects.Container}
+   */
+  helpCard(scene, options = {}) {
+    const Layout = window.JEDA && JEDA.Layout;
+    const W = Layout ? Layout.W : JEDA.CFG.W;
+    const H = Layout ? Layout.H : JEDA.CFG.H;
+    const cx = Layout ? Layout.cx() : W / 2;
+    const cy = Layout ? Layout.cy() : H / 2;
+
+    const modalContainer = scene.add.container(0, 0).setDepth(3500);
+
+    // 1. Backdrop Redup alpha 0.55 (PRD 15.2: "redup di belakangnya alpha 0,55")
+    const backdrop = scene.add.rectangle(cx, cy, W, H, 0x050510, 0.55)
+      .setInteractive();
+    modalContainer.add(backdrop);
+
+    // 2. Panel M Kaca Gelap di Tengah (960 x 608 px, radius 32, kelipatan 8)
+    const cardW = (Layout && Layout.panelSize && Layout.panelSize.M) ? Layout.panelSize.M : 960;
+    const cardH = 608;
+
+    const panelBg = scene.add.graphics();
+    panelBg.fillStyle(0x141638, 0.96);
+    panelBg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    panelBg.lineStyle(2, 0x3F486E, 0.65);
+    panelBg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    modalContainer.add(panelBg);
+
+    // Variabel state modal
+    let isClosed = false;
+    let currentPageIndex = 0;
+    const isMultiPage = Array.isArray(options.pages) && options.pages.length > 0;
+    const totalPages = isMultiPage ? options.pages.length : 1;
+
+    const animTweens = [];
+    const animTimers = [];
+
+    // Fungsi penutupan bersih modal
+    const closeCard = () => {
+      if (isClosed) return;
+      isClosed = true;
+
+      // Hapus listener keyboard Esc
+      if (scene.input && scene.input.keyboard) {
+        scene.input.keyboard.off('keydown-ESC', escHandler);
+        scene.input.keyboard.off('keydown-ESCAPE', escHandler);
+      }
+
+      // Hentikan semua tween dan timer animasi internal
+      animTweens.forEach(tw => {
+        if (tw && tw.remove) tw.remove();
+      });
+      animTimers.forEach(tm => {
+        if (tm && tm.remove) tm.remove(false);
+      });
+
+      // Animasi keluar lembut
+      scene.tweens.add({
+        targets: modalContainer,
+        alpha: 0,
+        scaleX: 0.96,
+        scaleY: 0.96,
+        duration: 180,
+        ease: 'Sine.easeIn',
+        onComplete: () => {
+          modalContainer.destroy();
+          if (typeof options.onDone === 'function') {
+            options.onDone();
+          }
+        }
+      });
+    };
+
+    // Handler Esc
+    const escHandler = (event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      closeCard();
+    };
+
+    if (scene.input && scene.input.keyboard) {
+      scene.input.keyboard.on('keydown-ESC', escHandler);
+      scene.input.keyboard.on('keydown-ESCAPE', escHandler);
+    }
+
+    // 3. Header Panel: Kapsul Kategori, Judul, & Subjudul
+    const headerContainer = scene.add.container(cx, cy - cardH / 2 + 58);
+
+    // Kapsul Kategori "PETUNJUK BERMAIN"
+    const catBadgeW = 240;
+    const catBadgeH = 36;
+    const catBg = scene.add.graphics();
+    catBg.fillStyle(0x1A2048, 0.95);
+    catBg.fillRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 18);
+    catBg.lineStyle(1.5, 0x7FE0C3, 0.55);
+    catBg.strokeRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 18);
+
+    const catText = scene.add.text(0, 0, 'PETUNJUK BERMAIN', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '27px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.calm
+    }).setOrigin(0.5).setResolution(2);
+    headerContainer.add([catBg, catText]);
+
+    // Judul Utama (Hierarki teks 44 px)
+    const titleText = scene.add.text(0, 44, options.title || 'Petunjuk Bermain', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '44px',
+      fontStyle: '800',
+      color: '#FFFFFF'
+    }).setOrigin(0.5).setResolution(2);
+    headerContainer.add(titleText);
+
+    // Subjudul / Catatan K1 jika ada (Hierarki teks 27 px)
+    if (options.subtitle) {
+      const subtitleText = scene.add.text(0, 84, options.subtitle, {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '27px',
+        fontStyle: '600',
+        color: '#A7F3D0'
+      }).setOrigin(0.5).setResolution(2);
+      headerContainer.add(subtitleText);
+    }
+    modalContainer.add(headerContainer);
+
+    // 4. Kolom Kiri: Kotak Peragaan Animasi Mekanik (264 x 264 px, radius 24)
+    const colLeftX = cx - 296;
+    const colLeftY = cy + 18;
+    const previewBoxW = 264;
+    const previewBoxH = 264;
+
+    const previewContainer = scene.add.container(colLeftX, colLeftY);
+    const previewBg = scene.add.graphics();
+    previewBg.fillStyle(0x161A3E, 0.96);
+    previewBg.fillRoundedRect(-previewBoxW / 2, -previewBoxH / 2, previewBoxW, previewBoxH, 24);
+    previewBg.lineStyle(1.5, 0x384166, 0.65);
+    previewBg.strokeRoundedRect(-previewBoxW / 2, -previewBoxH / 2, previewBoxW, previewBoxH, 24);
+    previewContainer.add(previewBg);
+    modalContainer.add(previewContainer);
+
+    // Pembuat animasi mekanisme sesuai jenis petunjuk (type)
+    const renderMicroAnimation = (animType) => {
+      // Bersihkan elemen animasi sebelumnya
+      const oldItems = previewContainer.list.filter(item => item !== previewBg);
+      oldItems.forEach(item => item.destroy());
+      animTweens.forEach(tw => { if (tw && tw.remove) tw.remove(); });
+      animTweens.length = 0;
+      animTimers.forEach(tm => { if (tm && tm.remove) tm.remove(false); });
+      animTimers.length = 0;
+
+      if (animType === 'l1') {
+        // --- Animasi Level 1: Orb Bernapas Membesar & Mengecil + Kapsul Spasi ---
+        const orbGlow = scene.add.circle(0, -32, 48, 0x7FE0C3, 0.22);
+        const orbInner = scene.add.circle(0, -32, 34, 0x7FE0C3, 0.45);
+        const orbCore = scene.add.circle(0, -32, 18, 0x7FE0C3, 0.95);
+
+        // Kapsul Tombol [Spasi / Klik]
+        const keyW = 196;
+        const keyH = 42;
+        const keyBg = scene.add.graphics();
+        const drawKeyBg = (active) => {
+          keyBg.clear();
+          keyBg.fillStyle(active ? 0x1E364A : 0x12142E, 0.95);
+          keyBg.fillRoundedRect(-keyW / 2, 54 - keyH / 2, keyW, keyH, 21);
+          keyBg.lineStyle(2, active ? 0x7FE0C3 : 0x3F486E, active ? 0.95 : 0.65);
+          keyBg.strokeRoundedRect(-keyW / 2, 54 - keyH / 2, keyW, keyH, 21);
+        };
+        drawKeyBg(false);
+
+        const keyLabel = scene.add.text(0, 54, 'Tahan Spasi', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '800',
+          color: '#FFFFFF'
+        }).setOrigin(0.5).setResolution(2);
+
+        const statusNote = scene.add.text(0, 102, 'Tarik Napas', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '700',
+          color: JEDA.CFG.COLOR.hex.calm
+        }).setOrigin(0.5).setResolution(2);
+
+        previewContainer.add([orbGlow, orbInner, orbCore, keyBg, keyLabel, statusNote]);
+
+        // Tween napas siklus peraga
+        const breathTween = scene.tweens.add({
+          targets: [orbGlow, orbInner, orbCore],
+          scaleX: 1.45,
+          scaleY: 1.45,
+          duration: 2200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+          onYoyo: () => {
+            drawKeyBg(false);
+            keyLabel.setText('Lepas Spasi');
+            keyLabel.setColor('#CBD5E1');
+            statusNote.setText('Hembuskan');
+            statusNote.setColor('#94A3B8');
+          },
+          onRepeat: () => {
+            drawKeyBg(true);
+            keyLabel.setText('Tahan Spasi');
+            keyLabel.setColor('#FFFFFF');
+            statusNote.setText('Tarik Napas');
+            statusNote.setColor(JEDA.CFG.COLOR.hex.calm);
+          }
+        });
+        drawKeyBg(true);
+        animTweens.push(breathTween);
+
+      } else if (animType === 'l2') {
+        // --- Animasi Level 2: Pikiran Mengapung & Ditembak Menjadi Awan Lembut ---
+        const thoughtCloud = scene.add.container(0, -42);
+        const cloudBg = scene.add.graphics();
+        const drawCloud = (isClear) => {
+          cloudBg.clear();
+          if (isClear) {
+            cloudBg.fillStyle(0x7FE0C3, 0.45);
+            cloudBg.fillCircle(-24, 0, 24);
+            cloudBg.fillCircle(24, 0, 24);
+            cloudBg.fillCircle(0, -10, 28);
+            cloudBg.lineStyle(2, 0xA7F3D0, 0.85);
+            cloudBg.strokeCircle(0, -10, 28);
+          } else {
+            cloudBg.fillStyle(0x3B2856, 0.95);
+            cloudBg.fillRoundedRect(-76, -26, 152, 52, 26);
+            cloudBg.lineStyle(2, 0x8154B8, 0.75);
+            cloudBg.strokeRoundedRect(-76, -26, 152, 52, 26);
+          }
+        };
+        drawCloud(false);
+
+        const cloudText = scene.add.text(0, 0, 'Pikiran', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '700',
+          color: '#E2E8F0'
+        }).setOrigin(0.5).setResolution(2);
+        thoughtCloud.add([cloudBg, cloudText]);
+
+        // Empat Kapsul Tombol Astronot [1] [2] [3] [4]
+        const astroCapsules = [];
+        const btnXs = [-72, -24, 24, 72];
+        for (let i = 0; i < 4; i++) {
+          const capG = scene.add.graphics();
+          capG.fillStyle(i === 0 ? 0x1E3B46 : 0x141838, 0.95);
+          capG.fillRoundedRect(btnXs[i] - 18, 54 - 18, 36, 36, 12);
+          capG.lineStyle(1.5, i === 0 ? 0x7FE0C3 : 0x3F486E, 0.8);
+          capG.strokeRoundedRect(btnXs[i] - 18, 54 - 18, 36, 36, 12);
+
+          const capT = scene.add.text(btnXs[i], 54, `${i + 1}`, {
+            fontFamily: JEDA.CFG.FONT.family,
+            fontSize: '27px',
+            fontStyle: '800',
+            color: i === 0 ? '#7FE0C3' : '#94A3B8'
+          }).setOrigin(0.5).setResolution(2);
+          astroCapsules.push(capG, capT);
+        }
+
+        const infoNote = scene.add.text(0, 102, 'Pilih Astronot → Tembak', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '600',
+          color: '#A7F3D0'
+        }).setOrigin(0.5).setResolution(2);
+
+        previewContainer.add([thoughtCloud, ...astroCapsules, infoNote]);
+
+        // Efek tembak napas berkala
+        const beamG = scene.add.graphics();
+        previewContainer.add(beamG);
+
+        const shootLoop = scene.time.addEvent({
+          delay: 2400,
+          loop: true,
+          callback: () => {
+            // Gambar sinar berkilau
+            beamG.clear();
+            beamG.lineStyle(3, 0x7FE0C3, 0.9);
+            beamG.lineBetween(0, 36, 0, -20);
+
+            scene.tweens.add({
+              targets: thoughtCloud,
+              scaleX: 1.15,
+              scaleY: 1.15,
+              duration: 200,
+              yoyo: true,
+              onComplete: () => {
+                beamG.clear();
+                drawCloud(true);
+                cloudText.setText('Awan Damai');
+                cloudText.setColor('#16163A');
+                infoNote.setText('Menjadi Awan ✨');
+
+                scene.time.delayedCall(1100, () => {
+                  drawCloud(false);
+                  cloudText.setText('Pikiran');
+                  cloudText.setColor('#E2E8F0');
+                  infoNote.setText('Pilih Astronot → Tembak');
+                });
+              }
+            });
+          }
+        });
+        animTimers.push(shootLoop);
+
+      } else if (animType === 'l3') {
+        // --- Animasi Level 3: Empat Kapsul S.T.O.P. Menyala Berurutan ---
+        const stopLetters = ['S', 'T', 'O', 'P'];
+        const stopTitles = ['Stop', 'Tarik Napas', 'Observe', 'Proceed'];
+        const beads = [];
+        const beadRadius = 24;
+        const beadXs = [-84, -28, 28, 84];
+
+        stopLetters.forEach((letter, idx) => {
+          const bg = scene.add.graphics();
+          const drawBead = (active) => {
+            bg.clear();
+            bg.fillStyle(active ? 0x1E3B46 : 0x141838, 0.95);
+            bg.fillCircle(beadXs[idx], -18, beadRadius);
+            bg.lineStyle(2, active ? 0x7FE0C3 : 0x3F486E, active ? 0.95 : 0.65);
+            bg.strokeCircle(beadXs[idx], -18, beadRadius);
+          };
+          drawBead(false);
+
+          const txt = scene.add.text(beadXs[idx], -18, letter, {
+            fontFamily: JEDA.CFG.FONT.family,
+            fontSize: '27px',
+            fontStyle: '800',
+            color: '#94A3B8'
+          }).setOrigin(0.5).setResolution(2);
+
+          beads.push({ bg, txt, draw: drawBead });
+          previewContainer.add([bg, txt]);
+        });
+
+        const stepDesc = scene.add.text(0, 48, 'S: Berhenti Sejenak', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '800',
+          color: '#FFFFFF'
+        }).setOrigin(0.5).setResolution(2);
+
+        const subNote = scene.add.text(0, 96, 'Metode Jeda Sadar', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '600',
+          color: JEDA.CFG.COLOR.hex.calm
+        }).setOrigin(0.5).setResolution(2);
+
+        previewContainer.add([stepDesc, subNote]);
+
+        let stepIndex = 0;
+        const cycleTimer = scene.time.addEvent({
+          delay: 850,
+          loop: true,
+          callback: () => {
+            beads.forEach((b, idx) => {
+              const isActive = idx === stepIndex;
+              b.draw(isActive);
+              b.txt.setColor(isActive ? '#7FE0C3' : '#64748B');
+            });
+            stepDesc.setText(`${stopLetters[stepIndex]}: ${stopTitles[stepIndex]}`);
+            stepIndex = (stepIndex + 1) % 4;
+          }
+        });
+        animTimers.push(cycleTimer);
+
+      } else {
+        // --- Animasi Default / Pembuka (Lentera Zen Pendar Damai) ---
+        const lanternGlow = scene.add.circle(0, -28, 48, 0x7FE0C3, 0.25);
+        const lanternBase = scene.add.graphics();
+        lanternBase.fillStyle(0x1F2A48, 0.95);
+        lanternBase.fillRoundedRect(-32, -8, 64, 42, 14);
+        lanternBase.lineStyle(2, 0x7FE0C3, 0.85);
+        lanternBase.strokeRoundedRect(-32, -8, 64, 42, 14);
+
+        const flame = scene.add.circle(0, -32, 18, 0x7FE0C3, 0.95);
+
+        const animTw = scene.tweens.add({
+          targets: [lanternGlow, flame],
+          scaleX: 1.25,
+          scaleY: 1.25,
+          alpha: 0.75,
+          duration: 1600,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+        animTweens.push(animTw);
+
+        const caption = scene.add.text(0, 62, 'Penjaga Lentera', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '800',
+          color: '#FFFFFF'
+        }).setOrigin(0.5).setResolution(2);
+
+        const subCaption = scene.add.text(0, 102, 'Latihan Berhenti Sejenak', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '600',
+          color: JEDA.CFG.COLOR.hex.calm
+        }).setOrigin(0.5).setResolution(2);
+
+        previewContainer.add([lanternGlow, lanternBase, flame, caption, subCaption]);
+      }
+    };
+
+    // Jalankan peragaan awal
+    renderMicroAnimation(options.type || (isMultiPage ? 'intro' : 'l1'));
+
+    // 5. Kolom Kanan: Langkah / Konten Teks
+    const colRightX = cx + 152;
+    const contentRightContainer = scene.add.container(colRightX, cy + 18);
+    modalContainer.add(contentRightContainer);
+
+    // Kapsul Tombol Bawah (Mulai di Kanan, Lewati di Kiri)
+    const btnY = cy + cardH / 2 - 68;
+    const btnW = 280;
+    const btnH = 88;
+    const btnRadius = 44; // Kapsul sesuai Prinsip 6
+
+    const btnLeft = this.createButton(scene, cx - 156, btnY, btnW, btnH, 'Lewati', () => {
+      closeCard();
+    }, { primary: false, radius: btnRadius, fontSize: 33 });
+
+    let btnRight = null;
+
+    // Render Konten Kolom Kanan
+    const renderRightColumn = () => {
+      // Bersihkan isi kanan
+      contentRightContainer.removeAll(true);
+
+      if (btnRight) {
+        btnRight.destroy();
+        btnRight = null;
+      }
+
+      if (isMultiPage) {
+        // --- Mode Multi-Halaman (Pembuka 3 Halaman) ---
+        const curPage = options.pages[currentPageIndex] || {};
+
+        // Judul Halaman
+        const pageTitle = scene.add.text(0, -84, curPage.pageTitle || `Langkah ${currentPageIndex + 1}`, {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '33px',
+          fontStyle: '800',
+          color: '#FFFFFF',
+          align: 'center'
+        }).setOrigin(0.5).setResolution(2);
+
+        // Teks Halaman (Persis PRD 15.2, dijamin <= 14 kata atau teks resmi)
+        const pageText = scene.add.text(0, -10, curPage.text || '', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '600',
+          color: '#CBD5E1',
+          align: 'center',
+          wordWrap: { width: 510 },
+          lineSpacing: 8
+        }).setOrigin(0.5).setResolution(2);
+
+        // Kapsul Aksen Kategori Halaman
+        const badgeLabel = curPage.badge || (currentPageIndex === 0 ? 'Fokus Utama' : (currentPageIndex === 1 ? '3 Level Tersedia' : 'Ruang Bebas Tekanan'));
+        const badgeW = 260;
+        const badgeH = 40;
+        const bBg = scene.add.graphics();
+        bBg.fillStyle(0x1A224A, 0.92);
+        bBg.fillRoundedRect(-badgeW / 2, 60 - badgeH / 2, badgeW, badgeH, 20);
+        bBg.lineStyle(1.5, 0x485888, 0.7);
+        bBg.strokeRoundedRect(-badgeW / 2, 60 - badgeH / 2, badgeW, badgeH, 20);
+
+        const bText = scene.add.text(0, 60, badgeLabel, {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '700',
+          color: JEDA.CFG.COLOR.hex.calm
+        }).setOrigin(0.5).setResolution(2);
+
+        // Titik Indikator Pagination (3 halaman)
+        const dotContainer = scene.add.container(0, 114);
+        const dotSpacing = 24;
+        const startDotX = -((totalPages - 1) * dotSpacing) / 2;
+        for (let i = 0; i < totalPages; i++) {
+          const dx = startDotX + i * dotSpacing;
+          const isActive = i === currentPageIndex;
+          const dot = scene.add.circle(dx, 0, isActive ? 7 : 5, isActive ? 0x7FE0C3 : 0x3F486E, isActive ? 1.0 : 0.6);
+          dotContainer.add(dot);
+        }
+
+        contentRightContainer.add([pageTitle, pageText, bBg, bText, dotContainer]);
+
+        // Tombol Kanan: 'Lanjut →' jika masih ada halaman, 'Mulai' jika halaman terakhir
+        const isLastPage = currentPageIndex === totalPages - 1;
+        const rightLabel = isLastPage ? 'Mulai' : 'Lanjut →';
+
+        btnRight = this.createButton(scene, cx + 156, btnY, btnW, btnH, rightLabel, () => {
+          if (isLastPage) {
+            closeCard();
+          } else {
+            currentPageIndex++;
+            renderRightColumn();
+          }
+        }, { primary: true, radius: btnRadius, fontSize: 33 });
+        modalContainer.add(btnRight);
+
+      } else {
+        // --- Mode 3 Langkah (Level 1, 2, 3) ---
+        const steps = options.steps || [];
+        const stepCount = Math.min(steps.length, 3);
+        const rowYs = stepCount === 2 ? [-44, 52] : [-76, 8, 92];
+
+        for (let i = 0; i < stepCount; i++) {
+          const st = steps[i];
+          const ry = rowYs[i];
+          const rowContainer = scene.add.container(0, ry);
+
+          // 1. Badge Angka Langkah (Bulat 38 px)
+          const badgeX = -236;
+          const numBg = scene.add.graphics();
+          numBg.fillStyle(0x1B234A, 0.95);
+          numBg.fillCircle(badgeX, 0, 19);
+          numBg.lineStyle(2, 0x7FE0C3, 0.85);
+          numBg.strokeCircle(badgeX, 0, 19);
+
+          const numTxt = scene.add.text(badgeX, 0, `${st.num || (i + 1)}`, {
+            fontFamily: JEDA.CFG.FONT.family,
+            fontSize: '27px',
+            fontStyle: '800',
+            color: '#FFFFFF'
+          }).setOrigin(0.5).setResolution(2);
+
+          // 2. Teks Langkah (Maks 14 kata, persis tabel 15.2, font 27 px)
+          const textX = -198;
+          const stTxt = scene.add.text(textX, 0, st.text, {
+            fontFamily: JEDA.CFG.FONT.family,
+            fontSize: '27px',
+            fontStyle: '600',
+            color: '#F1F5F9',
+            wordWrap: { width: 446 },
+            lineSpacing: 4
+          }).setOrigin(0, 0.5).setResolution(2);
+
+          rowContainer.add([numBg, numTxt, stTxt]);
+          contentRightContainer.add(rowContainer);
+        }
+
+        // Tombol Kanan: 'Mulai'
+        btnRight = this.createButton(scene, cx + 156, btnY, btnW, btnH, 'Mulai', () => {
+          closeCard();
+        }, { primary: true, radius: btnRadius, fontSize: 33 });
+        modalContainer.add(btnRight);
+      }
+    };
+
+    renderRightColumn();
+    modalContainer.add(btnLeft);
+
+    // Animasi kemunculan lembut modal
+    modalContainer.setAlpha(0);
+    modalContainer.setScale(0.96);
+    scene.tweens.add({
+      targets: modalContainer,
+      alpha: 1,
+      scaleX: 1.0,
+      scaleY: 1.0,
+      duration: 220,
+      ease: 'Sine.easeOut'
+    });
+
+    return modalContainer;
   }
 };

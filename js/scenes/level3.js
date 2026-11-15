@@ -49,6 +49,14 @@ class Level3Scene extends Phaser.Scene {
     if (JEDA.Guard && JEDA.Guard.startIdleMonitor) {
       JEDA.Guard.startIdleMonitor(this);
     }
+
+    // 7. Tampilkan kartu petunjuk otomatis saat pertama kali dibuka (PRD 15.2 & BR-15)
+    this.isHelpOpen = false;
+    if (!JEDA.State.hasSeen('l3')) {
+      this.time.delayedCall(350, () => {
+        this.showHelpModal();
+      });
+    }
   }
 
   /**
@@ -75,14 +83,21 @@ class Level3Scene extends Phaser.Scene {
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    // Kanan: Kapsul status skenario (rata margin kanan 1800 px)
-    const rightX = (Layout.W - Layout.M) - btnW / 2;
-    const scContainer = this.add.container(rightX, headerY);
+    // Kanan: Tombol Bantuan (?) dan Kapsul status skenario (rata margin kanan 1800 px)
+    const helpBtnSize = 48;
+    const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1800 - 24 = 1776
+    this.helpButton = JEDA.UI.createButton(this, helpBtnX, headerY, helpBtnSize, helpBtnSize, '?', () => {
+      this.showHelpModal();
+    }, { fontSize: 27, radius: 24 });
+
+    const scW = 200;
+    const scX = helpBtnX - helpBtnSize / 2 - 16 - scW / 2; // 1752 - 16 - 100 = 1636
+    const scContainer = this.add.container(scX, headerY);
     const scBg = this.add.graphics();
     scBg.fillStyle(0x181A3C, 0.95);
-    scBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 24);
+    scBg.fillRoundedRect(-scW / 2, -btnH / 2, scW, btnH, 24);
     scBg.lineStyle(2, 0x485278, 0.65);
-    scBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 24);
+    scBg.strokeRoundedRect(-scW / 2, -btnH / 2, scW, btnH, 24);
 
     this.stepCounterText = this.add.text(0, 0, 'Skenario 1 dari 3', {
       fontFamily: JEDA.CFG.FONT.family,
@@ -91,6 +106,26 @@ class Level3Scene extends Phaser.Scene {
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
     scContainer.add([scBg, this.stepCounterText]);
+  }
+
+  /**
+   * Menampilkan kartu petunjuk Level 3 (PRD 15.2 & BR-15).
+   */
+  showHelpModal() {
+    this.isHelpOpen = true;
+    JEDA.UI.helpCard(this, {
+      type: 'l3',
+      title: 'Petunjuk Level 3: Jeda S.T.O.P.',
+      steps: [
+        { num: 1, text: 'Pilih Langsung bereaksi atau Jeda dengan STOP.', key: 'Pilihan Reaksi' },
+        { num: 2, text: 'STOP: Berhenti, Tarik napas, Observe emosimu, Proceed dengan respons terbaik.', key: 'Metode S.T.O.P.' }
+      ],
+      keys: ['S', 'T', 'O', 'P'],
+      onDone: () => {
+        this.isHelpOpen = false;
+        JEDA.State.markSeen('l3');
+      }
+    });
   }
 
   /**

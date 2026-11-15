@@ -66,6 +66,7 @@ class Level2Scene extends Phaser.Scene {
 
     // 5. Input Safety - BR-05 (Anti Panik Klik)
     this.input.on('pointerdown', () => {
+      if (this.isHelpOpen) return;
       if (JEDA.Guard && JEDA.Guard.recordPointerDown) {
         JEDA.Guard.recordPointerDown(this, () => {
           if (JEDA.Lumi) {
@@ -95,6 +96,14 @@ class Level2Scene extends Phaser.Scene {
       });
       this.time.delayedCall(700, () => {
         if (!this.isFinished) JEDA.Lumi.say('l2_intro');
+      });
+    }
+
+    // 9. Tampilkan kartu petunjuk otomatis saat pertama kali dibuka (PRD 15.2 & BR-15)
+    this.isHelpOpen = false;
+    if (!JEDA.State.hasSeen('l2')) {
+      this.time.delayedCall(350, () => {
+        this.showHelpModal();
       });
     }
 
@@ -166,20 +175,50 @@ class Level2Scene extends Phaser.Scene {
       color: '#CBD5E1'
     }).setOrigin(0.5).setResolution(2);
 
-    // Indikator Kemajuan di Kanan (rata margin kanan 1800 px)
-    const rightX = (Layout.W - Layout.M) - btnW / 2;
+    // Indikator Kemajuan dan Tombol Bantuan (?) di Kanan (rata margin kanan 1800 px)
+    const helpBtnSize = 48;
+    const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1800 - 24 = 1776
+    this.helpButton = JEDA.UI.createButton(this, helpBtnX, headerY, helpBtnSize, helpBtnSize, '?', () => {
+      this.showHelpModal();
+    }, { fontSize: 27, radius: 24 });
+
+    const counterW = 180;
+    const counterX = helpBtnX - helpBtnSize / 2 - 16 - counterW / 2; // 1752 - 16 - 90 = 1646
     const counterBg = this.add.graphics();
     counterBg.fillStyle(0x181A3C, 0.95);
-    counterBg.fillRoundedRect(rightX - btnW / 2, headerY - btnH / 2, btnW, btnH, 24);
+    counterBg.fillRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
     counterBg.lineStyle(2, 0x485278, 0.65);
-    counterBg.strokeRoundedRect(rightX - btnW / 2, headerY - btnH / 2, btnW, btnH, 24);
+    counterBg.strokeRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
 
-    this.counterText = this.add.text(rightX, headerY, `Selesai: 0/10`, {
+    this.counterText = this.add.text(counterX, headerY, `Selesai: 0/10`, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
+  }
+
+  /**
+   * Menampilkan kartu petunjuk Level 2 (PRD 15.2 & BR-15).
+   */
+  showHelpModal() {
+    this.isHelpOpen = true;
+    if (this.spawnTimer) this.spawnTimer.paused = true;
+    JEDA.UI.helpCard(this, {
+      type: 'l2',
+      title: 'Petunjuk Level 2: Awan Pikiran',
+      steps: [
+        { num: 1, text: 'Pilih astronot dengan tombol 1 sampai 4 atau klik potretnya.', key: 'Tombol 1 - 4' },
+        { num: 2, text: 'Arahkan ke monster pikiran, tahan untuk mengisi napas, lepas untuk menembak.', key: 'Tahan & Lepas' },
+        { num: 3, text: 'Astronot yang tepat mengubah monster menjadi awan.', key: 'Ubah ke Awan' }
+      ],
+      keys: ['1', '2', '3', '4', 'Arahkan & Lepas'],
+      onDone: () => {
+        this.isHelpOpen = false;
+        if (this.spawnTimer) this.spawnTimer.paused = false;
+        JEDA.State.markSeen('l2');
+      }
+    });
   }
 
   /**

@@ -38,7 +38,11 @@ JEDA.State = {
       stars: { l1: 0, l2: 0, l3: 0 },
       fails: { l1: 0, l2: 0, l3: 0 },
       easy: { l1: false, l2: false, l3: false },
-      settings: { reduceMotion: false, sound: false },
+      settings: {
+        reduceMotion: false,
+        sound: false,
+        seen: { intro: false, l1: false, l2: false, l3: false }
+      },
       runs: { date: today, count: 0 },
       consentHeavy: false, // True jika pemain memilih 'Latihan napas ringan' di modal peduli
       badges: [],          // PRD 14.2: Daftar lencana positif yang diraih
@@ -71,9 +75,23 @@ JEDA.State = {
         throw new Error('Skema data tidak valid');
       }
 
-      // Pastikan semua properti wajib ada, termasuk migrasi kolom badges & skin untuk data lama (PRD 14.2 & BR-14)
+      // Pastikan semua properti wajib ada, termasuk migrasi kolom badges, skin, dan settings.seen (PRD 14.2, 15.2 & BR-14)
       const defaults = this.getDefaultData();
-      const needsMigration = !Array.isArray(parsed.badges) || typeof parsed.skin !== 'string';
+      const needsMigration = !Array.isArray(parsed.badges) ||
+                             typeof parsed.skin !== 'string' ||
+                             !parsed.settings ||
+                             !parsed.settings.seen;
+
+      const defaultSeen = { intro: false, l1: false, l2: false, l3: false };
+      const currentSettings = parsed.settings || {};
+      const mergedSettings = {
+        reduceMotion: Boolean(currentSettings.reduceMotion),
+        sound: Boolean(currentSettings.sound),
+        seen: {
+          ...defaultSeen,
+          ...(typeof currentSettings.seen === 'object' && currentSettings.seen ? currentSettings.seen : {})
+        }
+      };
 
       this.data = {
         ...defaults,
@@ -82,7 +100,7 @@ JEDA.State = {
         stars: { ...defaults.stars, ...(parsed.stars || {}) },
         fails: { ...defaults.fails, ...(parsed.fails || {}) },
         easy: { ...defaults.easy, ...(parsed.easy || {}) },
-        settings: { ...defaults.settings, ...(parsed.settings || {}) },
+        settings: mergedSettings,
         runs: { ...defaults.runs, ...(parsed.runs || {}) },
         badges: Array.isArray(parsed.badges) ? parsed.badges : [],
         skin: (typeof parsed.skin === 'string' && parsed.skin) ? parsed.skin : 'embun'
@@ -125,6 +143,30 @@ JEDA.State = {
       return true;
     }
     return false;
+  },
+
+  /**
+   * Memeriksa apakah kartu petunjuk tertentu sudah pernah dilihat (BR-15).
+   * @param {string} key - 'intro' | 'l1' | 'l2' | 'l3'
+   * @returns {boolean}
+   */
+  hasSeen(key) {
+    if (!this.data || !this.data.settings || !this.data.settings.seen) return false;
+    return Boolean(this.data.settings.seen[key]);
+  },
+
+  /**
+   * Menandai kartu petunjuk tertentu sudah dilihat dan menyimpannya ke state (BR-15).
+   * @param {string} key - 'intro' | 'l1' | 'l2' | 'l3'
+   */
+  markSeen(key) {
+    if (!this.data) return;
+    if (!this.data.settings) this.data.settings = {};
+    if (!this.data.settings.seen) {
+      this.data.settings.seen = { intro: false, l1: false, l2: false, l3: false };
+    }
+    this.data.settings.seen[key] = true;
+    this.save();
   },
 
   /**
