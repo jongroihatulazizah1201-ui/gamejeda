@@ -55,9 +55,9 @@ JEDA.FX = {
       }
     }
 
-    // 3. Lapisan vinyet gelap di sudut layar (alpha 0.20 pada 3D, 0.35 pada 2D)
+    // 3. Lapisan vinyet gelap (bila 3D aktif, vinyet ditangani CSS layar penuh agar tidak ada garis batas 16:9)
     const vignette = scene.add.image(W / 2, H / 2, 'vignette')
-      .setAlpha(is3D ? 0.20 : 0.35)
+      .setAlpha(is3D ? 0 : 0.35)
       .setDepth(-80);
 
     return { bg, dustGroup, vignette };

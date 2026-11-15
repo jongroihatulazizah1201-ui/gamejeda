@@ -74,20 +74,20 @@ JEDA.Stage3D = (function() {
   let timeScale = 1.0;
   let reduceMotion = false;
 
-  // Kamera & Parallax (Preset Sesuai PRD Bagian 13.3)
+  // Kamera & Parallax (Preset Sesuai PRD Bagian 13.3 - Komposisi Simetris)
   const CAMERA_PRESETS = {
-    menu:   { x: 0,   y: 0.6,  z: 21.5, lookX: 0,   lookY: -0.4, lookZ: 0 },
+    menu:   { x: 0,   y: 0.2,  z: 22.0, lookX: 0,   lookY: -0.8, lookZ: 0 },
     l1:     { x: 0,   y: 0.0,  z: 11.2, lookX: 0,   lookY: 0.0,  lookZ: 0 },
     l2:     { x: 3.5, y: 2.2,  z: 15.0, lookX: 1.5, lookY: 2.5,  lookZ: -2 },
-    l3:     { x: 0,   y: -0.6, z: 16.5, lookX: 0,   lookY: -1.5, lookZ: 0 },
-    result: { x: 0,   y: 2.2,  z: 24.0, lookX: 0,   lookY: -0.8, lookZ: 0 }
+    l3:     { x: 0,   y: -1.0, z: 17.0, lookX: 0,   lookY: -2.0, lookZ: 0 },
+    result: { x: 0,   y: 1.6,  z: 24.5, lookX: 0,   lookY: -1.0, lookZ: 0 }
   };
-  let currentCamPos = { x: 0, y: 0.6, z: 21.5 };
-  let targetCamPos = { x: 0, y: 0.6, z: 21.5 };
-  let currentLookAt = { x: 0, y: -0.4, z: 0 };
-  let targetLookAt = { x: 0, y: -0.4, z: 0 };
-  let currentOrbPos = { x: 0, y: 3.6, z: -1.0 };
-  let targetOrbPos = { x: 0, y: 3.6, z: -1.0 };
+  let currentCamPos = { x: 0, y: 0.2, z: 22.0 };
+  let targetCamPos = { x: 0, y: 0.2, z: 22.0 };
+  let currentLookAt = { x: 0, y: -0.8, z: 0 };
+  let targetLookAt = { x: 0, y: -0.8, z: 0 };
+  let currentOrbPos = { x: 0, y: 4.2, z: -1.0 };
+  let targetOrbPos = { x: 0, y: 4.2, z: -1.0 };
   let mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
   let currentMode = 'menu';
 
@@ -279,47 +279,53 @@ JEDA.Stage3D = (function() {
   }
 
   /**
-   * Membangun 8 awan low poly dari IcosahedronGeometry (flatShading) sesuai PRD 13.3.
+   * Membangun formasi awan low poly organik yang membingkai langit secara simetris (PRD 13.3).
    */
   function buildClouds() {
     clouds = [];
     const cloudMat = new THREE.MeshPhongMaterial({
-      color: 0xF2F5F8,
+      color: 0xF4F7FA,
       flatShading: true,
-      shininess: 10,
+      shininess: 8,
       transparent: true,
-      opacity: 0.85
+      opacity: 0.82
     });
 
-    // 8 formasi awan di berbagai kedalaman dan ketinggian
+    // 8 formasi awan yang membingkai langit kiri & kanan (tengah terbuka bersih untuk orb bulan)
     const cloudConfigs = [
-      { x: -14, y: 5.5, z: -10, scale: 1.4, speed: 0.55 },
-      { x:  -6, y: 7.2, z: -15, scale: 1.8, speed: 0.40 },
-      { x:   4, y: 6.0, z: -12, scale: 1.5, speed: 0.50 },
-      { x:  12, y: 7.8, z: -18, scale: 2.1, speed: 0.35 },
-      { x: -18, y: 3.5, z:  -8, scale: 1.2, speed: 0.65 },
-      { x:  -2, y: 4.2, z:  -6, scale: 1.1, speed: 0.70 },
-      { x:   8, y: 4.8, z:  -9, scale: 1.3, speed: 0.60 },
-      { x:  16, y: 3.8, z:  -7, scale: 1.0, speed: 0.75 }
+      // Sisi Kiri Langit
+      { x: -16, y: 5.2, z: -12, scale: 1.5, speed: 0.45 },
+      { x: -10, y: 6.8, z: -16, scale: 1.7, speed: 0.35 },
+      { x:  -8, y: 3.8, z: -10, scale: 1.2, speed: 0.55 },
+      { x: -18, y: 4.2, z:  -8, scale: 1.1, speed: 0.65 },
+      // Sisi Kanan Langit (Simetris & Seimbang)
+      { x:  16, y: 5.2, z: -12, scale: 1.5, speed: 0.45 },
+      { x:  10, y: 6.8, z: -16, scale: 1.7, speed: 0.35 },
+      { x:   8, y: 3.8, z: -10, scale: 1.2, speed: 0.55 },
+      { x:  18, y: 4.2, z:  -8, scale: 1.1, speed: 0.65 }
     ];
 
     cloudConfigs.forEach((cfg, idx) => {
       const group = new THREE.Group();
-      const puffCount = 3 + (idx % 3);
 
-      for (let p = 0; p < puffCount; p++) {
-        const radius = (0.7 + Math.random() * 0.5) * cfg.scale;
-        const geo = new THREE.IcosahedronGeometry(radius, 0);
-        const mesh = new THREE.Mesh(geo, cloudMat);
+      // Struktur awan berundak lembut (Dodecahedron low-poly)
+      const mainRadius = 0.9 * cfg.scale;
+      const mainGeo = new THREE.DodecahedronGeometry(mainRadius, 0);
+      const mainMesh = new THREE.Mesh(mainGeo, cloudMat);
+      group.add(mainMesh);
 
-        mesh.position.set(
-          (p - puffCount / 2) * 0.9 * cfg.scale + (Math.random() - 0.5) * 0.4,
-          (Math.random() - 0.5) * 0.5 * cfg.scale,
-          (Math.random() - 0.5) * 0.6 * cfg.scale
-        );
-        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-        group.add(mesh);
-      }
+      const flankOffsets = [
+        { x: -0.75 * cfg.scale, y: -0.15 * cfg.scale, z:  0.2 * cfg.scale, r: 0.65 },
+        { x:  0.75 * cfg.scale, y: -0.10 * cfg.scale, z: -0.2 * cfg.scale, r: 0.65 },
+        { x: -0.25 * cfg.scale, y:  0.35 * cfg.scale, z: -0.1 * cfg.scale, r: 0.55 },
+        { x:  0.25 * cfg.scale, y: -0.20 * cfg.scale, z:  0.25 * cfg.scale, r: 0.50 }
+      ];
+      flankOffsets.forEach(fo => {
+        const pGeo = new THREE.DodecahedronGeometry(fo.r * cfg.scale, 0);
+        const pMesh = new THREE.Mesh(pGeo, cloudMat);
+        pMesh.position.set(fo.x, fo.y, fo.z);
+        group.add(pMesh);
+      });
 
       group.position.set(cfg.x, cfg.y, cfg.z);
       scene.add(group);
@@ -329,13 +335,13 @@ JEDA.Stage3D = (function() {
         baseY: cfg.y,
         speed: cfg.speed,
         phase: idx * 0.8,
-        bobSpeed: 0.5 + Math.random() * 0.5
+        bobSpeed: 0.45 + (idx % 3) * 0.15
       });
     });
   }
 
   /**
-   * Membangun taman 3 pulau melayang dengan lentera bersinar (Fase 3D-2).
+   * Membangun taman 3 pulau melayang dengan simetri sempurna dan lentera bersinar (Fase 3D-2).
    */
   function buildLanternIslands() {
     islands = [];
@@ -345,11 +351,11 @@ JEDA.Stage3D = (function() {
     const woodMat = new THREE.MeshPhongMaterial({ color: 0x2A2338, shininess: 5 });
     const haloTex = createGlowTexture(false);
 
-    // Konfigurasi 3 pulau terapung
+    // Konfigurasi 3 pulau terapung yang 100% simetris & seimbang
     const islandConfigs = [
-      { x: -6.5, y: -4.8, z: -2.0, radius: 2.4, height: 3.2, phase: 0.0 },  // Kiri (Level 1)
-      { x:  0.0, y: -5.4, z: -0.5, radius: 2.8, height: 3.6, phase: 1.8 },  // Tengah (Level 2)
-      { x:  6.5, y: -4.6, z: -2.5, radius: 2.3, height: 3.0, phase: 3.4 }   // Kanan (Level 3)
+      { x: -7.0, y: -6.4, z: -2.0, radius: 2.5, height: 3.4, phase: 0.0, side: -1 },  // Kiri (Level 1)
+      { x:  0.0, y: -5.8, z: -0.8, radius: 2.9, height: 3.8, phase: 1.5, side: 0 },   // Tengah (Level 2)
+      { x:  7.0, y: -6.4, z: -2.0, radius: 2.5, height: 3.4, phase: 3.0, side: 1 }   // Kanan (Level 3)
     ];
 
     islandConfigs.forEach((cfg, idx) => {
@@ -368,19 +374,20 @@ JEDA.Stage3D = (function() {
       topMesh.position.y = 0.2;
       islandGroup.add(topMesh);
 
-      // 3. Batuan hiasan di atas pulau
+      // 3. Batuan hiasan di atas pulau (diletakkan simetris di sisi luar)
       const rockGeo = new THREE.IcosahedronGeometry(0.35, 0);
       const rockMesh = new THREE.Mesh(rockGeo, rockMat);
-      rockMesh.position.set(-cfg.radius * 0.45, 0.45, cfg.radius * 0.3);
+      const rockX = cfg.side === 0 ? -cfg.radius * 0.45 : (cfg.side * cfg.radius * 0.45);
+      rockMesh.position.set(rockX, 0.45, cfg.radius * 0.2);
       islandGroup.add(rockMesh);
 
-      // 4. Tiang Lentera Kayu
+      // 4. Tiang Lentera Kayu (berdiri tegak di pusat pulau x=0, z=0)
       const poleGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.6, 6);
       const poleMesh = new THREE.Mesh(poleGeo, woodMat);
-      poleMesh.position.set(cfg.radius * 0.3, 1.0, -cfg.radius * 0.15);
+      poleMesh.position.set(0, 1.0, 0);
       islandGroup.add(poleMesh);
 
-      // 5. Lentera (Bola Emisif)
+      // 5. Lentera (Bola Emisif tepat di pucuk tiang pusat)
       const bulbGeo = new THREE.SphereGeometry(0.32, 16, 16);
       const bulbMat = new THREE.MeshStandardMaterial({
         color: 0x333333,
@@ -389,12 +396,12 @@ JEDA.Stage3D = (function() {
         roughness: 0.3
       });
       const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
-      bulbMesh.position.set(cfg.radius * 0.3, 1.8, -cfg.radius * 0.15);
+      bulbMesh.position.set(0, 1.8, 0);
       islandGroup.add(bulbMesh);
 
       // 6. PointLight di dalam lentera
       const bulbLight = new THREE.PointLight(0xF4D06F, 0.0, 14);
-      bulbLight.position.set(cfg.radius * 0.3, 1.8, -cfg.radius * 0.15);
+      bulbLight.position.set(0, 1.8, 0);
       islandGroup.add(bulbLight);
 
       // 7. Halo aditif lentera
@@ -407,7 +414,7 @@ JEDA.Stage3D = (function() {
         depthWrite: false
       });
       const lanternHalo = new THREE.Sprite(haloMatLantern);
-      lanternHalo.position.set(cfg.radius * 0.3, 1.8, -cfg.radius * 0.15);
+      lanternHalo.position.set(0, 1.8, 0);
       lanternHalo.scale.set(3.2, 3.2, 1.0);
       islandGroup.add(lanternHalo);
 
@@ -449,7 +456,7 @@ JEDA.Stage3D = (function() {
     });
     const beam = new THREE.Mesh(geo, mat);
     const pos = island.group.position;
-    beam.position.set(pos.x + 0.7, pos.y + 1.8, pos.z - 0.3);
+    beam.position.set(pos.x, pos.y + 2.0, pos.z);
     scene.add(beam);
 
     lanternBeams.push({
@@ -882,7 +889,7 @@ JEDA.Stage3D = (function() {
       targetLookAt = { x: preset.lookX, y: preset.lookY, z: preset.lookZ };
 
       if (mode === 'menu') {
-        targetOrbPos = { x: 0, y: 3.6, z: -1.0 }; // Melayang anggun di langit atas, tidak menabrak kartu checkin
+        targetOrbPos = { x: 0, y: 4.2, z: -1.0 }; // Melayang anggun di langit atas, simetris dan lapang
         targetBreathScale = 0.55;
         if (orbLight) orbLight.intensity = 0.7;
         if (haloMat) haloMat.opacity = 0.25;
@@ -906,7 +913,7 @@ JEDA.Stage3D = (function() {
         if (haloMat) haloMat.opacity = 0.15;
         if (particlesMesh && particlesMesh.material) particlesMesh.material.opacity = 0.25;
       } else if (mode === 'result') {
-        targetOrbPos = { x: 0, y: 3.6, z: -1.0 }; // Menerangi seluruh taman lentera
+        targetOrbPos = { x: 0, y: 4.0, z: -1.0 }; // Menerangi seluruh taman lentera secara simetris
         targetBreathScale = 0.7;
         if (orbLight) orbLight.intensity = 1.0;
         if (haloMat) haloMat.opacity = 0.4;

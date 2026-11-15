@@ -27,9 +27,9 @@ class BootScene extends Phaser.Scene {
       this.createFloatingDust();
     }
 
-    // 4. Tampilkan lapisan vinyet gelap di tepi layar (alpha 0.35)
+    // 4. Tampilkan lapisan vinyet gelap di tepi layar (bila 3D aktif, vinyet ditangani CSS layar penuh)
     this.vignette = this.add.image(W / 2, H / 2, 'vignette')
-      .setAlpha(0.35);
+      .setAlpha(is3D ? 0 : 0.35);
 
     // 5. Tampilkan judul JEDA dan subjudul di atas latar
     this.showTitle();
@@ -144,36 +144,61 @@ class BootScene extends Phaser.Scene {
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2;
 
-    // Posisi teks berada di bawah orb napas 3D agar tidak tabrakan (Prinsip UI/UX)
-    this.titleText = this.add.text(cx, cy + 85, 'JEDA', {
+    // Posisi teks tepat di tengah ruang langit (bebas tabrakan dari orb di atas dan pulau di bawah)
+    this.titleText = this.add.text(cx, cy - 65, 'JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: JEDA.CFG.FONT.title + 'px',
+      fontSize: '76px',
       fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.text
+      color: '#FFFFFF',
+      shadow: { offsetX: 0, offsetY: 3, blur: 14, color: 'rgba(5, 5, 20, 0.9)', fill: true }
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
-    this.subtitleText = this.add.text(cx, cy + 155, 'Latihan berhenti sejenak', {
+    this.subtitleText = this.add.text(cx, cy + 10, 'Latihan berhenti sejenak', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: JEDA.CFG.FONT.body + 'px',
+      fontSize: '28px',
       fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.muted
+      color: '#CBD5E1',
+      shadow: { offsetX: 0, offsetY: 2, blur: 10, color: 'rgba(5, 5, 20, 0.85)', fill: true }
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
-    this.hintText = this.add.text(cx, cy + 215, 'Klik di mana saja untuk melanjutkan', {
+    // Kapsul petunjuk interaksi (frosted pill beraksen tenang)
+    this.hintContainer = this.add.container(cx, cy + 85).setAlpha(0);
+    const pillW = 380;
+    const pillH = 48;
+    const pillBg = this.add.graphics();
+    pillBg.fillStyle(0x141738, 0.92);
+    pillBg.fillRoundedRect(-pillW / 2, -pillH / 2, pillW, pillH, 24);
+    pillBg.lineStyle(2, 0x7FE0C3, 0.7);
+    pillBg.strokeRoundedRect(-pillW / 2, -pillH / 2, pillW, pillH, 24);
+
+    const hintText = this.add.text(0, 0, 'Klik di mana saja untuk melanjutkan', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '16px',
-      fontStyle: '400',
-      color: '#94A3B8'
-    }).setOrigin(0.5).setResolution(2).setAlpha(0);
+      fontSize: '18px',
+      fontStyle: '700',
+      color: '#FFFFFF'
+    }).setOrigin(0.5).setResolution(2);
 
-    // Animasi kemunculan lembut
+    this.hintContainer.add([pillBg, hintText]);
+
+    // Animasi kemunculan cepat dan tegas
     this.tweens.add({
-      targets: [this.titleText, this.subtitleText, this.hintText],
+      targets: [this.titleText, this.subtitleText, this.hintContainer],
       alpha: 1,
       y: '-=12',
-      duration: 800,
-      ease: 'Sine.easeInOut',
-      stagger: 180
+      duration: 500,
+      ease: 'Sine.easeOut',
+      stagger: 120,
+      onComplete: () => {
+        // Denyut halus pada kapsul petunjuk
+        this.tweens.add({
+          targets: this.hintContainer,
+          alpha: { from: 1, to: 0.65 },
+          yoyo: true,
+          repeat: -1,
+          duration: 1200,
+          ease: 'Sine.easeInOut'
+        });
+      }
     });
   }
 }

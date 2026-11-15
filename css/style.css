@@ -64,6 +64,16 @@ html, body {
   display: block;
 }
 
+/* Lapisan vinyet halus menyeluruh (100vw x 100vh) tanpa batas garis 16:9 */
+#stage3d::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 50%, rgba(10, 12, 30, 0.30) 80%, rgba(5, 5, 18, 0.70) 100%);
+  z-index: 1;
+}
+
 /* Induk Phaser 2D di lapisan atas transparan */
 #game-container {
   position: relative;
