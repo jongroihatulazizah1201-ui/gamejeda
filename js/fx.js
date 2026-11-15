@@ -91,26 +91,56 @@ JEDA.FX = {
   },
 
   /**
+   * Mengambil warna numerik heksadesimal dari skin aktif (PRD Bagian 14.2 G5).
+   * @param {string|null} skinId - ID skin opsional, atau baca dari JEDA.State.data.skin
+   * @returns {number}
+   */
+  getSkinColor(skinId = null) {
+    const id = skinId || (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
+    const skins = (window.JEDA && JEDA.CFG && JEDA.CFG.SKINS) || {};
+    if (skins[id]) {
+      return skins[id].color;
+    }
+    return (window.JEDA && JEDA.CFG && JEDA.CFG.COLOR && JEDA.CFG.COLOR.calm) || 0x7FE0C3;
+  },
+
+  /**
+   * Pembuat orb napas dinamis berdasarkan skin aktif (PRD Bagian 14.2 G5 / Fase G-4).
+   * Kontrak resmi JEDA.FX.orb sesuai PRD 14.2.
+   * @param {Phaser.Scene} scene
+   * @param {number} x
+   * @param {number} y
+   * @param {number} radius
+   * @param {number|null} colorHex
+   * @returns {Phaser.GameObjects.Container}
+   */
+  orb(scene, x, y, radius = 90, colorHex = null) {
+    const color = colorHex !== null ? colorHex : this.getSkinColor();
+    return this.createOrb(scene, x, y, radius, color);
+  },
+
+  /**
    * Membuat orb napas 3 lapis bertumpuk (inti, cincin dalam, cincin luar) dengan blend ADD.
    * @param {Phaser.Scene} scene
    * @param {number} x
    * @param {number} y
    * @param {number} radius
-   * @param {number} colorHex
+   * @param {number|null} colorHex
    */
-  createOrb(scene, x, y, radius = 90, colorHex = JEDA.CFG.COLOR.calm) {
+  createOrb(scene, x, y, radius = 90, colorHex = null) {
+    const color = colorHex !== null ? colorHex : this.getSkinColor();
     const container = scene.add.container(x, y);
 
     // Cincin luar (alpha lembut 0.15)
-    const outerRing = scene.add.circle(0, 0, radius * 1.5, colorHex, 0.15)
+    const outerRing = scene.add.circle(0, 0, radius * 1.5, color, 0.15)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     // Cincin dalam (alpha sedang 0.35)
-    const innerRing = scene.add.circle(0, 0, radius * 1.15, colorHex, 0.35)
+    const innerRing = scene.add.circle(0, 0, radius * 1.15, color, 0.35)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     // Inti orb (alpha terang 0.85)
-    const core = scene.add.circle(0, 0, radius * 0.75, colorHex, 0.85)
+    const core = scene.add.circle(0, 0, radius * 0.75, color, 0.85)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     container.add([outerRing, innerRing, core]);

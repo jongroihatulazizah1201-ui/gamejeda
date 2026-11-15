@@ -886,6 +886,9 @@ JEDA.Stage3D = (function() {
         isRunning = true;
         animFrameId = requestAnimationFrame(animate);
 
+        const savedSkin = (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
+        this.setSkin(savedSkin);
+
         console.log('[Stage3D] Panggung 3D Three.js r128 berhasil diinisialisasi.');
         return true;
       } catch (err) {
@@ -1112,6 +1115,42 @@ JEDA.Stage3D = (function() {
       l.targetLight = 2.4;    // 50% lebih terang dari normal (1.6)
       l.targetHaloOpacity = 1.0;
       spawnLanternBeam(isl);
+    },
+
+    /**
+     * Mengganti palet warna Orb Napas sesuai skin aktif (PRD Bagian 14.2 G5 / Fase G-4).
+     * @param {string} skinId - 'embun' | 'fajar' | 'aurora'
+     */
+    setSkin(skinId) {
+      if (!skinId) return;
+      const skins = (window.JEDA && JEDA.CFG && JEDA.CFG.SKINS) || {};
+      const skin = skins[skinId] || skins.embun;
+      if (!skin) return;
+
+      const skinColor = new THREE.Color(skin.color);
+      COLORS.good.copy(skinColor);
+
+      // Perbarui target warna dan warna aktif seketika
+      targetColor.copy(skinColor);
+      if (currentColor) {
+        currentColor.copy(skinColor);
+      }
+
+      if (orbShaderMat && orbShaderMat.uniforms && orbShaderMat.uniforms.color) {
+        orbShaderMat.uniforms.color.value.copy(skinColor);
+      }
+      if (orbLight) {
+        orbLight.color.copy(skinColor);
+      }
+      if (haloMat) {
+        haloMat.color.copy(skinColor);
+      }
+      if (pulseRingMesh && pulseRingMesh.material) {
+        pulseRingMesh.material.color.copy(skinColor);
+      }
+      if (particlesMesh && particlesMesh.material) {
+        particlesMesh.material.color.copy(skinColor);
+      }
     },
 
     /**

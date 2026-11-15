@@ -185,17 +185,18 @@ class Level1Scene extends Phaser.Scene {
   createGlowingOrb(cx, cy) {
     this.orbContainer = this.add.container(cx, cy);
     const baseR = 85;
+    const skinColor = (window.JEDA && JEDA.FX && JEDA.FX.getSkinColor) ? JEDA.FX.getSkinColor() : JEDA.CFG.COLOR.calm;
 
     // Cincin Luar (alpha 0.15)
-    this.outerRing = this.add.circle(0, 0, baseR * 1.85, JEDA.CFG.COLOR.calm, 0.15)
+    this.outerRing = this.add.circle(0, 0, baseR * 1.85, skinColor, 0.15)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     // Cincin Dalam (alpha 0.35)
-    this.innerRing = this.add.circle(0, 0, baseR * 1.35, JEDA.CFG.COLOR.calm, 0.35)
+    this.innerRing = this.add.circle(0, 0, baseR * 1.35, skinColor, 0.35)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     // Inti Orb (alpha 0.85)
-    this.coreCircle = this.add.circle(0, 0, baseR * 0.85, JEDA.CFG.COLOR.calm, 0.85)
+    this.coreCircle = this.add.circle(0, 0, baseR * 0.85, skinColor, 0.85)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.orbContainer.add([this.outerRing, this.innerRing, this.coreCircle]);
@@ -745,7 +746,7 @@ class Level1Scene extends Phaser.Scene {
 
   flashOrbOff() {
     const offColor = JEDA.CFG.COLOR.off;
-    const calmColor = JEDA.CFG.COLOR.calm;
+    const skinColor = (window.JEDA && JEDA.FX && JEDA.FX.getSkinColor) ? JEDA.FX.getSkinColor() : JEDA.CFG.COLOR.calm;
 
     this.outerRing.setFillStyle(offColor, 0.35);
     this.innerRing.setFillStyle(offColor, 0.6);
@@ -753,9 +754,9 @@ class Level1Scene extends Phaser.Scene {
 
     this.time.delayedCall(500, () => {
       if (this.outerRing && this.innerRing && this.coreCircle) {
-        this.outerRing.setFillStyle(calmColor, 0.15);
-        this.innerRing.setFillStyle(calmColor, 0.35);
-        this.coreCircle.setFillStyle(calmColor, 0.85);
+        this.outerRing.setFillStyle(skinColor, 0.15);
+        this.innerRing.setFillStyle(skinColor, 0.35);
+        this.coreCircle.setFillStyle(skinColor, 0.85);
       }
     });
   }

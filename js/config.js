@@ -86,5 +86,37 @@ JEDA.CFG = {
     subtitle: 42,
     body: 33,
     caption: 27
+  },
+
+  // 3 Skin Orb Mindfulness (PRD Bagian 14.2 G5 / Fase G-4)
+  // Syarat total bintang: Embun (0), Fajar (3), Aurora (6)
+  SKINS: {
+    embun: {
+      id: 'embun',
+      name: 'Embun',
+      reqStars: 0,
+      color: 0x7FE0C3,
+      hex: '#7FE0C3',
+      glow: 0xA7F3D0,
+      desc: 'Bawaan: Ketenangan embun jernih'
+    },
+    fajar: {
+      id: 'fajar',
+      name: 'Fajar',
+      reqStars: 3,
+      color: 0xFFD27A,
+      hex: '#FFD27A',
+      glow: 0xFDE68A,
+      desc: 'Terbuka di 3 bintang: Kehangatan fajar keemasan'
+    },
+    aurora: {
+      id: 'aurora',
+      name: 'Aurora',
+      reqStars: 6,
+      color: 0xA78BFA,
+      hex: '#A78BFA',
+      glow: 0xE9D5FF,
+      desc: 'Terbuka di 6 bintang: Lembayung mistis aurora malam'
+    }
   }
 };

@@ -128,6 +128,41 @@ JEDA.State = {
   },
 
   /**
+   * Menghitung total bintang yang telah diraih di seluruh level (maksimal 9).
+   * @returns {number}
+   */
+  getTotalStars() {
+    if (!this.data || !this.data.stars) return 0;
+    const s = this.data.stars;
+    return (s.l1 || 0) + (s.l2 || 0) + (s.l3 || 0);
+  },
+
+  /**
+   * Mengatur skin orb yang aktif jika syarat bintang terpenuhi (PRD 14.2 G5).
+   * @param {string} skinId - 'embun' | 'fajar' | 'aurora'
+   * @returns {boolean} true jika skin berhasil diterapkan
+   */
+  setSkin(skinId) {
+    if (!this.data) return false;
+    const skins = (window.JEDA && JEDA.CFG && JEDA.CFG.SKINS) || {};
+    const skin = skins[skinId];
+    if (!skin) return false;
+
+    const totalStars = this.getTotalStars();
+    if (totalStars < skin.reqStars) {
+      return false;
+    }
+
+    this.data.skin = skinId;
+    this.save();
+
+    if (window.JEDA && JEDA.Stage3D && JEDA.Stage3D.setSkin) {
+      JEDA.Stage3D.setSkin(skinId);
+    }
+    return true;
+  },
+
+  /**
    * Menyimpan data saat ini ke localStorage.
    */
   save() {
