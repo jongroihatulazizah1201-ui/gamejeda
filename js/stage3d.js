@@ -1004,6 +1004,7 @@ JEDA.Stage3D = (function() {
 
   /**
    * Mengonversi koordinat layar 1920x1080 ke koordinat dunia 3D pada bidang Z = targetZ.
+   * Menggunakan kamera tetap pada mode 'l2' (PRD Bagian 15.4).
    * @param {number} screenX - Koordinat horizontal layar (0 s.d. 1920)
    * @param {number} screenY - Koordinat vertikal layar (0 s.d. 1080)
    * @param {number} targetZ - Kedalaman bidang Z (default: 0)
@@ -1011,6 +1012,15 @@ JEDA.Stage3D = (function() {
    */
   function screenToWorld(screenX, screenY, targetZ = 0) {
     if (!camera) return new THREE.Vector3(0, 0, targetZ);
+
+    // Pada mode L2, pastikan kamera tepat terkunci pada preset tetap L2 (0, 0, 16.0) looking at (0, 0, 0)
+    if (currentMode === 'l2') {
+      const p = CAMERA_PRESETS.l2;
+      camera.position.set(p.x, p.y, p.z);
+      camera.lookAt(p.lookX, p.lookY, p.lookZ);
+      camera.updateMatrixWorld(true);
+    }
+
     const ndcX = (screenX / 1920) * 2 - 1;
     const ndcY = -(screenY / 1080) * 2 + 1;
     const vec = new THREE.Vector3(ndcX, ndcY, 0.5);
@@ -1034,6 +1044,14 @@ JEDA.Stage3D = (function() {
    */
   function worldToScreen(worldVec) {
     if (!camera) return { x: 960, y: 540 };
+
+    if (currentMode === 'l2') {
+      const p = CAMERA_PRESETS.l2;
+      camera.position.set(p.x, p.y, p.z);
+      camera.lookAt(p.lookX, p.lookY, p.lookZ);
+      camera.updateMatrixWorld(true);
+    }
+
     const p = worldVec.clone().project(camera);
     return {
       x: (p.x * 0.5 + 0.5) * 1920,
@@ -1242,7 +1260,10 @@ JEDA.Stage3D = (function() {
     const muzzleGeo = new THREE.CylinderGeometry(0.05, 0.06, 0.22, 10);
     muzzleGeo.rotateX(Math.PI * 0.5);
     const muzzle = new THREE.Mesh(muzzleGeo, stripMat);
-    muzzle.position.set(0, 0.85, 0.18);
+    // Konversi posisi moncong dari layar lewat screenToWorld (astronot sy: 855, moncong sy: 855 - 60)
+    const astCenterWPos = screenToWorld(cfg.sx, cfg.sy, 0);
+    const muzzleWPos = screenToWorld(cfg.sx, cfg.sy - 60, 0.18);
+    muzzle.position.set(0, muzzleWPos.y - astCenterWPos.y, 0.18);
     group.add(muzzle);
 
     // 8. Cincin cahaya seleksi di bawah kaki
@@ -1256,7 +1277,8 @@ JEDA.Stage3D = (function() {
     });
     const selRing = new THREE.Mesh(selGeo, selMat);
     selRing.rotation.x = -Math.PI * 0.5;
-    selRing.position.y = -0.90;
+    const footWPos = screenToWorld(cfg.sx, cfg.sy + 65, 0);
+    selRing.position.y = footWPos.y - astCenterWPos.y;
     group.add(selRing);
 
     group.userData = {
@@ -1356,9 +1378,12 @@ JEDA.Stage3D = (function() {
 
     // 5. Label Teks Pikiran (Plat tetap 400x104 px di layar, jarak 8 px di bawah badan monster)
     const labelSprite = createThoughtSprite(thought);
-    // Offset vertikal tepat 8 px di bawah badan monster:
-    // my = slotPos.y - 48, label center = slotPos.y + 60 -> selisih -108 px di layar = -1.492 di dunia
-    labelSprite.position.set(0, -1.492, 0.05);
+    // Posisi dihitung murni lewat screenToWorld tanpa koordinat dunia manual:
+    // Badan monster di slotPos.y - 48 px, pusat plat label di slotPos.y + 60 px
+    const bodyWPos = screenToWorld(slotPos.x, slotPos.y - 48, 0);
+    const labelWPos = screenToWorld(slotPos.x, slotPos.y + 60, 0.05);
+    const labelOffsetY = labelWPos.y - bodyWPos.y;
+    labelSprite.position.set(0, labelOffsetY, 0.05);
     group.add(labelSprite);
 
     group.userData = {
@@ -1569,12 +1594,16 @@ JEDA.Stage3D = (function() {
     // Arahkan astronot menghadap target
     aimL2Astronaut(astronautIndex, monsterItem.slotPos.x, monsterItem.slotPos.y);
 
-    // Posisi moncong astronot dalam koordinat dunia 3D
-    const rotZ = astronaut.rotation.z;
-    const muzzleOffset = new THREE.Vector3(-Math.sin(rotZ) * 0.85, Math.cos(rotZ) * 0.85, 0.18);
-    const startPos = astronaut.position.clone().add(muzzleOffset);
+    // Ambil posisi moncong astronot di dunia 3D langsung dari matriks hierarki Three.js
+    astronaut.updateMatrixWorld(true);
+    const startPos = new THREE.Vector3();
+    if (astronaut.userData && astronaut.userData.muzzle) {
+      astronaut.userData.muzzle.getWorldPosition(startPos);
+    } else {
+      startPos.copy(astronaut.position);
+    }
 
-    // Target pusat monster
+    // Target pusat monster (ditentukan dari screenToWorld)
     const targetPos = monsterItem.mesh.position.clone();
 
     // Sinar proyektil laser silinder tipis
@@ -1683,6 +1712,73 @@ JEDA.Stage3D = (function() {
   }
 
   /**
+   * Efek tembakan salah memantul (ricochet / deflection) tanpa hukuman (PRD Bagian 15.4 / Poin 8).
+   */
+  function spawnL2MissEffects(pos) {
+    // 1. Percikan pantulan merah-jingga lembut ke arah atas
+    const PART_COUNT = 8;
+    const partGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(PART_COUNT * 3);
+    const vels = [];
+
+    for (let p = 0; p < PART_COUNT; p++) {
+      positions[p * 3]     = pos.x;
+      positions[p * 3 + 1] = pos.y;
+      positions[p * 3 + 2] = pos.z;
+
+      const angle = (Math.random() - 0.5) * Math.PI * 0.6;
+      const spd = 2.0 + Math.random() * 2.0;
+      vels.push({
+        vx: Math.sin(angle) * spd,
+        vy: Math.abs(Math.cos(angle)) * spd + 1.2, // Memantul ke atas
+        vz: (Math.random() - 0.5) * 1.5
+      });
+    }
+    partGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const partMat = new THREE.PointsMaterial({
+      color: 0xFFA07A,
+      size: 0.18,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const sparksMesh = new THREE.Points(partGeo, partMat);
+    l2EffectsGroup.add(sparksMesh);
+
+    l2Sparks.push({
+      mesh: sparksMesh,
+      vels: vels,
+      age: 0.0,
+      maxAge: 0.45
+    });
+
+    // 2. Kilas sinar pantul memantul ke samping-atas
+    const bounceGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 6);
+    bounceGeo.rotateX(Math.PI * 0.5);
+    const bounceMat = new THREE.MeshBasicMaterial({
+      color: 0xFFA07A,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const bounceMesh = new THREE.Mesh(bounceGeo, bounceMat);
+    bounceMesh.position.copy(pos);
+    bounceMesh.rotation.z = (Math.random() > 0.5 ? 1 : -1) * 0.85;
+    l2EffectsGroup.add(bounceMesh);
+
+    l2ActiveBeams.push({
+      mesh: bounceMesh,
+      start: pos.clone(),
+      target: new THREE.Vector3(pos.x + (Math.random() > 0.5 ? 2.5 : -2.5), pos.y + 3.2, pos.z),
+      progress: 0.0,
+      duration: 0.28,
+      isBounce: true
+    });
+  }
+
+  /**
    * Membersihkan seluruh elemen Level 2 dari memori WebGL.
    */
   function clearL2() {
@@ -1755,13 +1851,16 @@ JEDA.Stage3D = (function() {
             ud.isSpawning = false;
           }
         } else {
-          // Goyang kecil: naik-turun 12 px di layar (0.166 unit dunia)
+          // Goyang kecil: naik-turun 12 px di layar dikonversi lewat screenToWorld
           if (!reduceMotion) {
-            const wobbleY = Math.sin(clockTime * 2.2 + ud.phase) * 0.166;
+            const pRef = screenToWorld(960, 540, 0);
+            const p12 = screenToWorld(960, 540 + 12, 0);
+            const world12px = Math.abs(p12.y - pRef.y);
+            const wobbleY = Math.sin(clockTime * 2.2 + ud.phase) * world12px;
             item.mesh.position.y = ud.basePos.y + wobbleY;
 
-            // Miring 4 derajat (0.0698 rad)
-            const tiltZ = Math.sin(clockTime * 1.8 + ud.phase) * 0.0698;
+            // Miring 4 derajat
+            const tiltZ = Math.sin(clockTime * 1.8 + ud.phase) * (4 * Math.PI / 180);
             ud.body.rotation.z = tiltZ;
             ud.body.rotation.y += 0.012 * timeScale;
             ud.bubble.rotation.y -= 0.008 * timeScale;
@@ -1797,6 +1896,24 @@ JEDA.Stage3D = (function() {
     // 3. Pembaruan laser meluncur (0,35 detik durasi)
     for (let b = l2ActiveBeams.length - 1; b >= 0; b--) {
       const beam = l2ActiveBeams[b];
+
+      // Sinar pantul (bounce / deflection) pada tembakan salah
+      if (beam.isBounce) {
+        beam.progress += (dt / beam.duration) * timeScale;
+        const t = Math.min(1.0, beam.progress);
+        beam.mesh.position.lerpVectors(beam.start, beam.target, t);
+        if (beam.mesh.material) {
+          beam.mesh.material.opacity = Math.max(0.0, (1.0 - t) * 0.85);
+        }
+        if (beam.progress >= 1.0) {
+          l2EffectsGroup.remove(beam.mesh);
+          beam.mesh.geometry.dispose();
+          beam.mesh.material.dispose();
+          l2ActiveBeams.splice(b, 1);
+        }
+        continue;
+      }
+
       beam.progress += (dt / beam.duration) * timeScale;
 
       const t = Math.min(1.0, beam.progress);
@@ -1818,6 +1935,7 @@ JEDA.Stage3D = (function() {
           } else {
             targetMonster.userData.shake = 0.40;
             targetMonster.userData.hasFailed = true;
+            spawnL2MissEffects(targetMonster.mesh.position);
           }
 
           if (typeof beam.onResult === 'function') {
@@ -2250,34 +2368,49 @@ JEDA.Stage3D = (function() {
     }
 
     // 13. Interpolasi Kamera (Preset Mode + Parallax Mouse + Target LookAt + Panik Offset)
-    const parallaxTargetX = reduceMotion ? 0 : mouse.targetX * 0.3;
-    const parallaxTargetY = reduceMotion ? 0 : mouse.targetY * 0.2;
-    mouse.x += (parallaxTargetX - mouse.x) * 0.05;
-    mouse.y += (parallaxTargetY - mouse.y) * 0.05;
+    if (currentMode === 'l2') {
+      // Kamera TETAP di mode 'l2': posisi (0, 0, 16.0) dan lookAt (0, 0, 0) terkunci presisi tanpa lag atau parallax
+      currentCamPos.x = CAMERA_PRESETS.l2.x;
+      currentCamPos.y = CAMERA_PRESETS.l2.y;
+      currentCamPos.z = CAMERA_PRESETS.l2.z;
+      currentLookAt.x = CAMERA_PRESETS.l2.lookX;
+      currentLookAt.y = CAMERA_PRESETS.l2.lookY;
+      currentLookAt.z = CAMERA_PRESETS.l2.lookZ;
+      mouse.x = 0;
+      mouse.y = 0;
 
-    currentCamPos.x += (targetCamPos.x - currentCamPos.x) * 0.045;
-    currentCamPos.y += (targetCamPos.y - currentCamPos.y) * 0.045;
-    currentCamPos.z += (targetCamPos.z - currentCamPos.z) * 0.045;
+      camera.position.set(currentCamPos.x, currentCamPos.y, currentCamPos.z);
+      camera.lookAt(currentLookAt.x, currentLookAt.y, currentLookAt.z);
+    } else {
+      const parallaxTargetX = reduceMotion ? 0 : mouse.targetX * 0.3;
+      const parallaxTargetY = reduceMotion ? 0 : mouse.targetY * 0.2;
+      mouse.x += (parallaxTargetX - mouse.x) * 0.05;
+      mouse.y += (parallaxTargetY - mouse.y) * 0.05;
 
-    currentLookAt.x += (targetLookAt.x - currentLookAt.x) * 0.045;
-    currentLookAt.y += (targetLookAt.y - currentLookAt.y) * 0.045;
-    currentLookAt.z += (targetLookAt.z - currentLookAt.z) * 0.045;
+      currentCamPos.x += (targetCamPos.x - currentCamPos.x) * 0.045;
+      currentCamPos.y += (targetCamPos.y - currentCamPos.y) * 0.045;
+      currentCamPos.z += (targetCamPos.z - currentCamPos.z) * 0.045;
 
-    const effCamZ = currentCamPos.z + panicCamOffset;
-    const cosOrb = Math.cos(celebrateOrbitAngle);
-    const sinOrb = Math.sin(celebrateOrbitAngle);
+      currentLookAt.x += (targetLookAt.x - currentLookAt.x) * 0.045;
+      currentLookAt.y += (targetLookAt.y - currentLookAt.y) * 0.045;
+      currentLookAt.z += (targetLookAt.z - currentLookAt.z) * 0.045;
+
+      const effCamZ = currentCamPos.z + panicCamOffset;
+      const cosOrb = Math.cos(celebrateOrbitAngle);
+      const sinOrb = Math.sin(celebrateOrbitAngle);
+
+      camera.position.set(
+        (currentCamPos.x + mouse.x) * cosOrb - effCamZ * sinOrb * 0.15,
+        currentCamPos.y + mouse.y,
+        effCamZ * cosOrb + (currentCamPos.x + mouse.x) * sinOrb * 0.15
+      );
+      camera.lookAt(currentLookAt.x, currentLookAt.y, currentLookAt.z);
+    }
 
     // 12b. Pembaruan Sub-panggung Level 2 Misi Astronot (Prompt R-5)
     if (l2Group && l2Group.visible) {
       updateL2(dt, timeScale);
     }
-
-    camera.position.set(
-      (currentCamPos.x + mouse.x) * cosOrb - effCamZ * sinOrb * 0.15,
-      currentCamPos.y + mouse.y,
-      effCamZ * cosOrb + (currentCamPos.x + mouse.x) * sinOrb * 0.15
-    );
-    camera.lookAt(currentLookAt.x, currentLookAt.y, currentLookAt.z);
 
     renderer.render(scene, camera);
   }
@@ -2489,6 +2622,10 @@ JEDA.Stage3D = (function() {
       targetCamPos = { x: preset.x, y: preset.y, z: preset.z };
       targetLookAt = { x: preset.lookX, y: preset.lookY, z: preset.lookZ };
 
+      // Pulihkan visibilitas elemen utama secara default
+      if (orbGroup) orbGroup.visible = true;
+      if (islands) islands.forEach(isl => { isl.visible = true; });
+
       if (mode === 'menu') {
         targetOrbPos = { x: 0, y: 8.5, z: -4.0 }; // Melayang anggun tinggi di langit sebagai bulan lembut yang tenang
         targetBreathScale = 0.40;
@@ -2505,11 +2642,35 @@ JEDA.Stage3D = (function() {
           if (particlesMesh.material) particlesMesh.material.opacity = 0.85;
         }
       } else if (mode === 'l2') {
+        // Kamera TETAP di mode 'l2': posisi (0, 0, 16.0) dan lookAt (0, 0, 0) terkunci seketika
+        currentCamPos = { x: preset.x, y: preset.y, z: preset.z };
+        targetCamPos = { x: preset.x, y: preset.y, z: preset.z };
+        currentLookAt = { x: preset.lookX, y: preset.lookY, z: preset.lookZ };
+        targetLookAt = { x: preset.lookX, y: preset.lookY, z: preset.lookZ };
+        mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+        if (camera) {
+          camera.position.set(preset.x, preset.y, preset.z);
+          camera.lookAt(preset.lookX, preset.lookY, preset.lookZ);
+          camera.updateMatrixWorld(true);
+        }
+
+        // Posisikan / refresh keempat astronot dengan kamera L2 tetap lewat screenToWorld
+        if (l2Astronauts && l2Astronauts.length > 0) {
+          l2Astronauts.forEach(a => {
+            const cfg = a.userData.cfg;
+            const wPos = screenToWorld(cfg.sx, cfg.sy, 0);
+            a.position.copy(wPos);
+            a.userData.basePos = wPos.clone();
+          });
+        }
+
         targetOrbPos = { x: 3.5, y: 6.0, z: -5.0 }; // Tenang melayang di kejauhan langit
         targetBreathScale = 0.45;
         if (orbLight) orbLight.intensity = 0.4;
         if (haloMat) haloMat.opacity = 0.12;
         if (particlesMesh) particlesMesh.visible = false;
+        if (orbGroup) orbGroup.visible = false;
+        if (islands) islands.forEach(isl => { isl.visible = false; });
       } else if (mode === 'l3') {
         targetOrbPos = { x: 0, y: 4.5, z: -3.0 }; // Di atas taman kepulauan lentera
         targetBreathScale = 0.45;
@@ -2840,6 +3001,12 @@ JEDA.Stage3D = (function() {
     },
 
     /**
+     * Konversi koordinat layar 1920x1080 ke koordinat dunia 3D (kamera tetap di mode 'l2').
+     */
+    screenToWorld: screenToWorld,
+    worldToScreen: worldToScreen,
+
+    /**
      * API Khusus Sub-panggung Level 2: Misi Astronot (PRD Bagian 15.4)
      */
     l2: {
@@ -2852,6 +3019,8 @@ JEDA.Stage3D = (function() {
       clear: clearL2,
       getMonsters: () => l2Monsters,
       getMonsterScreenPos: getL2MonsterScreenPos,
+      screenToWorld: screenToWorld,
+      worldToScreen: worldToScreen,
       isReady: () => !!(active && l2Group)
     },
     pick: pickL2Monster,
