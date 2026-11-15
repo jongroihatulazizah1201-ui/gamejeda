@@ -98,7 +98,7 @@ JEDA.CFG = {
       color: 0x7FE0C3,
       hex: '#7FE0C3',
       glow: 0xA7F3D0,
-      desc: 'Bawaan: Ketenangan embun jernih'
+      desc: 'Bawaan: Ketenangan embun jernih & langit senja syahdu'
     },
     fajar: {
       id: 'fajar',
@@ -107,7 +107,7 @@ JEDA.CFG = {
       color: 0xFFD27A,
       hex: '#FFD27A',
       glow: 0xFDE68A,
-      desc: 'Terbuka di 3 bintang: Kehangatan fajar keemasan'
+      desc: 'Terbuka di 3 bintang: Kehangatan fajar & langit merah keemasan'
     },
     aurora: {
       id: 'aurora',
@@ -116,7 +116,7 @@ JEDA.CFG = {
       color: 0xA78BFA,
       hex: '#A78BFA',
       glow: 0xE9D5FF,
-      desc: 'Terbuka di 6 bintang: Lembayung mistis aurora malam'
+      desc: 'Terbuka di 6 bintang: Lembayung mistis aurora & langit kutub zamrud'
     }
   }
 };
