@@ -1,0 +1,753 @@
+/**
+ * JEDA - Level2Scene (js/scenes/level2.js)
+ * Layar 3: Awan Pikiran (Melabeli Pikiran)
+ * Fitur Utama:
+ * - 10 gelembung pikiran muncul bertahap (maks 4 di layar sekaligus)
+ * - 4 keranjang label awan: Cemas, Rencana, Menilai Diri, Kenangan
+ * - Seret dan lepas (drag & drop) dengan animasi awan putih saat benar
+ * - Getaran dan petunjuk khusus saat salah memasukkan kategori
+ * - Deteksi penumpukan 4 gelembung > 8 detik memicu Mini Napas
+ * - BR-05: Pengawasan panik klik lewat guard.js (hanya mengurangi komponen Tenang)
+ * - Perhitungan skor menggunakan fungsi murni JEDA.Score.calcL2
+ */
+class Level2Scene extends Phaser.Scene {
+  constructor() {
+    super({ key: 'Level2Scene' });
+  }
+
+  create() {
+    const W = JEDA.CFG.W;
+    const H = JEDA.CFG.H;
+    const cx = W / 2;
+
+    // State permainan
+    this.totalThoughts = 10;
+    this.maxOnScreen = JEDA.CFG.L2.maxOnScreen || 4;
+    this.resolvedCount = 0;
+    this.firstTryCorrect = 0;
+    this.activeBubbles = [];
+    this.isFinished = false;
+    this.pileUpTimer = 0;
+    this.miniBreathActive = false;
+
+    // Siapkan antrean 10 pikiran teracak tanpa 3 kategori sama berturut-turut
+    this.thoughtQueue = this.getShuffledThoughts(JEDA.DATA.thoughts || []);
+
+    // 1. Latar Belakang & Vinyet
+    JEDA.FX.createBackground(this);
+    this.cameras.main.fadeIn(350);
+
+    // 2. Header & Navigasi
+    this.createHeader(W);
+
+    // 3. Empat Keranjang Awan di Bagian Bawah
+    this.createBaskets(cx, H - 110);
+
+    // 4. Mulai memunculkan gelembung pertama
+    this.spawnInitialBubbles();
+
+    // 5. Input Safety - BR-05 (Anti Panik Klik)
+    this.input.on('pointerdown', () => {
+      if (JEDA.Guard && JEDA.Guard.recordPointerDown) {
+        JEDA.Guard.recordPointerDown(this, () => {
+          JEDA.UI.showPanicOverlay(this);
+        });
+      }
+    });
+
+    // 6. Pengawas Idle (BR-06)
+    if (JEDA.Guard && JEDA.Guard.startIdleMonitor) {
+      JEDA.Guard.startIdleMonitor(this);
+    }
+  }
+
+  /**
+   * Mengacak urutan 10 pikiran tanpa 3 kategori berurutan sama (PRD Bagian 8.1).
+   */
+  getShuffledThoughts(source) {
+    const list = source.map(item => ({ ...item, hasFailed: false }));
+    for (let attempt = 0; attempt < 50; attempt++) {
+      for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+      let valid = true;
+      for (let i = 0; i < list.length - 2; i++) {
+        if (list[i].category === list[i + 1].category && list[i + 1].category === list[i + 2].category) {
+          valid = false;
+          break;
+        }
+      }
+      if (valid) return list;
+    }
+    return list;
+  }
+
+  /**
+   * Membuat header navigasi dan counter progres.
+   */
+  createHeader(W) {
+    // Tombol Kembali
+    JEDA.UI.createButton(this, 140, 65, 180, 50, '← Menu', () => {
+      JEDA.FX.transitionTo(this, 'CheckinScene');
+    }, { fontSize: 20, radius: 25 });
+
+    // Judul & Subjudul
+    this.add.text(W / 2, 55, 'Level 2: Awan Pikiran', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '32px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.text
+    }).setOrigin(0.5).setResolution(2);
+
+    this.add.text(W / 2, 95, 'Amati pikiran yang melayang, lalu seret ke keranjang yang sesuai', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '20px',
+      fontStyle: '600',
+      color: JEDA.CFG.COLOR.hex.muted
+    }).setOrigin(0.5).setResolution(2);
+
+    // Indikator Kemajuan
+    this.counterText = this.add.text(W - 160, 65, `Terselesaikan: 0/10`, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '22px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.calm
+    }).setOrigin(0.5).setResolution(2);
+  }
+
+  /**
+   * Membuat 4 keranjang label kategori di bagian bawah layar:
+   * Cemas, Rencana, Menilai Diri, Kenangan
+   */
+  createBaskets(cx, y) {
+    this.baskets = [];
+    const categories = [
+      { name: 'Cemas', desc: 'Khawatir masa depan', color: 0xFF8FA3 },
+      { name: 'Rencana', desc: 'Agenda & tindakan', color: 0x7FE0C3 },
+      { name: 'Menilai Diri', desc: 'Kritik & perbandingan', color: 0xFFD27A },
+      { name: 'Kenangan', desc: 'Memori masa lalu', color: 0xB9B5D6 }
+    ];
+
+    const basketW = 380;
+    const basketH = 140;
+    const spacing = 410;
+    const startX = cx - ((categories.length - 1) * spacing) / 2;
+
+    categories.forEach((cat, idx) => {
+      const bx = startX + idx * spacing;
+      const basketContainer = this.add.container(bx, y);
+
+      // Gambar bentuk awan panel
+      const bg = this.add.graphics();
+      this.drawCloudShape(bg, basketW, basketH, cat.color, false);
+
+      const title = this.add.text(0, -18, cat.name, {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '28px',
+        fontStyle: '800',
+        color: JEDA.CFG.COLOR.hex.text
+      }).setOrigin(0.5).setResolution(2);
+
+      const desc = this.add.text(0, 18, cat.desc, {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '18px',
+        fontStyle: '600',
+        color: JEDA.CFG.COLOR.hex.muted
+      }).setOrigin(0.5).setResolution(2);
+
+      // Teks petunjuk saat salah meletakkan pikiran
+      const hintText = this.add.text(0, -basketH / 2 - 40, '', {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '18px',
+        fontStyle: '600',
+        color: JEDA.CFG.COLOR.hex.warn,
+        align: 'center',
+        wordWrap: { width: 360 }
+      }).setOrigin(0.5).setResolution(2).setAlpha(0);
+
+      basketContainer.add([bg, title, desc, hintText]);
+
+      // Buat Drop Zone interaktif
+      const zone = this.add.zone(bx, y, basketW, basketH).setRectangleDropZone(basketW, basketH);
+      zone.category = cat.name;
+      zone.bg = bg;
+      zone.hintText = hintText;
+      zone.basketW = basketW;
+      zone.basketH = basketH;
+      zone.color = cat.color;
+
+      this.baskets.push(zone);
+    });
+
+    // Event interaksi drop zone
+    this.input.on('dragenter', (pointer, gameObject, dropZone) => {
+      if (dropZone && dropZone.bg) {
+        this.drawCloudShape(dropZone.bg, dropZone.basketW, dropZone.basketH, dropZone.color, true);
+      }
+    });
+
+    this.input.on('dragleave', (pointer, gameObject, dropZone) => {
+      if (dropZone && dropZone.bg) {
+        this.drawCloudShape(dropZone.bg, dropZone.basketW, dropZone.basketH, dropZone.color, false);
+      }
+    });
+
+    this.input.on('drop', (pointer, gameObject, dropZone) => {
+      if (dropZone && dropZone.bg) {
+        this.drawCloudShape(dropZone.bg, dropZone.basketW, dropZone.basketH, dropZone.color, false);
+      }
+      this.handleBubbleDrop(gameObject, dropZone);
+    });
+  }
+
+  /**
+   * Menggambar bentuk awan lembut untuk keranjang.
+   */
+  drawCloudShape(graphics, w, h, accentColor, isHovered) {
+    graphics.clear();
+    const fillAlpha = isHovered ? 0.22 : 0.08;
+    const strokeAlpha = isHovered ? 0.8 : 0.25;
+
+    graphics.fillStyle(0x16163A, 0.85);
+    graphics.fillRoundedRect(-w / 2, -h / 2, w, h, 28);
+
+    graphics.fillStyle(accentColor, fillAlpha);
+    graphics.fillRoundedRect(-w / 2, -h / 2, w, h, 28);
+
+    graphics.lineStyle(2, isHovered ? 0xFFFFFF : accentColor, strokeAlpha);
+    graphics.strokeRoundedRect(-w / 2, -h / 2, w, h, 28);
+  }
+
+  /**
+   * Memunculkan gelembung pertama hingga batas maksimum di layar (maks 4).
+   */
+  spawnInitialBubbles() {
+    for (let i = 0; i < 2; i++) {
+      this.spawnNextBubble(i * 1200);
+    }
+  }
+
+  /**
+   * Memunculkan satu gelembung pikiran dari kiri.
+   */
+  spawnNextBubble(delayMs = 0) {
+    if (this.thoughtQueue.length === 0 || this.activeBubbles.length >= this.maxOnScreen || this.isFinished) return;
+
+    this.time.delayedCall(delayMs, () => {
+      if (this.thoughtQueue.length === 0 || this.activeBubbles.length >= this.maxOnScreen || this.isFinished) return;
+
+      const thoughtData = this.thoughtQueue.shift();
+      const bubble = this.createBubble(thoughtData);
+      this.activeBubbles.push(bubble);
+    });
+  }
+
+  /**
+   * Membuat satu objek gelembung pikiran interaktif.
+   */
+  createBubble(thoughtData) {
+    const W = JEDA.CFG.W;
+    const lanes = [200, 340, 480, 620];
+    const laneY = Phaser.Utils.Array.GetRandom(lanes);
+    const startX = -140;
+
+    const container = this.add.container(startX, laneY).setDepth(10);
+    const bubbleW = 280;
+    const bubbleH = 130;
+
+    // Bentuk gelembung kaca oval rounded
+    const bg = this.add.graphics();
+    this.drawBubbleShape(bg, bubbleW, bubbleH, false);
+
+    // Teks pikiran
+    const textObj = this.add.text(0, 0, thoughtData.text, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '20px',
+      fontStyle: '600',
+      color: JEDA.CFG.COLOR.hex.text,
+      align: 'center',
+      wordWrap: { width: bubbleW - 40 }
+    }).setOrigin(0.5).setResolution(2);
+
+    container.add([bg, textObj]);
+    container.setSize(bubbleW, bubbleH);
+    container.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-bubbleW / 2, -bubbleH / 2, bubbleW, bubbleH),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
+    this.input.setDraggable(container);
+
+    // Data gelembung
+    container.thoughtData = thoughtData;
+    container.baseLaneY = laneY;
+    container.bg = bg;
+    container.textObj = textObj;
+    container.isBeingDragged = false;
+
+    // Gerak melayang perlahan dari kiri ke kanan (30-40 detik)
+    this.startDrifting(container, startX, W + 160);
+
+    // Event drag
+    container.on('dragstart', () => {
+      container.isBeingDragged = true;
+      if (container.driftTween) container.driftTween.pause();
+      container.setDepth(200);
+      this.tweens.add({ targets: container, scaleX: 1.08, scaleY: 1.08, duration: 150 });
+    });
+
+    container.on('drag', (pointer, dragX, dragY) => {
+      container.x = dragX;
+      container.y = dragY;
+    });
+
+    container.on('dragend', (pointer, dragX, dragY, dropped) => {
+      container.setDepth(10);
+      this.tweens.add({ targets: container, scaleX: 1.0, scaleY: 1.0, duration: 150 });
+
+      // Jika dilepas di luar keranjang (PRD: "lepas di luar keranjang, gelembung kembali melayang")
+      if (!dropped) {
+        container.isBeingDragged = false;
+        this.tweens.add({
+          targets: container,
+          y: container.baseLaneY,
+          duration: 400,
+          ease: 'Sine.easeOut',
+          onComplete: () => {
+            if (container.active) {
+              this.startDrifting(container, container.x, W + 160);
+            }
+          }
+        });
+      }
+    });
+
+    return container;
+  }
+
+  /**
+   * Menggambar bentuk oval transparan untuk gelembung pikiran.
+   */
+  drawBubbleShape(graphics, w, h, isWhiteCloud = false) {
+    graphics.clear();
+    if (isWhiteCloud) {
+      graphics.fillStyle(0xFFFFFF, 0.95);
+      graphics.fillRoundedRect(-w / 2, -h / 2, w, h, 36);
+      graphics.lineStyle(3, 0xFFFFFF, 1);
+      graphics.strokeRoundedRect(-w / 2, -h / 2, w, h, 36);
+    } else {
+      graphics.fillStyle(0xFFFFFF, 0.09);
+      graphics.fillRoundedRect(-w / 2, -h / 2, w, h, 32);
+      graphics.lineStyle(2, 0xFFFFFF, 0.35);
+      graphics.strokeRoundedRect(-w / 2, -h / 2, w, h, 32);
+    }
+  }
+
+  /**
+   * Menjalankan gerak melayang pelan gelembung dari posisi sekarang ke kanan.
+   */
+  startDrifting(container, fromX, toX) {
+    const W = JEDA.CFG.W;
+    const remainingDistance = Math.max(100, toX - fromX);
+    const speed = 45; // pixel per detik
+    const duration = (remainingDistance / speed) * 1000;
+
+    container.driftTween = this.tweens.add({
+      targets: container,
+      x: toX,
+      duration: duration,
+      ease: 'Linear',
+      onComplete: () => {
+        // Jika sampai di ujung kanan tanpa dikerjakan, putar kembali ke kiri
+        if (container.active && !container.isBeingDragged) {
+          container.x = -140;
+          this.startDrifting(container, -140, W + 160);
+        }
+      }
+    });
+  }
+
+  /**
+   * Evaluasi saat gelembung dijatuhkan ke salah satu keranjang.
+   */
+  handleBubbleDrop(bubble, dropZone) {
+    bubble.isBeingDragged = false;
+    const thought = bubble.thoughtData;
+    const isCorrect = (dropZone.category === thought.category);
+
+    if (isCorrect) {
+      // 1. Catat keberhasilan
+      if (!thought.hasFailed) {
+        this.firstTryCorrect++;
+      }
+      this.resolvedCount++;
+      this.counterText.setText(`Terselesaikan: ${this.resolvedCount}/10`);
+
+      // 2. Animasi BENAR: "gelembung berubah menjadi awan putih dan terangkat ke atas lalu hilang" (PRD 5.3)
+      if (bubble.driftTween) bubble.driftTween.stop();
+      bubble.disableInteractive();
+      this.drawBubbleShape(bubble.bg, bubble.width, bubble.height, true);
+      bubble.textObj.setColor('#16163A');
+
+      this.tweens.add({
+        targets: bubble,
+        y: bubble.y - 180,
+        scaleX: 1.25,
+        scaleY: 1.25,
+        alpha: 0,
+        duration: 700,
+        ease: 'Sine.easeOut',
+        onComplete: () => {
+          this.removeActiveBubble(bubble);
+          bubble.destroy();
+
+          // Munculkan gelembung berikutnya
+          if (this.resolvedCount < this.totalThoughts) {
+            this.spawnNextBubble(800);
+          } else {
+            this.finishLevel();
+          }
+        }
+      });
+    } else {
+      // 3. Animasi SALAH: "gelembung bergetar ringan, keranjang menampilkan petunjuk teks, gelembung kembali" (PRD 5.3)
+      thought.hasFailed = true;
+
+      // Keranjang menampilkan petunjuk
+      this.showBasketHint(dropZone, thought.hint);
+
+      // Gelembung bergetar ringan
+      this.tweens.add({
+        targets: bubble,
+        x: bubble.x - 14,
+        duration: 50,
+        yoyo: true,
+        repeat: 4,
+        ease: 'Sine.easeInOut',
+        onComplete: () => {
+          // Kembalikan ke posisi melayang semula
+          this.tweens.add({
+            targets: bubble,
+            y: bubble.baseLaneY,
+            duration: 400,
+            ease: 'Sine.easeOut',
+            onComplete: () => {
+              if (bubble.active) {
+                this.startDrifting(bubble, bubble.x, JEDA.CFG.W + 160);
+              }
+            }
+          });
+        }
+      });
+    }
+  }
+
+  /**
+   * Menampilkan petunjuk singkat di atas keranjang saat salah meletakkan pikiran.
+   */
+  showBasketHint(dropZone, hintText) {
+    if (!dropZone || !dropZone.hintText) return;
+    dropZone.hintText.setText(hintText);
+    dropZone.hintText.setAlpha(1);
+
+    this.tweens.killTweensOf(dropZone.hintText);
+    this.tweens.add({
+      targets: dropZone.hintText,
+      alpha: 1,
+      y: dropZone.y - dropZone.basketH / 2 - 45,
+      duration: 200,
+      onComplete: () => {
+        this.time.delayedCall(3500, () => {
+          this.tweens.add({
+            targets: dropZone.hintText,
+            alpha: 0,
+            duration: 300
+          });
+        });
+      }
+    });
+  }
+
+  /**
+   * Menghapus referensi gelembung dari daftar aktif.
+   */
+  removeActiveBubble(bubble) {
+    const idx = this.activeBubbles.indexOf(bubble);
+    if (idx !== -1) {
+      this.activeBubbles.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Loop pengawasan: mendeteksi penumpukan 4 gelembung > 8 detik (PRD Bagian 5.3).
+   */
+  update(time, delta) {
+    if (this.isFinished || this.miniBreathActive) return;
+
+    if (this.activeBubbles.length >= 4) {
+      this.pileUpTimer += delta;
+      if (this.pileUpTimer >= (JEDA.CFG.L2.pileUpMs || 8000)) {
+        this.pileUpTimer = 0;
+        this.triggerMiniBreath();
+      }
+    } else {
+      this.pileUpTimer = 0;
+    }
+  }
+
+  /**
+   * Memicu siklus napas mini saat pikiran menumpuk:
+   * "Jika 4 gelembung menumpuk lebih dari 8 detik, muncul ajakan 'Tarik napas sebentar'
+   * dengan satu siklus napas mini (pemain menahan 4 detik lalu melepas)." (PRD 5.3)
+   */
+  triggerMiniBreath() {
+    this.miniBreathActive = true;
+    const W = JEDA.CFG.W;
+    const H = JEDA.CFG.H;
+    const cx = W / 2;
+    const cy = H / 2;
+
+    // Hentikan sementara gerak melayang semua gelembung
+    this.activeBubbles.forEach(b => {
+      if (b.driftTween) b.driftTween.pause();
+    });
+
+    const overlay = this.add.container(0, 0).setDepth(1500);
+
+    const backdrop = this.add.rectangle(cx, cy, W, H, 0x090918, 0.85).setInteractive();
+    overlay.add(backdrop);
+
+    const title = this.add.text(cx, cy - 230, 'Pikiran Mulai Menumpuk', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '38px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.warn
+    }).setOrigin(0.5).setResolution(2);
+
+    const sub = this.add.text(cx, cy - 180, 'Tarik napas sebentar. Tahan tombol selama 4 detik, lalu hembuskan.', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '24px',
+      fontStyle: '600',
+      color: JEDA.CFG.COLOR.hex.text
+    }).setOrigin(0.5).setResolution(2);
+
+    // Orb mini napas
+    const orb = JEDA.FX.createOrb(this, cx, cy + 20, 75, JEDA.CFG.COLOR.calm);
+    overlay.add([title, sub, orb]);
+
+    // Instruksi tombol
+    const hint = this.add.text(cx, cy + 180, 'Tekan & tahan di sini untuk menarik napas...', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '22px',
+      fontStyle: '600',
+      color: JEDA.CFG.COLOR.hex.calm
+    }).setOrigin(0.5).setResolution(2);
+    overlay.add(hint);
+
+    let miniHolding = false;
+    let miniHoldStart = 0;
+    let breathDone = false;
+
+    backdrop.on('pointerdown', () => {
+      if (breathDone) return;
+      miniHolding = true;
+      miniHoldStart = Date.now();
+      hint.setText('Tarik napas perlahan... (Tahan 4 detik)');
+      this.tweens.add({ targets: orb, scaleX: 1.6, scaleY: 1.6, duration: 4000, ease: 'Sine.easeInOut' });
+    });
+
+    backdrop.on('pointerup', () => {
+      if (breathDone || !miniHolding) return;
+      miniHolding = false;
+      const duration = Date.now() - miniHoldStart;
+
+      if (duration >= 3000) {
+        breathDone = true;
+        hint.setText('Hembuskan napas perlahan... Pikiran kembali tenang.');
+        this.tweens.add({
+          targets: orb,
+          scaleX: 1.0,
+          scaleY: 1.0,
+          duration: 3000,
+          ease: 'Sine.easeInOut',
+          onComplete: () => {
+            this.time.delayedCall(800, () => {
+              this.tweens.add({
+                targets: overlay,
+                alpha: 0,
+                duration: 400,
+                onComplete: () => {
+                  overlay.destroy();
+                  this.miniBreathActive = false;
+                  // Lanjutkan kembali gelembung yang dijeda
+                  this.activeBubbles.forEach(b => {
+                    if (b.driftTween) b.driftTween.resume();
+                  });
+                }
+              });
+            });
+          }
+        });
+      } else {
+        hint.setText('Tahan sedikit lebih lama (minimal 4 detik). Coba lagi...');
+        this.tweens.add({ targets: orb, scaleX: 1.0, scaleY: 1.0, duration: 300 });
+      }
+    });
+  }
+
+  /**
+   * Menyelesaikan Level 2 dan menampilkan ringkasan skor.
+   */
+  finishLevel() {
+    if (this.isFinished) return;
+    this.isFinished = true;
+
+    // Kalkulasi skor dengan fungsi murni JEDA.Score.calcL2
+    // Catatan keputusan: Panik klik hanya mengurangi komponen Tenang, tidak memblokir kelulusan
+    const panicHits = (JEDA.State.session && JEDA.State.session.panicHits) || 0;
+    const result = JEDA.Score.calcL2(this.firstTryCorrect, panicHits, 10);
+
+    // Simpan progres jika lulus (skor >= 60)
+    if (result.passed) {
+      JEDA.State.saveLevelScore(2, result.score, result.stars);
+      JEDA.State.data.fails.l2 = 0;
+    } else {
+      JEDA.State.data.fails.l2 = (JEDA.State.data.fails.l2 || 0) + 1;
+    }
+    JEDA.State.session.levelScores.l2 = result.score;
+    JEDA.State.save();
+
+    // Tawaran Mode Ramah jika gagal 3 kali berturut-turut (BR-07)
+    if (!result.passed && JEDA.State.data.fails.l2 >= 3 && !JEDA.State.data.easy.l2) {
+      this.time.delayedCall(600, () => {
+        JEDA.UI.showFriendlyModeOffer(this, 'Level 2: Awan Pikiran', () => {
+          JEDA.State.data.easy.l2 = true;
+          JEDA.State.save();
+          this.scene.restart();
+        });
+      });
+      return;
+    }
+
+    this.time.delayedCall(600, () => {
+      this.showResultSummary(result, panicHits);
+    });
+  }
+
+  /**
+   * Menampilkan panel ringkasan hasil skor Level 2.
+   */
+  showResultSummary(result, panicHits) {
+    const W = JEDA.CFG.W;
+    const H = JEDA.CFG.H;
+    const cx = W / 2;
+    const cy = H / 2;
+
+    const modal = this.add.container(cx, cy).setDepth(2000);
+    const cardW = 920;
+    const cardH = 620;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x16163A, 0.95);
+    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
+    bg.lineStyle(2, result.passed ? JEDA.CFG.COLOR.calm : JEDA.CFG.COLOR.warn, 0.5);
+    bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
+    modal.add(bg);
+
+    const titleStr = result.passed ? 'Level 2 Selesai: Awan Pikiran' : 'Perlu Latihan Lagi';
+    const title = this.add.text(0, -cardH / 2 + 65, titleStr, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '38px',
+      fontStyle: '800',
+      color: result.passed ? JEDA.CFG.COLOR.hex.calm : JEDA.CFG.COLOR.hex.warn
+    }).setOrigin(0.5).setResolution(2);
+
+    const starStr = '★'.repeat(result.stars) + '☆'.repeat(3 - result.stars);
+    const stars = this.add.text(0, -cardH / 2 + 125, starStr, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '44px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.warn
+    }).setOrigin(0.5).setResolution(2);
+
+    // Tiga Komponen Skor
+    const rowY = -cardH / 2 + 220;
+    const compBoxW = 240;
+    const compBoxH = 120;
+    const comps = [
+      { name: 'Akurasi', val: `${result.akurasi}%`, desc: `${this.firstTryCorrect}/10 Tepat Awal` },
+      { name: 'Tenang', val: `${result.tenang}%`, desc: `${panicHits} Panik Klik` },
+      { name: 'Selesai', val: `${result.selesai}%`, desc: '10/10 Terselesaikan' }
+    ];
+
+    comps.forEach((c, idx) => {
+      const bx = (idx - 1) * 270;
+      const bgg = this.add.graphics();
+      bgg.fillStyle(0xFFFFFF, 0.08);
+      bgg.fillRoundedRect(bx - compBoxW / 2, rowY - compBoxH / 2, compBoxW, compBoxH, 16);
+      bgg.lineStyle(1.5, JEDA.CFG.COLOR.panelLine, 0.25);
+      bgg.strokeRoundedRect(bx - compBoxW / 2, rowY - compBoxH / 2, compBoxW, compBoxH, 16);
+
+      const nameT = this.add.text(bx, rowY - 32, c.name, {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '20px',
+        fontStyle: '600',
+        color: JEDA.CFG.COLOR.hex.muted
+      }).setOrigin(0.5).setResolution(2);
+
+      const valT = this.add.text(bx, rowY + 3, c.val, {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '32px',
+        fontStyle: '800',
+        color: JEDA.CFG.COLOR.hex.text
+      }).setOrigin(0.5).setResolution(2);
+
+      const descT = this.add.text(bx, rowY + 36, c.desc, {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '15px',
+        fontStyle: '400',
+        color: JEDA.CFG.COLOR.hex.muted
+      }).setOrigin(0.5).setResolution(2);
+
+      modal.add([bgg, nameT, valT, descT]);
+    });
+
+    const scoreText = this.add.text(0, rowY + 125, `Skor Akhir Level 2: ${result.score}`, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '32px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.text
+    }).setOrigin(0.5).setResolution(2);
+
+    modal.add([title, stars, scoreText]);
+
+    const btnY = cardH / 2 - 80;
+    if (result.passed) {
+      const nextBtn = JEDA.UI.createButton(this, 170, btnY, 280, 60, 'Lanjut ke Level 3', () => {
+        JEDA.FX.transitionTo(this, 'Level3Scene');
+      }, { primary: true, radius: 30 });
+
+      const repeatBtn = JEDA.UI.createButton(this, -170, btnY, 280, 60, 'Ulangi Level 2', () => {
+        this.scene.restart();
+      }, { radius: 30 });
+
+      modal.add([nextBtn, repeatBtn]);
+    } else {
+      const repeatBtn = JEDA.UI.createButton(this, 150, btnY, 260, 60, 'Ulangi Level 2', () => {
+        this.scene.restart();
+      }, { primary: true, radius: 30 });
+
+      const menuBtn = JEDA.UI.createButton(this, -150, btnY, 260, 60, 'Menu Utama', () => {
+        JEDA.FX.transitionTo(this, 'CheckinScene');
+      }, { radius: 30 });
+
+      modal.add([repeatBtn, menuBtn]);
+    }
+
+    modal.setAlpha(0);
+    this.tweens.add({ targets: modal, alpha: 1, duration: 300, ease: 'Sine.easeOut' });
+  }
+}
+
+window.Level2Scene = Level2Scene;

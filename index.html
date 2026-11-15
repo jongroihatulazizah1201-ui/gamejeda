@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JEDA - Latihan Berhenti Sejenak</title>
+  <!-- Style CSS lokal dengan @font-face Nunito (woff2 lokal) -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <!-- Urutan pemuatan script sesuai PRD Bagian 3:
+       phaser.min.js -> config -> data -> state -> score -> guard -> fx -> ui -> scenes/* -> main -->
+  <script src="lib/phaser.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/score.js"></script>
+  <script src="js/guard.js"></script>
+  <script src="js/fx.js"></script>
+  <script src="js/ui.js"></script>
+  
+  <!-- Scenes -->
+  <script src="js/scenes/boot.js"></script>
+  <script src="js/scenes/checkin.js"></script>
+  <script src="js/scenes/level1.js"></script>
+  <script src="js/scenes/level2.js"></script>
+  <script src="js/scenes/level3.js"></script>
+  <script src="js/scenes/result.js"></script>
+  <script src="js/scenes/pause.js"></script>
+
+  <!-- Inisialisasi Game -->
+  <script src="js/main.js"></script>
+</body>
+</html>
