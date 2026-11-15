@@ -73,6 +73,29 @@ JEDA.Stage3D = (function() {
   let targetCalm = 0.5;
   let clockTime = 0.0;
 
+  // Elemen 3D Spesifik Tema (PRD Bagian 15.3 & Prompt R-4)
+  let currentThemeName = 'embun';
+  let embunGroup = null;
+  let fajarGroup = null;
+  let auroraGroup = null;
+
+  // Data elemen Embun (kabut pagi, tetes embun jatuh, rumput bercahaya)
+  let embunMistPlanes = [];
+  let embunDewDrops = null;
+  let embunDewData = [];
+  let embunGrassTufts = [];
+
+  // Data elemen Fajar (matahari terbit sinar radial, awan jingga, siluet burung)
+  let fajarSunGroup = null;
+  let fajarSunRays = null;
+  let fajarClouds = [];
+  let fajarBirds = [];
+
+  // Data elemen Aurora (pita aurora sinus, bintang jatuh, kristal es melayang)
+  let auroraRibbons = [];
+  let auroraShootingStar = null;
+  let auroraIceCrystals = [];
+
   // Efek Tabel 13.4
   let ringScale = 1.0;
   let ringOpacity = 0.0;
@@ -498,6 +521,464 @@ JEDA.Stage3D = (function() {
   }
 
   /**
+   * Membuat tekstur kanvas prosedural lembut untuk kabut pagi (Embun).
+   */
+  function createMistTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(128, 32, 0, 128, 32, 128);
+    grad.addColorStop(0.0, 'rgba(191, 255, 233, 0.45)');
+    grad.addColorStop(0.5, 'rgba(191, 232, 220, 0.22)');
+    grad.addColorStop(1.0, 'rgba(191, 232, 220, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 64);
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  /**
+   * Membangun elemen 3D spesifik Tema Embun (PRD Bagian 15.3):
+   * - Kabut pagi tipis yang bergerak
+   * - Tetes embun bercahaya jatuh pelan
+   * - Rumput bercahaya di pulau
+   */
+  function buildEmbunElements() {
+    embunGroup = new THREE.Group();
+    scene.add(embunGroup);
+
+    // 1. Kabut Pagi Tipis (Moving Morning Mist)
+    const mistTex = createMistTexture();
+    const mistConfigs = [
+      { x: -7.5, y: -8.5, z: -3.0, w: 22, h: 4.5, phase: 0.0 },
+      { x:  0.0, y: -8.0, z: -1.8, w: 26, h: 5.0, phase: 1.8 },
+      { x:  7.5, y: -8.5, z: -3.0, w: 22, h: 4.5, phase: 3.5 },
+      { x:  0.0, y: -7.2, z: -12.0, w: 42, h: 6.5, phase: 0.8 }
+    ];
+
+    embunMistPlanes = [];
+    mistConfigs.forEach(cfg => {
+      const geo = new THREE.PlaneGeometry(cfg.w, cfg.h);
+      const mat = new THREE.MeshBasicMaterial({
+        map: mistTex,
+        transparent: true,
+        opacity: 0.35,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI * 0.42;
+      mesh.position.set(cfg.x, cfg.y, cfg.z);
+      embunGroup.add(mesh);
+      embunMistPlanes.push({ mesh, baseX: cfg.x, baseY: cfg.y, phase: cfg.phase });
+    });
+
+    // 2. Tetes Embun Bercahaya Jatuh Pelan (Falling Glowing Dew Drops)
+    const DEW_COUNT = 90;
+    const dewGeo = new THREE.BufferGeometry();
+    const dewPos = new Float32Array(DEW_COUNT * 3);
+    embunDewData = [];
+
+    for (let i = 0; i < DEW_COUNT; i++) {
+      dewPos[i * 3] = (Math.random() - 0.5) * 36;
+      dewPos[i * 3 + 1] = -9.0 + Math.random() * 22;
+      dewPos[i * 3 + 2] = -12.0 + Math.random() * 20;
+      embunDewData.push({
+        speed: 0.4 + Math.random() * 0.6,
+        phase: Math.random() * Math.PI * 2,
+        drift: 0.2 + Math.random() * 0.3
+      });
+    }
+    dewGeo.setAttribute('position', new THREE.BufferAttribute(dewPos, 3));
+
+    const dewMat = new THREE.PointsMaterial({
+      size: 0.42,
+      map: createGlowTexture(false),
+      transparent: true,
+      opacity: 0.75,
+      color: 0xBFFFE9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    embunDewDrops = new THREE.Points(dewGeo, dewMat);
+    embunGroup.add(embunDewDrops);
+
+    // 3. Rumput Bercahaya di Kepulauan (Bioluminescent Island Grass)
+    embunGrassTufts = [];
+    const grassConeGeo = new THREE.ConeGeometry(0.06, 0.48, 4);
+    islands.forEach((isl, iIdx) => {
+      const tuftCount = 6;
+      for (let t = 0; t < tuftCount; t++) {
+        const tuftGroup = new THREE.Group();
+        const angle = (t / tuftCount) * Math.PI * 2 + (iIdx * 0.5);
+        const r = 1.3 + Math.random() * 0.9;
+        const tx = Math.cos(angle) * r;
+        const tz = Math.sin(angle) * r;
+
+        // Tiap rumpun memiliki 3 bilah rumput
+        for (let b = 0; b < 3; b++) {
+          const bladeMat = new THREE.MeshBasicMaterial({
+            color: 0x7FE0C3,
+            transparent: true,
+            opacity: 0.85,
+            blending: THREE.AdditiveBlending
+          });
+          const blade = new THREE.Mesh(grassConeGeo, bladeMat);
+          blade.position.set((b - 1) * 0.08, 0.24, 0);
+          blade.rotation.z = (b - 1) * 0.22 + (Math.random() - 0.5) * 0.15;
+          blade.rotation.x = (Math.random() - 0.5) * 0.25;
+          tuftGroup.add(blade);
+        }
+
+        tuftGroup.position.set(tx, 0.35, tz);
+        isl.group.add(tuftGroup);
+        embunGrassTufts.push({ mesh: tuftGroup, phase: Math.random() * Math.PI * 2 });
+      }
+    });
+  }
+
+  /**
+   * Membangun elemen 3D spesifik Tema Fajar (PRD Bagian 15.3):
+   * - Matahari terbit di cakrawala dengan sinar radial
+   * - Awan jingga
+   * - Siluet burung low poly melintas
+   */
+  function buildFajarElements() {
+    fajarGroup = new THREE.Group();
+    scene.add(fajarGroup);
+
+    // 1. Matahari Terbit dengan Sinar Radial (Sunrise on Horizon with Radial Rays)
+    fajarSunGroup = new THREE.Group();
+    fajarSunGroup.position.set(0, -4.2, -42.0);
+
+    const sunCoreGeo = new THREE.CircleGeometry(4.8, 32);
+    const sunCoreMat = new THREE.MeshBasicMaterial({
+      color: 0xFFF2BA,
+      transparent: true,
+      opacity: 0.95
+    });
+    const sunCore = new THREE.Mesh(sunCoreGeo, sunCoreMat);
+    fajarSunGroup.add(sunCore);
+
+    const sunHaloMat = new THREE.SpriteMaterial({
+      map: createGlowTexture(false),
+      color: 0xFFA866,
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const sunHalo = new THREE.Sprite(sunHaloMat);
+    sunHalo.scale.set(28, 28, 1);
+    fajarSunGroup.add(sunHalo);
+
+    // 12 sinar radial emas
+    fajarSunRays = new THREE.Group();
+    const rayCount = 12;
+    for (let k = 0; k < rayCount; k++) {
+      const angle = k * (Math.PI * 2 / rayCount);
+      const rayGeo = new THREE.BufferGeometry();
+      const vertices = new Float32Array([
+        0, 3.5, 0,
+        -1.4, 26.0, 0,
+         1.4, 26.0, 0
+      ]);
+      rayGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+      const rayMat = new THREE.MeshBasicMaterial({
+        color: 0xFFD27A,
+        transparent: true,
+        opacity: 0.22,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const rayMesh = new THREE.Mesh(rayGeo, rayMat);
+      rayMesh.rotation.z = angle;
+      fajarSunRays.add(rayMesh);
+    }
+    fajarSunGroup.add(fajarSunRays);
+    fajarGroup.add(fajarSunGroup);
+
+    // 2. Awan Jingga (Warm Dawn Clouds)
+    fajarClouds = [];
+    const dawnCloudConfigs = [
+      { x: -16, y: -2.0, z: -32, scale: 1.4, color: 0xFF9E7A, speed: 0.12 },
+      { x: -7,  y: -3.5, z: -36, scale: 1.8, color: 0xFFA07A, speed: 0.08 },
+      { x:  8,  y: -3.2, z: -35, scale: 1.7, color: 0xFFC98B, speed: 0.10 },
+      { x:  17, y: -1.8, z: -30, scale: 1.3, color: 0xE0735F, speed: 0.14 },
+      { x:   0, y: -4.8, z: -38, scale: 2.2, color: 0xFF8A65, speed: 0.06 }
+    ];
+
+    dawnCloudConfigs.forEach((cfg, idx) => {
+      const cGroup = new THREE.Group();
+      const cloudMat = new THREE.MeshPhongMaterial({
+        color: cfg.color,
+        flatShading: true,
+        shininess: 8,
+        transparent: true,
+        opacity: 0.88
+      });
+
+      const spherePuffs = [
+        { x: 0, y: 0, z: 0, r: 1.1 },
+        { x: -0.9, y: -0.2, z: 0.1, r: 0.85 },
+        { x: 0.9, y: -0.15, z: -0.1, r: 0.9 },
+        { x: -0.4, y: 0.5, z: 0.1, r: 0.75 },
+        { x: 0.4, y: 0.45, z: -0.05, r: 0.7 }
+      ];
+
+      spherePuffs.forEach(p => {
+        const puffGeo = new THREE.DodecahedronGeometry(p.r, 0);
+        const puff = new THREE.Mesh(puffGeo, cloudMat);
+        puff.position.set(p.x, p.y, p.z);
+        cGroup.add(puff);
+      });
+
+      cGroup.scale.set(cfg.scale, cfg.scale, cfg.scale);
+      cGroup.position.set(cfg.x, cfg.y, cfg.z);
+      fajarGroup.add(cGroup);
+      fajarClouds.push({ group: cGroup, baseX: cfg.x, baseY: cfg.y, speed: cfg.speed, phase: idx * 1.2 });
+    });
+
+    // 3. Siluet Burung Low Poly Melintas (Low-Poly Flying Birds)
+    fajarBirds = [];
+    const birdConfigs = [
+      { x: -28, y: 6.2, z: -22, offset: 0.0, speed: 3.4 },
+      { x: -30, y: 7.0, z: -23, offset: 0.6, speed: 3.4 },
+      { x: -32, y: 5.6, z: -21, offset: 1.2, speed: 3.4 },
+      { x: -35, y: 6.8, z: -24, offset: 1.8, speed: 3.4 }
+    ];
+
+    birdConfigs.forEach(cfg => {
+      const bGroup = new THREE.Group();
+      const birdMat = new THREE.MeshBasicMaterial({
+        color: 0x261330,
+        side: THREE.DoubleSide
+      });
+
+      // Badan ramping
+      const bodyGeo = new THREE.ConeGeometry(0.12, 0.7, 4);
+      bodyGeo.rotateX(Math.PI * 0.5);
+      const body = new THREE.Mesh(bodyGeo, birdMat);
+      bGroup.add(body);
+
+      // Sayap Kiri dengan pivot
+      const pivotL = new THREE.Group();
+      pivotL.position.set(-0.06, 0, 0);
+      const wingLGeo = new THREE.BufferGeometry();
+      const vL = new Float32Array([
+        0, 0, 0,
+        -0.85, 0, 0.28,
+        -0.25, 0, -0.38
+      ]);
+      wingLGeo.setAttribute('position', new THREE.BufferAttribute(vL, 3));
+      const wingL = new THREE.Mesh(wingLGeo, birdMat);
+      pivotL.add(wingL);
+      bGroup.add(pivotL);
+
+      // Sayap Kanan dengan pivot
+      const pivotR = new THREE.Group();
+      pivotR.position.set(0.06, 0, 0);
+      const wingRGeo = new THREE.BufferGeometry();
+      const vR = new Float32Array([
+        0, 0, 0,
+        0.85, 0, 0.28,
+        0.25, 0, -0.38
+      ]);
+      wingRGeo.setAttribute('position', new THREE.BufferAttribute(vR, 3));
+      const wingR = new THREE.Mesh(wingRGeo, birdMat);
+      pivotR.add(wingR);
+      bGroup.add(pivotR);
+
+      bGroup.position.set(cfg.x, cfg.y, cfg.z);
+      fajarGroup.add(bGroup);
+      fajarBirds.push({
+        group: bGroup,
+        pivotL: pivotL,
+        pivotR: pivotR,
+        offset: cfg.offset,
+        speed: cfg.speed,
+        baseY: cfg.y
+      });
+    });
+  }
+
+  /**
+   * Membangun elemen 3D spesifik Tema Aurora (PRD Bagian 15.3):
+   * - Pita aurora bergelombang dengan ShaderMaterial bergelombang sinus
+   * - Bintang jatuh sesekali
+   * - Kristal es melayang
+   */
+  function buildAuroraElements() {
+    auroraGroup = new THREE.Group();
+    scene.add(auroraGroup);
+
+    // 1. Pita Aurora ShaderMaterial Bergelombang Sinus (Sine-Wave Aurora Ribbons)
+    auroraRibbons = [];
+    const ribbonConfigs = [
+      { w: 72, h: 16, segX: 64, segY: 16, x: 0, y: 13.0, z: -36.0, rx: 0.22, ry: -0.08, speed: 0.75, freq: 0.09 },
+      { w: 64, h: 14, segX: 56, segY: 14, x: 4, y: 15.5, z: -44.0, rx: 0.18, ry: 0.12, speed: 0.55, freq: 0.07 },
+      { w: 58, h: 13, segX: 48, segY: 12, x: -6, y: 11.8, z: -28.0, rx: 0.28, ry: -0.04, speed: 0.90, freq: 0.11 }
+    ];
+
+    const vShader = `
+      uniform float uTime;
+      uniform float uSpeed;
+      uniform float uWaveFreq;
+      varying vec2 vUv;
+      varying float vWave;
+
+      void main() {
+        vUv = uv;
+        vec3 pos = position;
+
+        float w1 = sin(pos.x * uWaveFreq + uTime * uSpeed) * 3.2;
+        float w2 = cos(pos.x * (uWaveFreq * 0.45) + uTime * (uSpeed * 0.55)) * 1.6;
+        float w3 = sin(pos.y * 0.25 + uTime * (uSpeed * 0.4)) * 0.9;
+
+        pos.z += w1 + w2;
+        pos.y += sin(pos.x * (uWaveFreq * 0.65) + uTime * uSpeed) * 1.5 + w3;
+
+        vWave = (w1 + w2) * 0.2;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `;
+
+    const fShader = `
+      uniform vec3 uColorBottom;
+      uniform vec3 uColorTop;
+      uniform float uTime;
+      varying vec2 vUv;
+      varying float vWave;
+
+      void main() {
+        vec3 col = mix(uColorBottom, uColorTop, pow(vUv.y, 0.82));
+        float curtain = sin(vUv.x * 48.0 + uTime * 0.75) * 0.15 + 0.85;
+        float curtain2 = cos(vUv.x * 24.0 - uTime * 0.45) * 0.10 + 0.90;
+        col *= curtain * curtain2;
+
+        float edgeY = smoothstep(0.0, 0.22, vUv.y) * smoothstep(1.0, 0.45, vUv.y);
+        float edgeX = smoothstep(0.0, 0.14, vUv.x) * smoothstep(1.0, 0.86, vUv.x);
+        float alpha = edgeY * edgeX * (0.68 + vWave * 0.15);
+
+        gl_FragColor = vec4(col, alpha);
+      }
+    `;
+
+    ribbonConfigs.forEach(cfg => {
+      const geo = new THREE.PlaneGeometry(cfg.w, cfg.h, cfg.segX, cfg.segY);
+      const mat = new THREE.ShaderMaterial({
+        vertexShader: vShader,
+        fragmentShader: fShader,
+        uniforms: {
+          uTime: { value: 0.0 },
+          uSpeed: { value: cfg.speed },
+          uWaveFreq: { value: cfg.freq },
+          uColorBottom: { value: new THREE.Vector3(0.12, 0.96, 0.65) },
+          uColorTop: { value: new THREE.Vector3(0.72, 0.35, 0.98) }
+        },
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(cfg.x, cfg.y, cfg.z);
+      mesh.rotation.x = cfg.rx;
+      mesh.rotation.y = cfg.ry;
+      auroraGroup.add(mesh);
+      auroraRibbons.push(mesh);
+    });
+
+    // 2. Bintang Jatuh Sesekali (Shooting Stars / Meteors)
+    const meteorGeo = new THREE.CylinderGeometry(0.04, 0.18, 3.8, 6);
+    meteorGeo.rotateZ(Math.PI * 0.38);
+    const meteorMat = new THREE.MeshBasicMaterial({
+      color: 0xD6F8FF,
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const meteorMesh = new THREE.Mesh(meteorGeo, meteorMat);
+    meteorMesh.visible = false;
+    auroraGroup.add(meteorMesh);
+
+    auroraShootingStar = {
+      mesh: meteorMesh,
+      active: false,
+      timer: 3.5,
+      progress: 0.0,
+      startX: 0,
+      startY: 0,
+      startZ: 0,
+      vx: 0,
+      vy: 0,
+      vz: 0
+    };
+
+    // 3. Kristal Es Melayang (Floating Ice Crystals)
+    auroraIceCrystals = [];
+    const iceGeo = new THREE.OctahedronGeometry(0.32, 0);
+    const iceMat = new THREE.MeshPhongMaterial({
+      color: 0xD8F0FF,
+      emissive: 0x3A5888,
+      emissiveIntensity: 0.35,
+      shininess: 35,
+      flatShading: true,
+      transparent: true,
+      opacity: 0.75
+    });
+
+    for (let k = 0; k < 36; k++) {
+      const mesh = new THREE.Mesh(iceGeo, iceMat);
+      const ix = (Math.random() - 0.5) * 34;
+      const iy = -6.0 + Math.random() * 17;
+      const iz = -12.0 + Math.random() * 18;
+      mesh.position.set(ix, iy, iz);
+      auroraGroup.add(mesh);
+
+      auroraIceCrystals.push({
+        mesh: mesh,
+        baseY: iy,
+        phase: Math.random() * Math.PI * 2,
+        rotSpeedX: 0.008 + Math.random() * 0.012,
+        rotSpeedY: 0.012 + Math.random() * 0.016
+      });
+    }
+  }
+
+  /**
+   * Mengatur visibilitas elemen 3D per tema dan penonaktifan saat Kurangi Gerakan aktif (BR-12).
+   */
+  function updateThemeElementsVisibility() {
+    if (reduceMotion) {
+      if (embunGroup) embunGroup.visible = false;
+      if (fajarGroup) fajarGroup.visible = false;
+      if (auroraGroup) auroraGroup.visible = false;
+      embunGrassTufts.forEach(g => { if (g.mesh) g.mesh.visible = false; });
+      return;
+    }
+
+    const theme = (currentThemeName || 'embun').toLowerCase();
+    if (embunGroup) embunGroup.visible = (theme === 'embun');
+    if (fajarGroup) fajarGroup.visible = (theme === 'fajar');
+    if (auroraGroup) auroraGroup.visible = (theme === 'aurora');
+    embunGrassTufts.forEach(g => { if (g.mesh) g.mesh.visible = (theme === 'embun'); });
+  }
+
+  /**
+   * Menginisialisasi seluruh elemen tema 3D panggung.
+   */
+  function buildThemeElements() {
+    buildEmbunElements();
+    buildFajarElements();
+    buildAuroraElements();
+    updateThemeElementsVisibility();
+  }
+
+  /**
    * Render loop utama Three.js.
    */
   function animate(timestamp) {
@@ -751,6 +1232,115 @@ JEDA.Stage3D = (function() {
       }
     }
 
+    // 10c. Pembaruan Animasi Elemen 3D Bertema (Prompt R-4)
+    if (!reduceMotion) {
+      // 1. Animasi Tema Embun (Kabut bergerak, tetes embun jatuh, rumput bergoyang)
+      if (embunGroup && embunGroup.visible) {
+        embunMistPlanes.forEach(m => {
+          m.mesh.position.x = m.baseX + Math.sin(clockTime * 0.28 + m.phase) * 1.6;
+          m.mesh.position.y = m.baseY + Math.cos(clockTime * 0.20 + m.phase) * 0.22;
+        });
+
+        if (embunDewDrops && embunDewDrops.geometry) {
+          const posAttr = embunDewDrops.geometry.attributes.position;
+          const posArr = posAttr.array;
+          const count = embunDewData.length;
+          for (let i = 0; i < count; i++) {
+            const d = embunDewData[i];
+            posArr[i * 3 + 1] -= (0.55 + d.speed * 0.45) * dt * timeScale;
+            posArr[i * 3] += Math.sin(clockTime * 0.6 + d.phase) * (d.drift * 0.02);
+            if (posArr[i * 3 + 1] < -9.8) {
+              posArr[i * 3 + 1] = 13.0 + Math.random() * 2.5;
+              posArr[i * 3] = (Math.random() - 0.5) * 36;
+            }
+          }
+          posAttr.needsUpdate = true;
+        }
+
+        embunGrassTufts.forEach(g => {
+          g.mesh.rotation.z = Math.sin(clockTime * 1.4 + g.phase) * 0.12;
+          g.mesh.children.forEach(blade => {
+            if (blade.material) {
+              blade.material.opacity = 0.65 + 0.35 * Math.sin(clockTime * 1.8 + g.phase);
+            }
+          });
+        });
+      }
+
+      // 2. Animasi Tema Fajar (Rotasi sinar matahari radial, awan jingga, burung mengepak)
+      if (fajarGroup && fajarGroup.visible) {
+        if (fajarSunRays) {
+          fajarSunRays.rotation.z += 0.0006 * timeScale;
+        }
+
+        fajarClouds.forEach(c => {
+          c.group.position.x = c.baseX + Math.sin(clockTime * c.speed + c.phase) * 1.8;
+          c.group.position.y = c.baseY + Math.cos(clockTime * 0.3 + c.phase) * 0.18;
+        });
+
+        fajarBirds.forEach(b => {
+          b.group.position.x += b.speed * dt * timeScale;
+          b.group.position.y = b.baseY + Math.sin(clockTime * 2.2 + b.offset) * 0.25;
+
+          const flap = Math.sin(clockTime * 5.2 + b.offset) * 0.45;
+          b.pivotL.rotation.z = flap;
+          b.pivotR.rotation.z = -flap;
+
+          if (b.group.position.x > 32.0) {
+            b.group.position.x = -32.0;
+          }
+        });
+      }
+
+      // 3. Animasi Tema Aurora (Pita aurora sinus, bintang jatuh, kristal es berputar)
+      if (auroraGroup && auroraGroup.visible) {
+        auroraRibbons.forEach(r => {
+          if (r.material && r.material.uniforms && r.material.uniforms.uTime) {
+            r.material.uniforms.uTime.value = clockTime;
+          }
+        });
+
+        if (auroraShootingStar) {
+          const s = auroraShootingStar;
+          if (!s.active) {
+            s.timer -= dt * timeScale;
+            if (s.timer <= 0) {
+              s.active = true;
+              s.progress = 0.0;
+              s.startX = -22.0 + Math.random() * 8.0;
+              s.startY = 17.0 + Math.random() * 5.0;
+              s.startZ = -32.0;
+              s.vx = 38.0;
+              s.vy = -24.0;
+              s.vz = 5.0;
+              s.mesh.position.set(s.startX, s.startY, s.startZ);
+              s.mesh.visible = true;
+            }
+          } else {
+            s.progress += dt * 1.4 * timeScale;
+            s.mesh.position.x = s.startX + s.vx * s.progress;
+            s.mesh.position.y = s.startY + s.vy * s.progress;
+            s.mesh.position.z = s.startZ + s.vz * s.progress;
+
+            const alpha = Math.sin(s.progress * Math.PI);
+            s.mesh.material.opacity = Math.max(0.0, alpha * 0.95);
+
+            if (s.progress >= 1.0) {
+              s.active = false;
+              s.mesh.visible = false;
+              s.timer = 5.0 + Math.random() * 3.5;
+            }
+          }
+        }
+
+        auroraIceCrystals.forEach(k => {
+          k.mesh.rotation.x += k.rotSpeedX * timeScale;
+          k.mesh.rotation.y += k.rotSpeedY * timeScale;
+          k.mesh.position.y = k.baseY + Math.sin(clockTime * 1.1 + k.phase) * 0.32;
+        });
+      }
+    }
+
     // 11. Bintang Berkilau & Skydome Berputar Perlahan
     if (skyDome && !reduceMotion) {
       skyDome.rotation.y += 0.0003 * timeScale;
@@ -961,6 +1551,9 @@ JEDA.Stage3D = (function() {
         // 8. Awan Low Poly & Kepulauan Lentera (Fase 3D-2)
         buildClouds();
         buildLanternIslands();
+
+        // 8b. Elemen 3D Bertema (PRD Bagian 15.3: Embun, Fajar, Aurora - Prompt R-4)
+        buildThemeElements();
 
         // 9. Event Listeners (Resize, Mouse Parallax, Tab Visibility)
         window.addEventListener('resize', onWindowResize);
@@ -1262,6 +1855,10 @@ JEDA.Stage3D = (function() {
       // Selaraskan juga palet orb napas
       this.setSkin(theme.id);
 
+      // Perbarui tema aktif dan visibilitas elemen 3D per tema (PRD 15.3 Prompt R-4)
+      currentThemeName = theme.id;
+      updateThemeElementsVisibility();
+
       if (duration <= 0) {
         currentSkyTop.copy(targetSkyTop);
         currentSkyMid.copy(targetSkyMid);
@@ -1349,6 +1946,7 @@ JEDA.Stage3D = (function() {
         isCelebrating = false;
         celebrateOrbitAngle = 0.0;
       }
+      updateThemeElementsVisibility();
     },
 
     /**
@@ -1371,6 +1969,17 @@ JEDA.Stage3D = (function() {
       if (distractionTimer) clearTimeout(distractionTimer);
       if (panicTimer) clearTimeout(panicTimer);
       if (celebrateTimer) clearTimeout(celebrateTimer);
+
+      if (embunGroup && scene) scene.remove(embunGroup);
+      if (fajarGroup && scene) scene.remove(fajarGroup);
+      if (auroraGroup && scene) scene.remove(auroraGroup);
+      embunMistPlanes = [];
+      embunDewData = [];
+      embunGrassTufts = [];
+      fajarClouds = [];
+      fajarBirds = [];
+      auroraRibbons = [];
+      auroraIceCrystals = [];
 
       clouds = [];
       spawnedClouds = [];
