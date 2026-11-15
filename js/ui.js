@@ -484,12 +484,12 @@ JEDA.UI = {
       lineSpacing: 8
     }).setOrigin(0.5).setResolution(2);
 
-    const acceptBtn = this.createButton(scene, -160, 100, 280, 58, 'Gunakan Mode Ramah', () => {
+    const acceptBtn = this.createButton(scene, -155, 100, 270, 58, 'Gunakan Mode Ramah', () => {
       modal.destroy();
       if (typeof onAccept === 'function') onAccept();
     }, { primary: true, radius: 29 });
 
-    const declineBtn = this.createButton(scene, 160, 100, 260, 58, 'Tetap Mode Normal', () => {
+    const declineBtn = this.createButton(scene, 155, 100, 270, 58, 'Tetap Mode Normal', () => {
       modal.destroy();
       if (typeof onDecline === 'function') onDecline();
     }, { radius: 29 });

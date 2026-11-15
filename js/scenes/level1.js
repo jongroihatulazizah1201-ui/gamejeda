@@ -119,6 +119,22 @@ class Level1Scene extends Phaser.Scene {
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
+
+    // Kapsul status siklus di kanan atas (simetris dengan tombol menu di kiri)
+    const progContainer = this.add.container(W - 140, 65);
+    const progBg = this.add.graphics();
+    progBg.fillStyle(0x181A3C, 0.95);
+    progBg.fillRoundedRect(-90, -25, 180, 50, 25);
+    progBg.lineStyle(2, 0x485278, 0.65);
+    progBg.strokeRoundedRect(-90, -25, 180, 50, 25);
+
+    this.cycleCounterText = this.add.text(0, 0, `Siklus 1/${this.totalCycles}`, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '20px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.calm
+    }).setOrigin(0.5).setResolution(2);
+    progContainer.add([progBg, this.cycleCounterText]);
   }
 
   /**
@@ -416,6 +432,10 @@ class Level1Scene extends Phaser.Scene {
     this.feedbackText.setColor(wordColor);
 
     this.currentCycle++;
+    if (this.cycleCounterText) {
+      const displayNum = Math.min(this.totalCycles, this.currentCycle);
+      this.cycleCounterText.setText(`Siklus ${displayNum}/${this.totalCycles}`);
+    }
 
     // Jika seluruh siklus selesai
     if (this.completedCycles.length >= this.totalCycles) {

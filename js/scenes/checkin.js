@@ -34,8 +34,8 @@ class CheckinScene extends Phaser.Scene {
     // 2. Transisi masuk kamera
     this.cameras.main.fadeIn(350);
 
-    // 3. Tombol Pengaturan di pojok kanan atas
-    this.createSettingsButton();
+    // 3. Tombol Pengaturan & Identitas Header Simetris
+    this.createHeaderButtons();
 
     // 4. Panel Utama Check-in
     this.createCenterPanel(cx);
@@ -58,11 +58,29 @@ class CheckinScene extends Phaser.Scene {
   }
 
   /**
-   * Membuat tombol pengaturan di pojok kanan atas.
+   * Membuat tombol header yang simetris di kiri dan kanan atas layar.
    */
-  createSettingsButton() {
+  createHeaderButtons() {
     const W = JEDA.CFG.W;
-    const btn = JEDA.UI.createButton(this, W - 150, 65, 200, 50, 'Pengaturan ⚙', () => {
+
+    // Badge Kiri Atas: Identitas Game yang Simetris dengan Tombol Pengaturan
+    const brandContainer = this.add.container(150, 65);
+    const bgL = this.add.graphics();
+    bgL.fillStyle(0x181A3C, 0.95);
+    bgL.fillRoundedRect(-100, -25, 200, 50, 25);
+    bgL.lineStyle(2, 0x485278, 0.65);
+    bgL.strokeRoundedRect(-100, -25, 200, 50, 25);
+
+    const brandText = this.add.text(0, 0, '✦ JEDA', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '22px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.calm
+    }).setOrigin(0.5).setResolution(2);
+    brandContainer.add([bgL, brandText]);
+
+    // Tombol Pengaturan Kanan Atas
+    JEDA.UI.createButton(this, W - 150, 65, 200, 50, 'Pengaturan ⚙', () => {
       JEDA.UI.showSettingsModal(this, () => {
         // Callback saat data dihapus: render ulang kartu level
         this.renderLevelCards();
@@ -139,7 +157,7 @@ class CheckinScene extends Phaser.Scene {
     const emoY2 = panelY + 125;
 
     this.createEmotionPills(emotionsRow1, cx, emoY1, 190);
-    this.createEmotionPills(emotionsRow2, cx, emoY2, 240);
+    this.createEmotionPills(emotionsRow2, cx, emoY2, 258);
 
     // Tombol Mulai
     this.startButton = JEDA.UI.createButton(this, cx, panelY + 215, 320, 64, 'Mulai', () => {
@@ -335,9 +353,9 @@ class CheckinScene extends Phaser.Scene {
     const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
     const cx = JEDA.CFG.W / 2;
     const cardY = 890;
-    const cardW = 340;
+    const cardW = 360;
     const cardH = 150;
-    const spacing = 370;
+    const spacing = 390;
 
     const levels = [
       { id: 1, name: 'Level 1: Napas', desc: 'Menyelaraskan ritme napas', key: 'l1', sceneKey: 'Level1Scene' },

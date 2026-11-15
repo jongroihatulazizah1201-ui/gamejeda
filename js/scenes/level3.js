@@ -61,19 +61,28 @@ class Level3Scene extends Phaser.Scene {
       JEDA.FX.transitionTo(this, 'CheckinScene');
     }, { fontSize: 20, radius: 25 });
 
-    this.titleText = this.add.text(W / 2, 50, 'Level 3: Jeda S.T.O.P.', {
+    this.titleText = this.add.text(W / 2, 65, 'Level 3: Jeda S.T.O.P.', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '32px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    this.stepCounterText = this.add.text(W / 2, 88, 'Skenario 1 dari 3', {
+    // Kapsul status skenario di kanan atas (simetris dengan tombol menu di kiri)
+    const scContainer = this.add.container(W - 140, 65);
+    const scBg = this.add.graphics();
+    scBg.fillStyle(0x181A3C, 0.95);
+    scBg.fillRoundedRect(-100, -25, 200, 50, 25);
+    scBg.lineStyle(2, 0x485278, 0.65);
+    scBg.strokeRoundedRect(-100, -25, 200, 50, 25);
+
+    this.stepCounterText = this.add.text(0, 0, 'Skenario 1 dari 3', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '20px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.muted
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
+    scContainer.add([scBg, this.stepCounterText]);
   }
 
   /**
