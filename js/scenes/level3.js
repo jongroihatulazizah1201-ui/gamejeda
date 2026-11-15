@@ -939,6 +939,9 @@ class Level3Scene extends Phaser.Scene {
     const cardH = 624; // Skala 8 px (78 * 8)
 
     const bg = this.add.graphics();
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
     bg.fillStyle(0x16163A, 0.95);
     bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
     bg.lineStyle(2, result.passed ? JEDA.CFG.COLOR.calm : JEDA.CFG.COLOR.warn, 0.5);

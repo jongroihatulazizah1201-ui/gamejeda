@@ -316,6 +316,9 @@ class CheckinScene extends Phaser.Scene {
     const cardW = Layout.panelSize.M; // 960 px (PRD 14.3)
     const cardH = 680; // Kelipatan 8 (85 * 8)
     const cardBg = this.add.graphics();
+    // 100% Solid Base
+    cardBg.fillStyle(0x0E1026, 1.0);
+    cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
     cardBg.fillStyle(0x131535, 0.96);
     cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
     cardBg.lineStyle(2, 0x7FE0C3, 0.65);

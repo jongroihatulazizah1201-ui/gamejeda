@@ -29,6 +29,9 @@ class PauseScene extends Phaser.Scene {
     const cardW = 840;
     const cardH = 480;
     const bg = this.add.graphics();
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     bg.fillStyle(0x16163A, 0.96);
     bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);

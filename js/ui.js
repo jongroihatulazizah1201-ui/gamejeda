@@ -512,7 +512,10 @@ JEDA.UI = {
     const cy = H / 2;
 
     const cardBg = scene.add.graphics();
-    cardBg.fillStyle(0x1a1a38, 0.95);
+    // 100% Solid Opaque Base (mencegah teks tembus pandang)
+    cardBg.fillStyle(0x0E1026, 1.0);
+    cardBg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    cardBg.fillStyle(0x1a1a38, 0.96);
     cardBg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     cardBg.lineStyle(2, 0xFF8FA3, 0.45); // Aksen warna hangat lembut
     cardBg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
@@ -870,9 +873,12 @@ JEDA.UI = {
     const cy = H / 2;
 
     const bg = scene.add.graphics();
+    // 100% Solid Opaque Base (mencegah teks tembus pandang)
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 28);
     bg.fillStyle(0x16163A, 0.96);
     bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 28);
-    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.3);
+    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
     bg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 28);
     container.add(bg);
 
@@ -953,10 +959,16 @@ JEDA.UI = {
       JEDA.Stage3D.triggerPanic();
     }
 
-    const container = scene.add.container(W / 2, H / 2).setDepth(1500);
+    const container = scene.add.container(W / 2, H / 2).setDepth(2500);
+
+    const backdrop = scene.add.rectangle(0, 0, W, H, 0x050510, 0.65).setInteractive();
+    container.add(backdrop);
 
     const bg = scene.add.graphics();
-    bg.fillStyle(0x16163A, 0.92);
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(-400, -90, 800, 180, 24);
+    bg.fillStyle(0x16163A, 0.96);
     bg.fillRoundedRect(-400, -90, 800, 180, 24);
     bg.lineStyle(2, JEDA.CFG.COLOR.warn, 0.6);
     bg.strokeRoundedRect(-400, -90, 800, 180, 24);
@@ -1000,10 +1012,17 @@ JEDA.UI = {
     const cy = H / 2;
 
     const modal = scene.add.container(cx, cy).setDepth(2500);
+
+    const backdrop = scene.add.rectangle(0, 0, W, H, 0x050510, 0.75).setInteractive();
+    modal.add(backdrop);
+
     const cardW = 760;
     const cardH = 380;
 
     const bg = scene.add.graphics();
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 28);
     bg.fillStyle(0x16163A, 0.96);
     bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 28);
     bg.lineStyle(2, JEDA.CFG.COLOR.calm, 0.5);
@@ -1270,20 +1289,31 @@ JEDA.UI = {
 
     const modalContainer = scene.add.container(0, 0).setDepth(3500);
 
-    // 1. Backdrop Redup alpha 0.55 (PRD 15.2: "redup di belakangnya alpha 0,55")
-    const backdrop = scene.add.rectangle(cx, cy, W, H, 0x050510, 0.55)
+    // 1. Backdrop Redup (PRD 15.2: redup di belakangnya, kontras tinggi dan fokus penuh)
+    const backdrop = scene.add.rectangle(cx, cy, W, H, 0x050614, 0.72)
       .setInteractive();
     backdrop.on('pointerdown', () => closeCard());
     modalContainer.add(backdrop);
 
-    // 2. Panel M Kaca Gelap di Tengah (960 x 608 px, radius 32, kelipatan 8)
+    // 2. Panel M Kaca Gelap di Tengah (960 x 624 px, radius 32, kelipatan 8)
     const cardW = (Layout && Layout.panelSize && Layout.panelSize.M) ? Layout.panelSize.M : 960;
-    const cardH = 608;
+    const cardH = 624; // Skala 8 px (78 * 8)
 
     const panelBg = scene.add.graphics();
-    panelBg.fillStyle(0x141638, 0.96);
+    // A. 100% Solid Opaque Base (menjamin 0% bleed-through elemen scene di belakangnya)
+    panelBg.fillStyle(0x0E1128, 1.0);
     panelBg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
-    panelBg.lineStyle(2, 0x3F486E, 0.65);
+
+    // B. Lapisan kaca frosted
+    panelBg.fillStyle(0x181C3D, 0.96);
+    panelBg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+
+    // C. Kilau lembut di tepi atas kaca
+    panelBg.fillStyle(0xFFFFFF, 0.03);
+    panelBg.fillRoundedRect(cx - cardW / 2 + 2, cy - cardH / 2 + 2, cardW - 4, 72, 30);
+
+    // D. Garis tepi frosted
+    panelBg.lineStyle(2, 0x3F4C7A, 0.75);
     panelBg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     modalContainer.add(panelBg);
 
@@ -1354,39 +1384,39 @@ JEDA.UI = {
     }
 
     // 3. Header Panel: Kapsul Kategori, Judul, & Subjudul
-    const headerContainer = scene.add.container(cx, cy - cardH / 2 + 58);
+    const headerContainer = scene.add.container(cx, cy - cardH / 2 + 56);
 
     // Kapsul Kategori "PETUNJUK BERMAIN" (Prinsip 3 & 8: Skala 8 px & Hierarki Teks)
     const catText = scene.add.text(0, 0, 'PETUNJUK BERMAIN', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '18px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
 
-    const catBadgeW = Math.max(240, Math.ceil((catText.width + 48) / 8) * 8);
-    const catBadgeH = 40; // Kelipatan 8
+    const catBadgeW = Math.max(200, Math.ceil((catText.width + 48) / 8) * 8);
+    const catBadgeH = 32; // Kelipatan 8
     const catBg = scene.add.graphics();
     catBg.fillStyle(0x1A2048, 0.95);
-    catBg.fillRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 20);
-    catBg.lineStyle(1.5, 0x7FE0C3, 0.55);
-    catBg.strokeRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 20);
+    catBg.fillRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 16);
+    catBg.lineStyle(1.5, 0x7FE0C3, 0.6);
+    catBg.strokeRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 16);
     headerContainer.add([catBg, catText]);
 
-    // Judul Utama (Hierarki teks 44 px)
+    // Judul Utama (Hierarki teks 38 px)
     const titleText = scene.add.text(0, 44, options.title || 'Petunjuk Bermain', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '44px',
+      fontSize: '38px',
       fontStyle: '800',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
     headerContainer.add(titleText);
 
-    // Subjudul / Catatan K1 jika ada (Hierarki teks 27 px)
+    // Subjudul / Catatan K1 jika ada (Hierarki teks 20 px)
     if (options.subtitle) {
-      const subtitleText = scene.add.text(0, 84, options.subtitle, {
+      const subtitleText = scene.add.text(0, 82, options.subtitle, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '27px',
+        fontSize: '20px',
         fontStyle: '600',
         color: '#A7F3D0'
       }).setOrigin(0.5).setResolution(2);
@@ -1394,17 +1424,19 @@ JEDA.UI = {
     }
     modalContainer.add(headerContainer);
 
-    // 4. Kolom Kiri: Kotak Peragaan Animasi Mekanik (264 x 264 px, radius 24)
-    const colLeftX = cx - 296;
-    const colLeftY = cy + 18;
-    const previewBoxW = 264;
-    const previewBoxH = 264;
+    // 4. Kolom Kiri: Kotak Peragaan Animasi Mekanik (272 x 272 px, radius 24)
+    const colLeftX = cx - 300;
+    const colLeftY = cy + 14;
+    const previewBoxW = 272;
+    const previewBoxH = 272;
 
     const previewContainer = scene.add.container(colLeftX, colLeftY);
     const previewBg = scene.add.graphics();
-    previewBg.fillStyle(0x161A3E, 0.96);
+    previewBg.fillStyle(0x111432, 1.0);
     previewBg.fillRoundedRect(-previewBoxW / 2, -previewBoxH / 2, previewBoxW, previewBoxH, 24);
-    previewBg.lineStyle(1.5, 0x384166, 0.65);
+    previewBg.fillStyle(0x181F48, 0.6);
+    previewBg.fillRoundedRect(-previewBoxW / 2, -previewBoxH / 2, previewBoxW, previewBoxH, 24);
+    previewBg.lineStyle(1.5, 0x384166, 0.75);
     previewBg.strokeRoundedRect(-previewBoxW / 2, -previewBoxH / 2, previewBoxW, previewBoxH, 24);
     previewContainer.add(previewBg);
     modalContainer.add(previewContainer);
@@ -1421,33 +1453,33 @@ JEDA.UI = {
 
       if (animType === 'l1') {
         // --- Animasi Level 1: Orb Bernapas Membesar & Mengecil + Kapsul Spasi ---
-        const orbGlow = scene.add.circle(0, -32, 48, 0x7FE0C3, 0.22);
-        const orbInner = scene.add.circle(0, -32, 34, 0x7FE0C3, 0.45);
-        const orbCore = scene.add.circle(0, -32, 18, 0x7FE0C3, 0.95);
+        const orbGlow = scene.add.circle(0, -36, 48, 0x7FE0C3, 0.22);
+        const orbInner = scene.add.circle(0, -36, 34, 0x7FE0C3, 0.45);
+        const orbCore = scene.add.circle(0, -36, 18, 0x7FE0C3, 0.95);
 
         // Kapsul Tombol [Spasi / Klik]
-        const keyW = 196;
-        const keyH = 42;
+        const keyW = 192;
+        const keyH = 44;
         const keyBg = scene.add.graphics();
         const drawKeyBg = (active) => {
           keyBg.clear();
           keyBg.fillStyle(active ? 0x1E364A : 0x12142E, 0.95);
-          keyBg.fillRoundedRect(-keyW / 2, 54 - keyH / 2, keyW, keyH, 21);
+          keyBg.fillRoundedRect(-keyW / 2, 52 - keyH / 2, keyW, keyH, 22);
           keyBg.lineStyle(2, active ? 0x7FE0C3 : 0x3F486E, active ? 0.95 : 0.65);
-          keyBg.strokeRoundedRect(-keyW / 2, 54 - keyH / 2, keyW, keyH, 21);
+          keyBg.strokeRoundedRect(-keyW / 2, 52 - keyH / 2, keyW, keyH, 22);
         };
         drawKeyBg(false);
 
-        const keyLabel = scene.add.text(0, 54, 'Tahan Spasi', {
+        const keyLabel = scene.add.text(0, 52, 'Tahan Spasi', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '22px',
           fontStyle: '800',
           color: '#FFFFFF'
         }).setOrigin(0.5).setResolution(2);
 
-        const statusNote = scene.add.text(0, 102, 'Tarik Napas', {
+        const statusNote = scene.add.text(0, 100, 'Tarik Napas', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '20px',
           fontStyle: '700',
           color: JEDA.CFG.COLOR.hex.calm
         }).setOrigin(0.5).setResolution(2);
@@ -1483,7 +1515,7 @@ JEDA.UI = {
 
       } else if (animType === 'l2') {
         // --- Animasi Level 2: Pikiran Mengapung & Ditembak Menjadi Awan Lembut ---
-        const thoughtCloud = scene.add.container(0, -42);
+        const thoughtCloud = scene.add.container(0, -44);
         const cloudBg = scene.add.graphics();
         const drawCloud = (isClear) => {
           cloudBg.clear();
@@ -1505,7 +1537,7 @@ JEDA.UI = {
 
         const cloudText = scene.add.text(0, 0, 'Pikiran', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '22px',
           fontStyle: '700',
           color: '#E2E8F0'
         }).setOrigin(0.5).setResolution(2);
@@ -1517,22 +1549,22 @@ JEDA.UI = {
         for (let i = 0; i < 4; i++) {
           const capG = scene.add.graphics();
           capG.fillStyle(i === 0 ? 0x1E3B46 : 0x141838, 0.95);
-          capG.fillRoundedRect(btnXs[i] - 18, 54 - 18, 36, 36, 12);
-          capG.lineStyle(1.5, i === 0 ? 0x7FE0C3 : 0x3F486E, 0.8);
-          capG.strokeRoundedRect(btnXs[i] - 18, 54 - 18, 36, 36, 12);
+          capG.fillRoundedRect(btnXs[i] - 19, 52 - 19, 38, 38, 12);
+          capG.lineStyle(1.5, i === 0 ? 0x7FE0C3 : 0x3F486E, 0.85);
+          capG.strokeRoundedRect(btnXs[i] - 19, 52 - 19, 38, 38, 12);
 
-          const capT = scene.add.text(btnXs[i], 54, `${i + 1}`, {
+          const capT = scene.add.text(btnXs[i], 52, `${i + 1}`, {
             fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '27px',
+            fontSize: '20px',
             fontStyle: '800',
             color: i === 0 ? '#7FE0C3' : '#94A3B8'
           }).setOrigin(0.5).setResolution(2);
           astroCapsules.push(capG, capT);
         }
 
-        const infoNote = scene.add.text(0, 102, 'Pilih Astronot → Tembak', {
+        const infoNote = scene.add.text(0, 100, 'Pilih Astronot → Tembak', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '20px',
           fontStyle: '600',
           color: '#A7F3D0'
         }).setOrigin(0.5).setResolution(2);
@@ -1547,10 +1579,9 @@ JEDA.UI = {
           delay: 2400,
           loop: true,
           callback: () => {
-            // Gambar sinar berkilau
             beamG.clear();
             beamG.lineStyle(3, 0x7FE0C3, 0.9);
-            beamG.lineBetween(0, 36, 0, -20);
+            beamG.lineBetween(0, 34, 0, -20);
 
             scene.tweens.add({
               targets: thoughtCloud,
@@ -1582,7 +1613,7 @@ JEDA.UI = {
         const stopLetters = ['S', 'T', 'O', 'P'];
         const stopTitles = ['Stop', 'Tarik Napas', 'Observe', 'Proceed'];
         const beads = [];
-        const beadRadius = 24;
+        const beadRadius = 22;
         const beadXs = [-84, -28, 28, 84];
 
         stopLetters.forEach((letter, idx) => {
@@ -1598,7 +1629,7 @@ JEDA.UI = {
 
           const txt = scene.add.text(beadXs[idx], -18, letter, {
             fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '27px',
+            fontSize: '22px',
             fontStyle: '800',
             color: '#94A3B8'
           }).setOrigin(0.5).setResolution(2);
@@ -1609,14 +1640,14 @@ JEDA.UI = {
 
         const stepDesc = scene.add.text(0, 48, 'S: Berhenti Sejenak', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '22px',
           fontStyle: '800',
           color: '#FFFFFF'
         }).setOrigin(0.5).setResolution(2);
 
-        const subNote = scene.add.text(0, 96, 'Metode Jeda Sadar', {
+        const subNote = scene.add.text(0, 92, 'Metode Jeda Sadar', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '18px',
           fontStyle: '600',
           color: JEDA.CFG.COLOR.hex.calm
         }).setOrigin(0.5).setResolution(2);
@@ -1640,43 +1671,91 @@ JEDA.UI = {
         animTimers.push(cycleTimer);
 
       } else {
-        // --- Animasi Default / Pembuka (Lentera Zen Pendar Damai) ---
-        const lanternGlow = scene.add.circle(0, -28, 48, 0x7FE0C3, 0.25);
-        const lanternBase = scene.add.graphics();
-        lanternBase.fillStyle(0x1F2A48, 0.95);
-        lanternBase.fillRoundedRect(-32, -8, 64, 42, 14);
-        lanternBase.lineStyle(2, 0x7FE0C3, 0.85);
-        lanternBase.strokeRoundedRect(-32, -8, 64, 42, 14);
+        // --- Animasi Default / Pembuka: Lentera Zen Pendar Damai (Desain Autentik Lentera) ---
+        const lanternGroup = scene.add.container(0, -22);
 
-        const flame = scene.add.circle(0, -32, 18, 0x7FE0C3, 0.95);
+        // Halo cahaya luar pendar toska lembut
+        const lanternGlow = scene.add.circle(0, -10, 48, 0x7FE0C3, 0.22);
+        lanternGlow.setBlendMode(Phaser.BlendModes.ADD);
 
+        const lanternArt = scene.add.graphics();
+        // 1. Cincin gantungan lentera atas
+        lanternArt.lineStyle(2, 0xCBD5E1, 0.85);
+        lanternArt.strokeCircle(0, -66, 7);
+
+        // 2. Atap Pagoda Melengkung (Eaves)
+        lanternArt.fillStyle(0x222B50, 1.0);
+        lanternArt.fillRoundedRect(-42, -56, 84, 14, 6);
+        lanternArt.lineStyle(1.5, 0x7FE0C3, 0.7);
+        lanternArt.strokeRoundedRect(-42, -56, 84, 14, 6);
+
+        // Mahkota atap kecil
+        lanternArt.fillStyle(0x2D3766, 1.0);
+        lanternArt.fillRoundedRect(-16, -62, 32, 8, 3);
+
+        // 3. Bilik Kaca Lentera (Chamber)
+        lanternArt.fillStyle(0x141B3B, 0.95);
+        lanternArt.fillRoundedRect(-26, -42, 52, 58, 4);
+        lanternArt.lineStyle(1.5, 0x3E4E80, 0.75);
+        lanternArt.strokeRoundedRect(-26, -42, 52, 58, 4);
+
+        // Kisi-kisi kayu bilik (Lattice)
+        lanternArt.lineStyle(1.5, 0x38456E, 0.6);
+        lanternArt.lineBetween(0, -42, 0, 16);
+        lanternArt.lineBetween(-26, -13, 26, -13);
+
+        // 4. Kaki / Pedestal Bawah Lentera
+        lanternArt.fillStyle(0x222B50, 1.0);
+        lanternArt.fillRoundedRect(-36, 16, 72, 12, 4);
+        lanternArt.lineStyle(1.5, 0x384166, 0.8);
+        lanternArt.strokeRoundedRect(-36, 16, 72, 12, 4);
+
+        // 5. Inti Api / Cahaya Lentera
+        const flameCore = scene.add.circle(0, -13, 13, 0x7FE0C3, 0.95);
+        const flameCenter = scene.add.circle(0, -13, 6, 0xFFFFFF, 0.95);
+
+        lanternGroup.add([lanternGlow, lanternArt, flameCore, flameCenter]);
+
+        // Animasi napas pendar lentera
         const animTw = scene.tweens.add({
-          targets: [lanternGlow, flame],
+          targets: [lanternGlow, flameCore],
           scaleX: 1.25,
           scaleY: 1.25,
-          alpha: 0.75,
-          duration: 1600,
+          alpha: 0.8,
+          duration: 1800,
           yoyo: true,
           repeat: -1,
           ease: 'Sine.easeInOut'
         });
         animTweens.push(animTw);
 
-        const caption = scene.add.text(0, 62, 'Penjaga Lentera', {
+        // Animasi melayang lembut (floating Zen)
+        const floatTw = scene.tweens.add({
+          targets: lanternGroup,
+          y: -26,
+          duration: 2200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+        animTweens.push(floatTw);
+
+        // Keterangan di bawah kotak lentera
+        const caption = scene.add.text(0, 68, 'Penjaga Lentera', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '22px',
           fontStyle: '800',
           color: '#FFFFFF'
         }).setOrigin(0.5).setResolution(2);
 
-        const subCaption = scene.add.text(0, 102, 'Latihan Berhenti Sejenak', {
+        const subCaption = scene.add.text(0, 96, 'Fokus & Hening', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
+          fontSize: '18px',
           fontStyle: '600',
           color: JEDA.CFG.COLOR.hex.calm
         }).setOrigin(0.5).setResolution(2);
 
-        previewContainer.add([lanternGlow, lanternBase, flame, caption, subCaption]);
+        previewContainer.add([lanternGroup, caption, subCaption]);
       }
     };
 
@@ -1684,15 +1763,16 @@ JEDA.UI = {
     renderMicroAnimation(options.type || (isMultiPage ? 'intro' : 'l1'));
 
     // 5. Kolom Kanan: Langkah / Konten Teks
-    const colRightX = cx + 152;
-    const contentRightContainer = scene.add.container(colRightX, cy + 18);
+    const colRightX = cx + 160;
+    const colRightY = cy + 14;
+    const contentRightContainer = scene.add.container(colRightX, colRightY);
     modalContainer.add(contentRightContainer);
 
     // Kapsul Tombol Bawah (Mulai di Kanan, Lewati di Kiri)
-    const btnY = cy + cardH / 2 - 68;
+    const btnY = cy + cardH / 2 - 64;
     const btnW = 280;
-    const btnH = 88;
-    const btnRadius = 44; // Kapsul sesuai Prinsip 6
+    const btnH = 80;
+    const btnRadius = 40; // Kapsul sesuai Prinsip 6
 
     const btnLeft = this.createButton(scene, cx - 156, btnY, btnW, btnH, 'Lewati', () => {
       closeCard();
@@ -1714,55 +1794,63 @@ JEDA.UI = {
         // --- Mode Multi-Halaman (Pembuka 3 Halaman) ---
         const curPage = options.pages[currentPageIndex] || {};
 
-        // Judul Halaman
-        const pageTitle = scene.add.text(0, -84, curPage.pageTitle || `Langkah ${currentPageIndex + 1}`, {
+        // 1. Kapsul Indikator Langkah / Eyebrow Badge di Bagian Atas
+        const badgeLabel = `${currentPageIndex + 1} dari ${totalPages} • ${curPage.badge || 'Panduan'}`;
+        const bText = scene.add.text(0, -88, badgeLabel, {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '33px',
+          fontSize: '18px',
           fontStyle: '800',
-          color: '#FFFFFF',
-          align: 'center'
-        }).setOrigin(0.5).setResolution(2);
-
-        // Teks Halaman (Persis PRD 15.2, dijamin <= 14 kata atau teks resmi)
-        const pageText = scene.add.text(0, -10, curPage.text || '', {
-          fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
-          fontStyle: '600',
-          color: '#CBD5E1',
-          align: 'center',
-          wordWrap: { width: 510 },
-          lineSpacing: 8
-        }).setOrigin(0.5).setResolution(2);
-
-        // Kapsul Aksen Kategori Halaman
-        const badgeLabel = curPage.badge || (currentPageIndex === 0 ? 'Fokus Utama' : (currentPageIndex === 1 ? '3 Level Tersedia' : 'Ruang Bebas Tekanan'));
-        const badgeW = 260;
-        const badgeH = 40;
-        const bBg = scene.add.graphics();
-        bBg.fillStyle(0x1A224A, 0.92);
-        bBg.fillRoundedRect(-badgeW / 2, 60 - badgeH / 2, badgeW, badgeH, 20);
-        bBg.lineStyle(1.5, 0x485888, 0.7);
-        bBg.strokeRoundedRect(-badgeW / 2, 60 - badgeH / 2, badgeW, badgeH, 20);
-
-        const bText = scene.add.text(0, 60, badgeLabel, {
-          fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '27px',
-          fontStyle: '700',
           color: JEDA.CFG.COLOR.hex.calm
         }).setOrigin(0.5).setResolution(2);
 
-        // Titik Indikator Pagination (3 halaman)
-        const dotContainer = scene.add.container(0, 114);
+        const badgeW = Math.max(220, Math.ceil((bText.width + 48) / 8) * 8);
+        const badgeH = 32;
+        const bBg = scene.add.graphics();
+        bBg.fillStyle(0x19224A, 0.95);
+        bBg.fillRoundedRect(-badgeW / 2, -88 - badgeH / 2, badgeW, badgeH, 16);
+        bBg.lineStyle(1.5, 0x425488, 0.7);
+        bBg.strokeRoundedRect(-badgeW / 2, -88 - badgeH / 2, badgeW, badgeH, 16);
+
+        // 2. Judul Halaman
+        const pageTitle = scene.add.text(0, -50, curPage.pageTitle || `Langkah ${currentPageIndex + 1}`, {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '30px',
+          fontStyle: '800',
+          color: '#FFFFFF',
+          align: 'center'
+        }).setOrigin(0.5, 0).setResolution(2);
+
+        // 3. Teks Halaman (Deskripsi PRD 15.2)
+        const pageText = scene.add.text(0, 2, curPage.text || '', {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '22px',
+          fontStyle: '600',
+          color: '#CBD5E1',
+          align: 'center',
+          wordWrap: { width: 480 },
+          lineSpacing: 6
+        }).setOrigin(0.5, 0).setResolution(2);
+
+        // 4. Titik Indikator Pagination (di bagian bawah)
+        const dotContainer = scene.add.container(0, 106);
         const dotSpacing = 24;
         const startDotX = -((totalPages - 1) * dotSpacing) / 2;
         for (let i = 0; i < totalPages; i++) {
           const dx = startDotX + i * dotSpacing;
           const isActive = i === currentPageIndex;
-          const dot = scene.add.circle(dx, 0, isActive ? 7 : 5, isActive ? 0x7FE0C3 : 0x3F486E, isActive ? 1.0 : 0.6);
+          const dot = scene.add.circle(dx, 0, isActive ? 6 : 4.5, isActive ? 0x7FE0C3 : 0x3F486E, isActive ? 1.0 : 0.65);
+          dot.setInteractive({ useHandCursor: true });
+          const targetIndex = i;
+          dot.on('pointerdown', () => {
+            if (targetIndex !== currentPageIndex) {
+              currentPageIndex = targetIndex;
+              renderRightColumn();
+            }
+          });
           dotContainer.add(dot);
         }
 
-        contentRightContainer.add([pageTitle, pageText, bBg, bText, dotContainer]);
+        contentRightContainer.add([bBg, bText, pageTitle, pageText, dotContainer]);
 
         // Tombol Kanan: 'Lanjut →' jika masih ada halaman, 'Mulai' jika halaman terakhir
         const isLastPage = currentPageIndex === totalPages - 1;
@@ -1782,36 +1870,36 @@ JEDA.UI = {
         // --- Mode 3 Langkah (Level 1, 2, 3) ---
         const steps = options.steps || [];
         const stepCount = Math.min(steps.length, 3);
-        const rowYs = stepCount === 2 ? [-44, 52] : [-76, 8, 92];
+        const rowYs = stepCount === 2 ? [-44, 44] : [-84, 0, 84];
 
         for (let i = 0; i < stepCount; i++) {
           const st = steps[i];
           const ry = rowYs[i];
           const rowContainer = scene.add.container(0, ry);
 
-          // 1. Badge Angka Langkah (Bulat 38 px)
-          const badgeX = -236;
+          // 1. Badge Angka Langkah (Bulat 36 px)
+          const badgeX = -224;
           const numBg = scene.add.graphics();
-          numBg.fillStyle(0x1B234A, 0.95);
-          numBg.fillCircle(badgeX, 0, 19);
-          numBg.lineStyle(2, 0x7FE0C3, 0.85);
-          numBg.strokeCircle(badgeX, 0, 19);
+          numBg.fillStyle(0x19224A, 0.95);
+          numBg.fillCircle(badgeX, 0, 18);
+          numBg.lineStyle(1.5, 0x7FE0C3, 0.85);
+          numBg.strokeCircle(badgeX, 0, 18);
 
           const numTxt = scene.add.text(badgeX, 0, `${st.num || (i + 1)}`, {
             fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '27px',
+            fontSize: '20px',
             fontStyle: '800',
             color: '#FFFFFF'
           }).setOrigin(0.5).setResolution(2);
 
-          // 2. Teks Langkah (Maks 14 kata, persis tabel 15.2, font 27 px)
-          const textX = -198;
+          // 2. Teks Langkah (Maks 14 kata, persis tabel 15.2, font 22 px)
+          const textX = -192;
           const stTxt = scene.add.text(textX, 0, st.text, {
             fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '27px',
+            fontSize: '22px',
             fontStyle: '600',
             color: '#F1F5F9',
-            wordWrap: { width: 446 },
+            wordWrap: { width: 440 },
             lineSpacing: 4
           }).setOrigin(0, 0.5).setResolution(2);
 

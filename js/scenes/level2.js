@@ -1326,6 +1326,9 @@ class Level2Scene extends Phaser.Scene {
     const cardH = 624; // Skala 8 px (78 * 8)
 
     const bg = this.add.graphics();
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
     bg.fillStyle(0x141638, 0.96);
     bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 32);
     bg.lineStyle(2, 0x3F486E, 0.65);
