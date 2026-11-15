@@ -1232,6 +1232,7 @@ JEDA.UI = {
     // 1. Backdrop Redup alpha 0.55 (PRD 15.2: "redup di belakangnya alpha 0,55")
     const backdrop = scene.add.rectangle(cx, cy, W, H, 0x050510, 0.55)
       .setInteractive();
+    backdrop.on('pointerdown', () => closeCard());
     modalContainer.add(backdrop);
 
     // 2. Panel M Kaca Gelap di Tengah (960 x 608 px, radius 32, kelipatan 8)
@@ -1259,10 +1260,11 @@ JEDA.UI = {
       if (isClosed) return;
       isClosed = true;
 
-      // Hapus listener keyboard Esc
+      // Hapus listener keyboard Esc & Enter
       if (scene.input && scene.input.keyboard) {
         scene.input.keyboard.off('keydown-ESC', escHandler);
         scene.input.keyboard.off('keydown-ESCAPE', escHandler);
+        scene.input.keyboard.off('keydown-ENTER', enterHandler);
       }
 
       // Hentikan semua tween dan timer animasi internal
@@ -1290,35 +1292,44 @@ JEDA.UI = {
       });
     };
 
-    // Handler Esc
+    // Handler Esc & Enter (PRD 14.3 Prinsip 15)
     const escHandler = (event) => {
       if (event && event.stopPropagation) event.stopPropagation();
       closeCard();
+    };
+    const enterHandler = (event) => {
+      if (event && event.stopPropagation) event.stopPropagation();
+      if (btnRight && btnRight.emit) {
+        btnRight.emit('pointerdown');
+      } else {
+        closeCard();
+      }
     };
 
     if (scene.input && scene.input.keyboard) {
       scene.input.keyboard.on('keydown-ESC', escHandler);
       scene.input.keyboard.on('keydown-ESCAPE', escHandler);
+      scene.input.keyboard.on('keydown-ENTER', enterHandler);
     }
 
     // 3. Header Panel: Kapsul Kategori, Judul, & Subjudul
     const headerContainer = scene.add.container(cx, cy - cardH / 2 + 58);
 
-    // Kapsul Kategori "PETUNJUK BERMAIN"
-    const catBadgeW = 240;
-    const catBadgeH = 36;
-    const catBg = scene.add.graphics();
-    catBg.fillStyle(0x1A2048, 0.95);
-    catBg.fillRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 18);
-    catBg.lineStyle(1.5, 0x7FE0C3, 0.55);
-    catBg.strokeRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 18);
-
+    // Kapsul Kategori "PETUNJUK BERMAIN" (Prinsip 3 & 8: Skala 8 px & Hierarki Teks)
     const catText = scene.add.text(0, 0, 'PETUNJUK BERMAIN', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
+      fontSize: '20px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
+
+    const catBadgeW = Math.max(240, Math.ceil((catText.width + 48) / 8) * 8);
+    const catBadgeH = 40; // Kelipatan 8
+    const catBg = scene.add.graphics();
+    catBg.fillStyle(0x1A2048, 0.95);
+    catBg.fillRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 20);
+    catBg.lineStyle(1.5, 0x7FE0C3, 0.55);
+    catBg.strokeRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 20);
     headerContainer.add([catBg, catText]);
 
     // Judul Utama (Hierarki teks 44 px)

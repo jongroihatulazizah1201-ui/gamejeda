@@ -90,22 +90,54 @@ class Level3Scene extends Phaser.Scene {
       this.showHelpModal();
     }, { fontSize: 27, radius: 24 });
 
-    const scW = 200;
-    const scX = helpBtnX - helpBtnSize / 2 - 16 - scW / 2; // 1752 - 16 - 100 = 1636
-    const scContainer = this.add.container(scX, headerY);
-    const scBg = this.add.graphics();
-    scBg.fillStyle(0x181A3C, 0.95);
-    scBg.fillRoundedRect(-scW / 2, -btnH / 2, scW, btnH, 24);
-    scBg.lineStyle(2, 0x485278, 0.65);
-    scBg.strokeRoundedRect(-scW / 2, -btnH / 2, scW, btnH, 24);
-
+    // Kontainer kapsul status skenario (dimensi & posisi diatur dinamis di updateScenarioCounter)
+    this.scContainer = this.add.container(0, headerY).setDepth(10);
+    this.scBg = this.add.graphics();
     this.stepCounterText = this.add.text(0, 0, 'Skenario 1 dari 3', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
+      fontSize: '24px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
-    scContainer.add([scBg, this.stepCounterText]);
+    this.scContainer.add([this.scBg, this.stepCounterText]);
+
+    // Format dan posisikan kapsul sesuai skala 8 px dan lebar dinamis terukur
+    this.updateScenarioCounter(0);
+  }
+
+  /**
+   * Memperbarui teks dan dimensi kapsul status skenario sesuai prinsip UI/UX (PRD 14.3).
+   * Lebar diukur dari teks + padding skala 8 px, rata kanan dengan jarak 16 px dari tombol ?.
+   */
+  updateScenarioCounter(idx = 0) {
+    if (!this.stepCounterText || !this.scBg || !this.scContainer) return;
+    const total = (this.scenarios && this.scenarios.length) || 3;
+    const label = `Skenario ${idx + 1} dari ${total}`;
+    this.stepCounterText.setText(label);
+
+    const Layout = JEDA.Layout;
+    const headerY = 64;
+    const helpBtnSize = 48;
+    const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1776
+    const helpLeftEdge = helpBtnX - helpBtnSize / 2; // 1752
+    const gap = 16; // Skala 8 px
+    const rightAnchor = helpLeftEdge - gap; // 1736
+
+    // Ukur lebar teks, berikan padding horizontal minimal 32 px kiri & kanan (total 64 px)
+    // Bulatkan lebar ke kelipatan 8 terdekat (PRD 14.3 Prinsip 3)
+    const textW = this.stepCounterText.width;
+    const scW = Math.max(280, Math.ceil((textW + 64) / 8) * 8);
+    const scH = 48; // Kelipatan 8
+    const radius = 24; // Kelipatan 8
+
+    const scX = rightAnchor - scW / 2;
+    this.scContainer.setPosition(scX, headerY);
+
+    this.scBg.clear();
+    this.scBg.fillStyle(0x181A3C, 0.95);
+    this.scBg.fillRoundedRect(-scW / 2, -scH / 2, scW, scH, radius);
+    this.scBg.lineStyle(2, 0x485278, 0.75);
+    this.scBg.strokeRoundedRect(-scW / 2, -scH / 2, scW, scH, radius);
   }
 
   /**
@@ -246,7 +278,7 @@ class Level3Scene extends Phaser.Scene {
     }
 
     this.currentScenarioIndex = idx;
-    this.stepCounterText.setText(`Skenario ${idx + 1} dari ${this.scenarios.length}`);
+    this.updateScenarioCounter(idx);
     this.clearScenarioContainer();
 
     const scenario = this.scenarios[idx];
@@ -464,8 +496,8 @@ class Level3Scene extends Phaser.Scene {
     this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 30;
-    const cardW = 950;
-    const cardH = 540;
+    const cardW = 960; // Panel M (PRD 14.3)
+    const cardH = 544; // Skala 8 px (68 * 8)
 
     const bg = this.add.graphics();
     bg.fillStyle(0x16163A, 0.95);
@@ -539,8 +571,8 @@ class Level3Scene extends Phaser.Scene {
     this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 30;
-    const cardW = 950;
-    const cardH = 540;
+    const cardW = 960; // Panel M (PRD 14.3)
+    const cardH = 544; // Skala 8 px
 
     const bg = this.add.graphics();
     bg.fillStyle(0x16163A, 0.95);
@@ -688,8 +720,8 @@ class Level3Scene extends Phaser.Scene {
     this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 30;
-    const cardW = 950;
-    const cardH = 540;
+    const cardW = 960; // Panel M (PRD 14.3)
+    const cardH = 544; // Skala 8 px
     const scenario = this.stopData.scenario;
 
     const bg = this.add.graphics();
@@ -765,8 +797,8 @@ class Level3Scene extends Phaser.Scene {
     this.clearScenarioContainer();
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2 + 30;
-    const cardW = 1080;
-    const cardH = 580;
+    const cardW = 1200; // Panel L (PRD 14.3)
+    const cardH = 584; // Skala 8 px
     const scenario = this.stopData.scenario;
 
     const bg = this.add.graphics();
@@ -902,8 +934,8 @@ class Level3Scene extends Phaser.Scene {
     const cy = JEDA.CFG.H / 2 + 20;
 
     const modal = this.add.container(cx, cy).setDepth(2000);
-    const cardW = 950;
-    const cardH = 620;
+    const cardW = 960; // Panel M (PRD 14.3)
+    const cardH = 624; // Skala 8 px (78 * 8)
 
     const bg = this.add.graphics();
     bg.fillStyle(0x16163A, 0.95);

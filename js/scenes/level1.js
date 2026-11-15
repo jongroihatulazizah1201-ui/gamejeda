@@ -180,8 +180,8 @@ class Level1Scene extends Phaser.Scene {
       this.showHelpModal();
     }, { fontSize: 27, radius: 24 });
 
-    const progW = 180;
-    const progX = helpBtnX - helpBtnSize / 2 - 16 - progW / 2; // 1752 - 16 - 90 = 1646
+    const progW = 208; // Kelipatan 8 (26 * 8)
+    const progX = helpBtnX - helpBtnSize / 2 - 16 - progW / 2; // 1752 - 16 - 104 = 1632
     const progContainer = this.add.container(progX, headerY);
     const progBg = this.add.graphics();
     progBg.fillStyle(0x181A3C, 0.95);
@@ -191,7 +191,7 @@ class Level1Scene extends Phaser.Scene {
 
     this.cycleCounterText = this.add.text(0, 0, `Siklus 1/${this.totalCycles}`, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
+      fontSize: '24px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);

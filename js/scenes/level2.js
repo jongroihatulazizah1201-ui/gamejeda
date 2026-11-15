@@ -242,8 +242,8 @@ class Level2Scene extends Phaser.Scene {
       this.showHelpModal();
     }, { fontSize: 27, radius: 24 });
 
-    const counterW = 220;
-    const counterX = helpBtnX - helpBtnSize / 2 - 16 - counterW / 2;
+    const counterW = 240; // Kelipatan 8 (30 * 8)
+    const counterX = helpBtnX - helpBtnSize / 2 - 16 - counterW / 2; // 1752 - 16 - 120 = 1616
     const counterBg = this.add.graphics();
     counterBg.fillStyle(0x181A3C, 0.95);
     counterBg.fillRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
@@ -253,8 +253,8 @@ class Level2Scene extends Phaser.Scene {
 
     this.progressText = this.add.text(counterX, headerY, `Dijinakkan 0 / ${this.totalThoughts}`, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
-      fontStyle: '700',
+      fontSize: '24px',
+      fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2).setDepth(6);
   }
