@@ -53,6 +53,17 @@ class Level2Scene extends Phaser.Scene {
     // 4. Mulai memunculkan gelembung pertama
     this.spawnInitialBubbles();
 
+    // Spawner berkala agar gelembung terus muncul bertahap dan teratur (PRD 5.3)
+    this.spawnTimer = this.time.addEvent({
+      delay: 7500,
+      loop: true,
+      callback: () => {
+        if (!this.isFinished && !this.miniBreathActive && this.activeBubbles.length < this.maxOnScreen && this.thoughtQueue.length > 0) {
+          this.spawnNextBubble(0);
+        }
+      }
+    });
+
     // 5. Input Safety - BR-05 (Anti Panik Klik)
     this.input.on('pointerdown', () => {
       if (JEDA.Guard && JEDA.Guard.recordPointerDown) {
@@ -88,6 +99,7 @@ class Level2Scene extends Phaser.Scene {
     }
 
     this.events.on('shutdown', () => {
+      if (this.spawnTimer) this.spawnTimer.remove(false);
       if (JEDA.Lumi) JEDA.Lumi.destroy();
     });
   }
@@ -284,16 +296,57 @@ class Level2Scene extends Phaser.Scene {
   }
 
   /**
-   * Memunculkan gelembung pertama hingga batas maksimum di layar (maks 4).
+   * Mengambil jalur Y yang optimal dan bebas dari gelembung lain.
+   * PRD 14.5: Area gelembung y 200 sampai 760.
+   * 4 Jalur Simetris: 240, 380, 520, 660 (jarak vertikal 140 px > tinggi gelembung 120 px).
+   * Menjamin tidak ada gelembung yang bertumpuk atau menempel.
    */
-  spawnInitialBubbles() {
-    for (let i = 0; i < 2; i++) {
-      this.spawnNextBubble(i * 1200);
+  getBestLaneY(excludeBubble = null) {
+    const lanes = [240, 380, 520, 660];
+
+    // Evaluasi kepadatan tiap jalur
+    const laneStats = lanes.map(laneY => {
+      const bubblesInLane = this.activeBubbles.filter(b => 
+        b !== excludeBubble && b.active && Math.abs(b.baseLaneY - laneY) < 50
+      );
+
+      // Cari jarak gelembung terdekat ke titik muncul (-160 px)
+      let minDistance = 9999;
+      bubblesInLane.forEach(b => {
+        const dist = Math.abs(b.x - (-160));
+        if (dist < minDistance) minDistance = dist;
+      });
+
+      return {
+        laneY,
+        count: bubblesInLane.length,
+        minDistance
+      };
+    });
+
+    // 1. Prioritaskan jalur yang benar-benar kosong (count === 0)
+    const emptyLanes = laneStats.filter(s => s.count === 0);
+    if (emptyLanes.length > 0) {
+      return Phaser.Utils.Array.GetRandom(emptyLanes).laneY;
     }
+
+    // 2. Jika seluruh jalur terisi, pilih jalur yang gelembungnya paling jauh (> 500 px dari titik muncul)
+    laneStats.sort((a, b) => b.minDistance - a.minDistance);
+    return laneStats[0].laneY;
   }
 
   /**
-   * Memunculkan satu gelembung pikiran dari kiri.
+   * Memunculkan gelembung awal satu per satu dengan jeda yang aman (PRD 5.3).
+   */
+  spawnInitialBubbles() {
+    // Gelembung pertama muncul segera
+    this.spawnNextBubble(400);
+    // Gelembung kedua muncul setelah gelembung pertama melayang cukup jauh (5 detik kemudian)
+    this.spawnNextBubble(5000);
+  }
+
+  /**
+   * Memunculkan satu gelembung pikiran dari kiri di jalur yang aman.
    */
   spawnNextBubble(delayMs = 0) {
     if (this.thoughtQueue.length === 0 || this.activeBubbles.length >= this.maxOnScreen || this.isFinished) return;
@@ -308,23 +361,22 @@ class Level2Scene extends Phaser.Scene {
   }
 
   /**
-   * Membuat satu objek gelembung pikiran interaktif.
+   * Membuat satu objek gelembung pikiran interaktif dengan jarak aman.
    */
   createBubble(thoughtData) {
     const W = JEDA.CFG.W;
-    const lanes = [200, 340, 480, 620];
-    const laneY = Phaser.Utils.Array.GetRandom(lanes);
-    const startX = -140;
+    const laneY = this.getBestLaneY();
+    const startX = -160;
 
     const container = this.add.container(startX, laneY).setDepth(10);
-    const bubbleW = 280;
-    const bubbleH = 130;
+    const bubbleW = 300;
+    const bubbleH = 120;
 
     // Bentuk gelembung kaca oval rounded ber-efek pantulan kaca & pendar kategori (Prinsip UI/UX)
     const bg = this.add.graphics();
     this.drawBubbleShape(bg, bubbleW, bubbleH, false, thoughtData.category);
 
-    // Teks pikiran (kontras tinggi, tajam)
+    // Teks pikiran (kontras tinggi, tajam, ukuran proporsional)
     const textObj = this.add.text(0, 0, thoughtData.text, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '20px',
@@ -350,13 +402,13 @@ class Level2Scene extends Phaser.Scene {
     container.textObj = textObj;
     container.isBeingDragged = false;
 
-    // Gerak melayang perlahan dari kiri ke kanan (30-40 detik)
-    this.startDrifting(container, startX, W + 160);
+    // Gerak melayang perlahan dari kiri ke kanan
+    this.startDrifting(container, startX, W + 180);
 
     // Animasi naik-turun lembut (floating bobbing) agar tampak hidup seperti gelembung sungguhan
     container.bobTween = this.tweens.add({
       targets: [bg, textObj],
-      y: '+=8',
+      y: '+=6',
       duration: Phaser.Math.Between(1800, 2400),
       yoyo: true,
       repeat: -1,
@@ -380,7 +432,7 @@ class Level2Scene extends Phaser.Scene {
       if (container.bobTween) container.bobTween.pause();
       if (container.pulseTween) container.pulseTween.pause();
       container.setDepth(200);
-      this.tweens.add({ targets: container, scaleX: 1.1, scaleY: 1.1, duration: 150 });
+      this.tweens.add({ targets: container, scaleX: 1.08, scaleY: 1.08, duration: 150 });
     });
 
     container.on('drag', (pointer, dragX, dragY) => {
@@ -397,14 +449,19 @@ class Level2Scene extends Phaser.Scene {
         container.isBeingDragged = false;
         if (container.bobTween) container.bobTween.resume();
         if (container.pulseTween) container.pulseTween.resume();
+
+        // Cari jalur yang aman dari gelembung lain agar tidak bertumpukan saat kembali
+        const safeLaneY = this.getBestLaneY(container);
+        container.baseLaneY = safeLaneY;
+
         this.tweens.add({
           targets: container,
-          y: container.baseLaneY,
+          y: safeLaneY,
           duration: 400,
           ease: 'Sine.easeOut',
           onComplete: () => {
             if (container.active) {
-              this.startDrifting(container, container.x, W + 160);
+              this.startDrifting(container, container.x, W + 180);
             }
           }
         });
@@ -444,7 +501,7 @@ class Level2Scene extends Phaser.Scene {
       const auraColor = categoryAuras[category] || 0x7FE0C3;
 
       // 1. Lapisan dasar gelap frosted glass (100% terbaca, bebas tembus pandang)
-      graphics.fillStyle(0x131536, 0.94);
+      graphics.fillStyle(0x131536, 0.96);
       graphics.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
 
       // 2. Kilau gradasi dalam gelembung kaca
@@ -477,8 +534,15 @@ class Level2Scene extends Phaser.Scene {
   startDrifting(container, fromX, toX) {
     const W = JEDA.CFG.W;
     const remainingDistance = Math.max(100, toX - fromX);
-    const speed = 45; // pixel per detik
+
+    // Kecepatan sedikit bervariasi per jalur (42-47 px/s) agar tampak alami dan tidak sejajar kaku
+    const laneSpeedMap = { 240: 42, 380: 46, 520: 43, 660: 47 };
+    const speed = laneSpeedMap[container.baseLaneY] || 45;
     const duration = (remainingDistance / speed) * 1000;
+
+    if (container.driftTween) {
+      container.driftTween.stop();
+    }
 
     container.driftTween = this.tweens.add({
       targets: container,
@@ -486,10 +550,13 @@ class Level2Scene extends Phaser.Scene {
       duration: duration,
       ease: 'Linear',
       onComplete: () => {
-        // Jika sampai di ujung kanan tanpa dikerjakan, putar kembali ke kiri
+        // Jika sampai di ujung kanan tanpa dikerjakan, putar kembali ke kiri di jalur yang aman
         if (container.active && !container.isBeingDragged) {
-          container.x = -140;
-          this.startDrifting(container, -140, W + 160);
+          const newLaneY = this.getBestLaneY(container);
+          container.x = -160;
+          container.y = newLaneY;
+          container.baseLaneY = newLaneY;
+          this.startDrifting(container, -160, W + 180);
         }
       }
     });
@@ -542,9 +609,11 @@ class Level2Scene extends Phaser.Scene {
           this.removeActiveBubble(bubble);
           bubble.destroy();
 
-          // Munculkan gelembung berikutnya
+          // Munculkan gelembung berikutnya jika di layar tersisa sedikit
           if (this.resolvedCount < this.totalThoughts) {
-            this.spawnNextBubble(800);
+            if (this.activeBubbles.length < 2) {
+              this.spawnNextBubble(1200);
+            }
           } else {
             this.finishLevel();
           }
@@ -570,15 +639,17 @@ class Level2Scene extends Phaser.Scene {
         repeat: 4,
         ease: 'Sine.easeInOut',
         onComplete: () => {
-          // Kembalikan ke posisi melayang semula
+          // Kembalikan ke posisi melayang semula di jalur yang aman
+          const safeLaneY = this.getBestLaneY(bubble);
+          bubble.baseLaneY = safeLaneY;
           this.tweens.add({
             targets: bubble,
-            y: bubble.baseLaneY,
+            y: safeLaneY,
             duration: 400,
             ease: 'Sine.easeOut',
             onComplete: () => {
               if (bubble.active) {
-                this.startDrifting(bubble, bubble.x, JEDA.CFG.W + 160);
+                this.startDrifting(bubble, bubble.x, JEDA.CFG.W + 180);
               }
             }
           });
@@ -624,10 +695,13 @@ class Level2Scene extends Phaser.Scene {
   }
 
   /**
-   * Loop pengawasan: mendeteksi penumpukan 4 gelembung > 8 detik (PRD Bagian 5.3).
+   * Loop pengawasan: mendeteksi penumpukan 4 gelembung > 8 detik & memisahkan gelembung agar tidak menempel.
    */
   update(time, delta) {
     if (this.isFinished || this.miniBreathActive) return;
+
+    // Jaga jarak antar gelembung agar tidak pernah saling menempel atau menutupi tulisan
+    this.preventBubbleOverlap();
 
     if (this.activeBubbles.length >= 4) {
       this.pileUpTimer += delta;
@@ -637,6 +711,49 @@ class Level2Scene extends Phaser.Scene {
       }
     } else {
       this.pileUpTimer = 0;
+    }
+  }
+
+  /**
+   * Mencegah tumpang tindih gelembung (anti-overlap & separation).
+   * Jika ada dua gelembung yang berada di jalur yang sama dan terlalu berdekatan,
+   * secara otomatis salah satunya dipindahkan ke jalur kosong lain.
+   */
+  preventBubbleOverlap() {
+    const bubbles = this.activeBubbles.filter(b => b && b.active && !b.isBeingDragged);
+    const minSafeX = 330; // Lebar gelembung 300 + margin aman 30 px
+
+    for (let i = 0; i < bubbles.length; i++) {
+      for (let j = i + 1; j < bubbles.length; j++) {
+        const a = bubbles[i];
+        const b = bubbles[j];
+
+        const dx = Math.abs(a.x - b.x);
+        const dy = Math.abs(a.y - b.y);
+
+        // Jika berada di jalur yang sama (dy < 60) dan jarak horizontal berdekatan (< 330 px)
+        if (dy < 60 && dx < minSafeX) {
+          // Pindahkan gelembung yang di belakang ke jalur kosong lain
+          const target = (a.x < b.x) ? a : b;
+          const other = (target === a) ? b : a;
+          const newLaneY = this.getBestLaneY(target);
+
+          if (Math.abs(newLaneY - target.baseLaneY) > 50) {
+            target.baseLaneY = newLaneY;
+            this.tweens.add({
+              targets: target,
+              y: newLaneY,
+              duration: 450,
+              ease: 'Sine.easeInOut'
+            });
+          } else {
+            // Beri dorongan jarak horizontal lembut jika jalur lain sedang penuh
+            const push = (minSafeX - dx) * 0.05;
+            target.x = Math.max(-160, target.x - push);
+            other.x += push;
+          }
+        }
+      }
     }
   }
 
