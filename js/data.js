@@ -138,5 +138,26 @@ JEDA.DATA = {
         text: 'Mengeluh ke teman sekelas saat itu juga.'
       }
     }
-  ]
+  ],
+
+  /**
+   * 14 Ucapan Lumi (PRD Bagian 14.1 & 14.2 G1)
+   * Pendamping mindfulness yang hangat, ringkas, dan bebas penghakiman.
+   */
+  lumi: {
+    intro_l1: 'Hai, aku Lumi. Ikuti napasku, tahan saat aku membesar.',
+    cycle_good: 'Napasmu pas. Rasakan pelan-pelannya.',
+    cycle_off: 'Tidak apa-apa. Kembali ke napas.',
+    distract_hit: 'Perhatianmu tadi pergi. Kembali ke napas.',
+    storm: 'Badai datang. Tetap di napasmu.',
+    storm_pass: 'Kamu melewati badai. Lenteranya makin terang.',
+    l2_intro: 'Pikiran itu seperti awan. Beri nama, lalu biarkan lewat.',
+    l2_correct: 'Pas. Awannya melayang pergi.',
+    l2_wrong: 'Hampir. Coba lihat lagi isinya.',
+    panic: 'Pelan-pelan. Tarik napas dulu.',
+    l3_intro: 'Kadang yang terbaik adalah berhenti sebentar.',
+    stop_s: 'Berhenti. Dunia ikut menunggu.',
+    level_pass: 'Satu lentera menyala.',
+    result_low: 'Perasaan bisa naik turun. Mengamatinya sudah bagian dari latihan.'
+  }
 };

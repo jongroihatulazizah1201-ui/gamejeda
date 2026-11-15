@@ -57,6 +57,10 @@ class Level2Scene extends Phaser.Scene {
     this.input.on('pointerdown', () => {
       if (JEDA.Guard && JEDA.Guard.recordPointerDown) {
         JEDA.Guard.recordPointerDown(this, () => {
+          if (JEDA.Lumi) {
+            JEDA.Lumi.addFlow(-20);
+            JEDA.Lumi.say('panic');
+          }
           JEDA.UI.showPanicOverlay(this);
         });
       }
@@ -69,6 +73,23 @@ class Level2Scene extends Phaser.Scene {
     if (JEDA.Guard && JEDA.Guard.startIdleMonitor) {
       JEDA.Guard.startIdleMonitor(this);
     }
+
+    // 8. Inisialisasi Karakter Pendamping Lumi (PRD 14.2 Fase G-2)
+    if (JEDA.Lumi) {
+      JEDA.Lumi.init(this, {
+        bubbleX: cx,
+        bubbleY: 135,
+        showMeter: false,
+        resetFlow: true
+      });
+      this.time.delayedCall(700, () => {
+        if (!this.isFinished) JEDA.Lumi.say('l2_intro');
+      });
+    }
+
+    this.events.on('shutdown', () => {
+      if (JEDA.Lumi) JEDA.Lumi.destroy();
+    });
   }
 
   /**
@@ -486,7 +507,9 @@ class Level2Scene extends Phaser.Scene {
       // 1. Catat keberhasilan
       if (!thought.hasFailed) {
         this.firstTryCorrect++;
+        if (JEDA.Lumi) JEDA.Lumi.addFlow(10);
       }
+      if (JEDA.Lumi) JEDA.Lumi.say('l2_correct');
       this.resolvedCount++;
       this.counterText.setText(`Terselesaikan: ${this.resolvedCount}/10`);
 
@@ -530,6 +553,10 @@ class Level2Scene extends Phaser.Scene {
     } else {
       // 3. Animasi SALAH: "gelembung bergetar ringan, keranjang menampilkan petunjuk teks, gelembung kembali" (PRD 5.3)
       thought.hasFailed = true;
+      if (JEDA.Lumi) {
+        JEDA.Lumi.addFlow(-10);
+        JEDA.Lumi.say('l2_wrong');
+      }
 
       // Keranjang menampilkan petunjuk
       this.showBasketHint(dropZone, thought.hint);
@@ -727,6 +754,7 @@ class Level2Scene extends Phaser.Scene {
 
     // Simpan progres jika lulus (skor >= 60)
     if (result.passed) {
+      if (JEDA.Lumi) JEDA.Lumi.say('level_pass');
       JEDA.State.saveLevelScore(2, result.score, result.stars);
       JEDA.State.data.fails.l2 = 0;
       if (JEDA.Stage3D) {
@@ -736,6 +764,7 @@ class Level2Scene extends Phaser.Scene {
         }
       }
     } else {
+      if (JEDA.Lumi) JEDA.Lumi.say('result_low');
       JEDA.State.data.fails.l2 = (JEDA.State.data.fails.l2 || 0) + 1;
     }
     JEDA.State.session.levelScores.l2 = result.score;

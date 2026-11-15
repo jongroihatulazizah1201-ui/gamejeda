@@ -622,5 +622,56 @@ JEDA.UI = {
     }, { primary: true, radius: 34, fontSize: 22 });
 
     modal.add([bg, title, desc, declineBtn, acceptBtn]);
+  },
+
+  /**
+   * Gelembung Ucapan Lumi (PRD Bagian 14.1 & 14.2 G1).
+   * - Menampilkan pesan hangat Lumi di bawah orb (PRD 14.5: y = 760 di L1)
+   * - Kotak kaca rounded ber-aksen toska (calm) dengan ekor penunjuk ke atas
+   * - Maksimal 2 baris, font 24 px, lebar responsif proporsional
+   */
+  speechBubble(scene, x, y, text) {
+    const container = scene.add.container(x, y).setDepth(1500);
+
+    const textObj = scene.add.text(0, 3, text, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '24px',
+      fontStyle: '700',
+      color: '#FFFFFF',
+      align: 'center',
+      wordWrap: { width: 580 },
+      lineSpacing: 6
+    }).setOrigin(0.5).setResolution(2);
+
+    const padX = 42;
+    const padY = 22;
+    const w = Math.max(340, Math.min(720, textObj.width + padX * 2));
+    const h = textObj.height + padY * 2;
+    const radius = 24;
+
+    const bg = scene.add.graphics();
+    // 1. Latar belakang kaca gelap solid (0x121538 alpha 0.96)
+    bg.fillStyle(0x121538, 0.96);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+
+    // 2. Ekor segitiga runcing menunjuk ke arah orb di atas (-h / 2)
+    bg.fillTriangle(-12, -h / 2, 12, -h / 2, 0, -h / 2 - 14);
+
+    // 3. Garis tepi pendar toska tenang (0x7FE0C3)
+    bg.lineStyle(2, 0x7FE0C3, 0.85);
+    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+    bg.lineBetween(-12, -h / 2, 0, -h / 2 - 14);
+    bg.lineBetween(0, -h / 2 - 14, 12, -h / 2);
+
+    // 4. Ikon pendar kecil Lumi di samping kiri teks
+    const glowDot = scene.add.circle(-w / 2 + 28, 0, 7, 0x7FE0C3, 0.9);
+
+    container.add([bg, glowDot, textObj]);
+    container.textObj = textObj;
+    container.bg = bg;
+    container.bubbleW = w;
+    container.bubbleH = h;
+
+    return container;
   }
 };

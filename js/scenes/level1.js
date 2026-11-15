@@ -99,6 +99,25 @@ class Level1Scene extends Phaser.Scene {
     if (JEDA.Guard && JEDA.Guard.startIdleMonitor) {
       JEDA.Guard.startIdleMonitor(this);
     }
+
+    // 10. Karakter Pendamping Lumi & Meter Aliran (PRD 14.2 Fase G-2)
+    if (JEDA.Lumi) {
+      JEDA.Lumi.init(this, {
+        orbX: cx,
+        orbY: 500,
+        bubbleX: cx,
+        bubbleY: 760,
+        showMeter: true,
+        resetFlow: true
+      });
+      this.time.delayedCall(700, () => {
+        if (!this.isFinished) JEDA.Lumi.say('intro_l1');
+      });
+    }
+
+    this.events.on('shutdown', () => {
+      if (JEDA.Lumi) JEDA.Lumi.destroy();
+    });
   }
 
   /**
@@ -407,10 +426,23 @@ class Level1Scene extends Phaser.Scene {
       dotColor = JEDA.CFG.COLOR.calm;
       feedbackWord = 'Pas';
       syncState = 'good';
+      if (JEDA.Lumi) {
+        JEDA.Lumi.addFlow(20);
+        JEDA.Lumi.say('cycle_good');
+      }
     } else if (cycleScore >= 0.5) {
       dotColor = JEDA.CFG.COLOR.warn;
       feedbackWord = 'Sedikit meleset';
       syncState = 'warn';
+      if (JEDA.Lumi) {
+        JEDA.Lumi.addFlow(10);
+        JEDA.Lumi.say('cycle_good');
+      }
+    } else {
+      if (JEDA.Lumi) {
+        JEDA.Lumi.addFlow(-15);
+        JEDA.Lumi.say('cycle_off');
+      }
     }
 
     if (JEDA.Stage3D) {
@@ -544,6 +576,11 @@ class Level1Scene extends Phaser.Scene {
     container.destroy();
     this.distractHits++;
 
+    if (JEDA.Lumi) {
+      JEDA.Lumi.addFlow(-10);
+      JEDA.Lumi.say('distract_hit');
+    }
+
     JEDA.UI.toast(this, 'Perhatianmu tadi pergi. Kembali ke napas.');
     this.flashOrbOff();
 
@@ -591,6 +628,7 @@ class Level1Scene extends Phaser.Scene {
     const result = JEDA.Score.calcL1(this.completedCycles, this.distractHits);
 
     if (result.passed) {
+      if (JEDA.Lumi) JEDA.Lumi.say('level_pass');
       JEDA.State.saveLevelScore(1, result.score, result.stars);
       JEDA.State.data.fails.l1 = 0;
       if (JEDA.Stage3D) {
@@ -600,6 +638,7 @@ class Level1Scene extends Phaser.Scene {
         }
       }
     } else {
+      if (JEDA.Lumi) JEDA.Lumi.say('result_low');
       JEDA.State.data.fails.l1 = (JEDA.State.data.fails.l1 || 0) + 1;
     }
     JEDA.State.session.levelScores.l1 = result.score;
