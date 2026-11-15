@@ -48,14 +48,14 @@ JEDA.Stage3D = (function() {
 
   // Kamera & Parallax
   const CAMERA_PRESETS = {
-    menu:   { x: 0, y: 0.2, z: 16.0, fov: 50 },
+    menu:   { x: 0, y: 1.0, z: 22.0, fov: 50 },
     l1:     { x: 0, y: 0.0, z: 11.2, fov: 48 },
     l2:     { x: 1.2, y: 0.8, z: 14.5, fov: 50 },
     l3:     { x: 0, y: 0.3, z: 15.0, fov: 50 },
     result: { x: 0, y: 1.5, z: 18.0, fov: 52 }
   };
-  let currentCamPos = { x: 0, y: 0.2, z: 16.0 };
-  let targetCamPos = { x: 0, y: 0.2, z: 16.0 };
+  let currentCamPos = { x: 0, y: 1.0, z: 22.0 };
+  let targetCamPos = { x: 0, y: 1.0, z: 22.0 };
   let mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
   let currentMode = 'menu';
 
@@ -88,25 +88,25 @@ JEDA.Stage3D = (function() {
    */
   function createGlowTexture(isStar = false) {
     const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
+    canvas.width = 64;
+    canvas.height = 64;
     const ctx = canvas.getContext('2d');
 
-    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
     if (isStar) {
       grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
-      grad.addColorStop(0.3, 'rgba(230, 245, 255, 0.7)');
-      grad.addColorStop(0.7, 'rgba(180, 210, 255, 0.2)');
+      grad.addColorStop(0.2, 'rgba(215, 238, 255, 0.8)');
+      grad.addColorStop(0.5, 'rgba(127, 224, 195, 0.25)');
       grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
     } else {
-      grad.addColorStop(0.0, 'rgba(255, 255, 255, 0.95)');
-      grad.addColorStop(0.25, 'rgba(127, 224, 195, 0.65)');
-      grad.addColorStop(0.65, 'rgba(43, 76, 126, 0.25)');
+      grad.addColorStop(0.0, 'rgba(255, 255, 255, 0.65)');
+      grad.addColorStop(0.3, 'rgba(127, 224, 195, 0.35)');
+      grad.addColorStop(0.7, 'rgba(43, 76, 126, 0.10)');
       grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
     }
 
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 128, 128);
+    ctx.fillRect(0, 0, 64, 64);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.generateMipmaps = false;
@@ -141,10 +141,11 @@ JEDA.Stage3D = (function() {
         varying vec3 vViewPosition;
         void main() {
           vec3 viewDir = normalize(vViewPosition);
-          float fresnel = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 2.2);
-          vec3 base = color * 0.85;
-          vec3 finalColor = mix(base, fresnelColor, fresnel * 0.75);
-          gl_FragColor = vec4(finalColor, 0.92);
+          float fresnel = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 2.5);
+          vec3 base = color * 0.75;
+          vec3 finalColor = mix(base, fresnelColor, fresnel * 0.82);
+          float alpha = 0.75 + fresnel * 0.22;
+          gl_FragColor = vec4(finalColor, alpha);
         }
       `,
       transparent: true,
@@ -179,7 +180,7 @@ JEDA.Stage3D = (function() {
 
     const starTexture = createGlowTexture(true);
     const material = new THREE.PointsMaterial({
-      size: 2.2,
+      size: 1.1,
       map: starTexture,
       transparent: true,
       blending: THREE.AdditiveBlending,
@@ -226,7 +227,7 @@ JEDA.Stage3D = (function() {
 
     const particleTexture = createGlowTexture(true);
     const material = new THREE.PointsMaterial({
-      size: 1.8,
+      size: 0.12, // Partikel halus dan anggun berukuran presisi
       map: particleTexture,
       transparent: true,
       blending: THREE.AdditiveBlending,
@@ -272,7 +273,7 @@ JEDA.Stage3D = (function() {
       orbGroup.rotation.y += 0.003 * timeScale;
     }
     if (haloSprite) {
-      const haloScale = 7.5 * finalOrbScale;
+      const haloScale = 4.8 * finalOrbScale;
       haloSprite.scale.set(haloScale, haloScale, 1);
     }
 
@@ -410,7 +411,7 @@ JEDA.Stage3D = (function() {
         orbGroup.add(orbMesh);
 
         // PointLight di dalam Orb
-        orbLight = new THREE.PointLight(0x7FE0C3, 2.0, 25);
+        orbLight = new THREE.PointLight(0x7FE0C3, 1.2, 22);
         orbGroup.add(orbLight);
 
         // Halo Cahaya Aditif Mengelilingi Orb
@@ -420,10 +421,11 @@ JEDA.Stage3D = (function() {
           transparent: true,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
-          color: 0x7FE0C3
+          color: 0x7FE0C3,
+          opacity: 0.4
         });
         haloSprite = new THREE.Sprite(haloMat);
-        haloSprite.scale.set(7.5, 7.5, 1);
+        haloSprite.scale.set(4.8, 4.8, 1);
         orbGroup.add(haloSprite);
 
         scene.add(orbGroup);
@@ -457,6 +459,18 @@ JEDA.Stage3D = (function() {
       targetCamPos.x = preset.x;
       targetCamPos.y = preset.y;
       targetCamPos.z = preset.z;
+
+      if (mode === 'menu') {
+        targetBreathScale = 0.6;
+        if (orbLight) orbLight.intensity = 0.7;
+        if (haloMat) haloMat.opacity = 0.25;
+        if (particlesMesh && particlesMesh.material) particlesMesh.material.opacity = 0.35;
+      } else if (mode === 'l1') {
+        targetBreathScale = 0.9;
+        if (orbLight) orbLight.intensity = 1.3;
+        if (haloMat) haloMat.opacity = 0.6;
+        if (particlesMesh && particlesMesh.material) particlesMesh.material.opacity = 0.85;
+      }
     },
 
     /**
@@ -552,3 +566,4 @@ JEDA.Stage3D = (function() {
     }
   };
 })();
+

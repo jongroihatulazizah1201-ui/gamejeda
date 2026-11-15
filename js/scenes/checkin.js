@@ -73,8 +73,11 @@ class CheckinScene extends Phaser.Scene {
     const panelH = 590;
     const panelY = 445;
 
-    // Panel kaca tengah
-    JEDA.UI.createPanel(this, cx, panelY, panelW, panelH, 32, 0.08, 0.22);
+    // Panel kaca tengah berlatar gelap frosted glass agar teks dan tombol selalu terbaca jelas
+    const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
+    const fillColor = is3D ? 0x14142B : JEDA.CFG.COLOR.panel;
+    const fillAlpha = is3D ? 0.90 : 0.08;
+    JEDA.UI.createPanel(this, cx, panelY, panelW, panelH, 32, fillAlpha, 0.35, fillColor);
 
     // Judul & Subjudul
     this.add.text(cx, panelY - 240, 'JEDA', {
@@ -322,6 +325,7 @@ class CheckinScene extends Phaser.Scene {
    */
   renderLevelCards() {
     this.cardsContainer.removeAll(true);
+    const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
     const cx = JEDA.CFG.W / 2;
     const cardY = 890;
     const cardW = 340;
@@ -344,9 +348,11 @@ class CheckinScene extends Phaser.Scene {
 
       // Background kartu
       const bg = this.add.graphics();
-      bg.fillStyle(JEDA.CFG.COLOR.panel, isUnlocked ? 0.08 : 0.03);
+      const cardColor = is3D ? 0x14142B : JEDA.CFG.COLOR.panel;
+      const cardFill = is3D ? (isUnlocked ? 0.88 : 0.65) : (isUnlocked ? 0.08 : 0.03);
+      bg.fillStyle(cardColor, cardFill);
       bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 24);
-      bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, isUnlocked ? 0.25 : 0.12);
+      bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, isUnlocked ? 0.35 : 0.18);
       bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 24);
 
       // Judul level

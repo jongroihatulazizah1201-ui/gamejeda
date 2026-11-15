@@ -9,9 +9,9 @@ JEDA.UI = {
   /**
    * Menggambar panel kaca rounded rectangle.
    */
-  createPanel(scene, x, y, w, h, radius = 24, fillAlpha = 0.08, strokeAlpha = 0.20) {
+  createPanel(scene, x, y, w, h, radius = 24, fillAlpha = 0.08, strokeAlpha = 0.20, fillColor = JEDA.CFG.COLOR.panel) {
     const graphics = scene.add.graphics();
-    graphics.fillStyle(JEDA.CFG.COLOR.panel, fillAlpha);
+    graphics.fillStyle(fillColor, fillAlpha);
     graphics.fillRoundedRect(x - w / 2, y - h / 2, w, h, radius);
 
     graphics.lineStyle(2, JEDA.CFG.COLOR.panelLine, strokeAlpha);
