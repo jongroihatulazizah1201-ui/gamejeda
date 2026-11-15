@@ -19,9 +19,6 @@ JEDA.Stage3D = (function() {
 
   // Objek panggung 3D
   let skyDome = null;
-  let skyCanvas = null;
-  let skyCtx = null;
-  let skyTexture = null;
   let starsMesh = null;
   let orbGroup = null;
   let orbMesh = null;
@@ -39,7 +36,6 @@ JEDA.Stage3D = (function() {
 
   // Awan Low Poly & Taman Lentera (Fase 3D-2 & 3D-3)
   let clouds = [];
-  let sharedCloudMat = null;
   let spawnedClouds = []; // Awan baru muncul saat gelembung benar (L2)
   let islands = [];
   let lanternBeams = []; // Sinar naik lentera saat lulus level
@@ -96,65 +92,27 @@ JEDA.Stage3D = (function() {
   let currentMode = 'menu';
 
   /**
-   * Memperbarui kanvas gradasi langit skydome sesuai skin aktif (PRD 14.2 G5 / Fase G-4).
-   * Menghasilkan atmosfer langit yang dramatis dan berbeda nyata antar tema:
-   * - 'embun': Senja syahdu kebiruan & embun jernih (Midnight Blue -> Indigo -> Slate Cyan -> Dew Mist)
-   * - 'fajar': Fajar keemasan menyala (Deep Dawn Purple -> Crimson Magenta -> Coral -> Golden Amber -> Sunrise Gold)
-   * - 'aurora': Lembayung aurora kutub magis (Cosmic Abyss -> Polar Teal -> Emerald Ribbon -> Cyan Glow -> Neon Purple)
+   * Membuat tekstur kanvas prosedural gradasi senja untuk skydome.
    */
-  function updateSkyCanvas(skinId = 'embun') {
-    if (!skyCanvas) {
-      skyCanvas = document.createElement('canvas');
-      skyCanvas.width = 512;
-      skyCanvas.height = 512;
-      skyCtx = skyCanvas.getContext('2d');
-    }
+  function createSkyTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
 
-    const grad = skyCtx.createLinearGradient(0, 0, 0, 512);
-    if (skinId === 'fajar') {
-      grad.addColorStop(0.00, '#1c102a'); // Puncak langit: ungu pekat fajar
-      grad.addColorStop(0.30, '#441c42'); // Magenta lembayung
-      grad.addColorStop(0.55, '#86324b'); // Crimson hangat
-      grad.addColorStop(0.75, '#c75a3c'); // Terakota hangat
-      grad.addColorStop(0.90, '#ea8d35'); // Jingga fajar menyala
-      grad.addColorStop(1.00, '#fcd34d'); // Cakrawala emas bersinar
-    } else if (skinId === 'aurora') {
-      grad.addColorStop(0.00, '#060614'); // Puncak angkasa: hitam kosmis pekat
-      grad.addColorStop(0.24, '#0a2336'); // Biru laut kutub dalam
-      grad.addColorStop(0.48, '#059669'); // Pita hijau zamrud aurora
-      grad.addColorStop(0.68, '#06b6d4'); // Tirai cyan bercahaya
-      grad.addColorStop(0.86, '#7c3aed'); // Lembayung ungu kutub
-      grad.addColorStop(1.00, '#c084fc'); // Cakrawala lavender berpendar
-    } else {
-      // embun: langit senja syahdu (default)
-      grad.addColorStop(0.00, '#101128'); // Biru senja pekat
-      grad.addColorStop(0.40, '#1e2b58'); // Biru malam indigo
-      grad.addColorStop(0.75, '#2f4b6a'); // Biru keabuan tenang
-      grad.addColorStop(1.00, '#4e7d8f'); // Cakrawala embun jernih
-    }
+    const grad = ctx.createLinearGradient(0, 0, 0, 512);
+    grad.addColorStop(0.0, '#16163A'); // Atas gelap
+    grad.addColorStop(0.5, '#2B4C7E'); // Tengah biru senja
+    grad.addColorStop(0.85, '#B87288'); // Transisi ungu lembayung
+    grad.addColorStop(1.0, '#E8A598'); // Bawah cakrawala hangat
 
-    skyCtx.fillStyle = grad;
-    skyCtx.fillRect(0, 0, 512, 512);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 512);
 
-    if (skyTexture) {
-      skyTexture.needsUpdate = true;
-    }
-    if (skyDome && skyDome.material && skyDome.material.map) {
-      skyDome.material.map.needsUpdate = true;
-    }
-  }
-
-  /**
-   * Membuat tekstur kanvas prosedural gradasi langit untuk skydome.
-   */
-  function createSkyTexture(skinId = 'embun') {
-    updateSkyCanvas(skinId);
-    if (!skyTexture) {
-      skyTexture = new THREE.CanvasTexture(skyCanvas);
-      skyTexture.generateMipmaps = false;
-      skyTexture.minFilter = THREE.LinearFilter;
-    }
-    return skyTexture;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    return texture;
   }
 
   /**
@@ -327,16 +285,13 @@ JEDA.Stage3D = (function() {
    */
   function buildClouds() {
     clouds = [];
-    if (!sharedCloudMat) {
-      sharedCloudMat = new THREE.MeshPhongMaterial({
-        color: 0xF4F7FA,
-        flatShading: true,
-        shininess: 8,
-        transparent: true,
-        opacity: 0.80
-      });
-    }
-    const cloudMat = sharedCloudMat;
+    const cloudMat = new THREE.MeshPhongMaterial({
+      color: 0xF4F7FA,
+      flatShading: true,
+      shininess: 8,
+      transparent: true,
+      opacity: 0.80
+    });
 
     // 8 formasi awan yang membingkai langit kiri & kanan secara simetris & lapang
     const cloudConfigs = [
@@ -845,8 +800,6 @@ JEDA.Stage3D = (function() {
         camera.position.set(currentCamPos.x, currentCamPos.y, currentCamPos.z);
         camera.lookAt(currentLookAt.x, currentLookAt.y, currentLookAt.z);
 
-        const savedSkin = (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
-
         // 3. Pencahayaan Panggung (Ambient, Hemisphere, Directional lembut)
         ambLight = new THREE.AmbientLight(0xFFFFFF, 1.3);
         scene.add(ambLight);
@@ -858,9 +811,9 @@ JEDA.Stage3D = (function() {
         dirLight.position.set(5, 12, 10);
         scene.add(dirLight);
 
-        // 4. Skydome Gradasi Langit Prosedural Berdasarkan Skin
+        // 4. Skydome Gradasi Senja
         const skyGeo = new THREE.SphereGeometry(180, 32, 24);
-        const skyTex = createSkyTexture(savedSkin);
+        const skyTex = createSkyTexture();
         const skyMat = new THREE.MeshBasicMaterial({
           map: skyTex,
           side: THREE.BackSide,
@@ -1068,9 +1021,8 @@ JEDA.Stage3D = (function() {
       for (let i = 0; i < count; i++) {
         const r = 0.6 + Math.random() * 0.4;
         const geo = new THREE.IcosahedronGeometry(r, 0);
-        const cloudColor = sharedCloudMat ? sharedCloudMat.color.getHex() : 0xF2F5F8;
         const mat = new THREE.MeshPhongMaterial({
-          color: cloudColor,
+          color: 0xF2F5F8,
           flatShading: true,
           shininess: 10,
           transparent: true,
@@ -1166,7 +1118,7 @@ JEDA.Stage3D = (function() {
     },
 
     /**
-     * Mengganti palet warna Orb Napas serta atmosfer langit & pencahayaan sesuai skin aktif (PRD Bagian 14.2 G5 / Fase G-4).
+     * Mengganti palet warna Orb Napas sesuai skin aktif (PRD Bagian 14.2 G5 / Fase G-4).
      * @param {string} skinId - 'embun' | 'fajar' | 'aurora'
      */
     setSkin(skinId) {
@@ -1184,7 +1136,6 @@ JEDA.Stage3D = (function() {
         currentColor.copy(skinColor);
       }
 
-      // 1. Orb Napas & Komponen Cahayanya
       if (orbShaderMat && orbShaderMat.uniforms && orbShaderMat.uniforms.color) {
         orbShaderMat.uniforms.color.value.copy(skinColor);
       }
@@ -1199,78 +1150,6 @@ JEDA.Stage3D = (function() {
       }
       if (particlesMesh && particlesMesh.material) {
         particlesMesh.material.color.copy(skinColor);
-      }
-
-      // 2. Skydome Tekstur Prosedural
-      updateSkyCanvas(skinId);
-
-      // 3. Pencahayaan, Kabut, Awan, dan Bintang Sesuai Tema Atmosfer
-      if (skinId === 'fajar') {
-        // Tema Fajar: Kehangatan fajar keemasan & langit merah-emas menyala
-        if (scene && scene.fog) scene.fog.color.setHex(0x35142a);
-        if (hemiLight) {
-          hemiLight.color.setHex(0xFFD27A); // Cahaya langit hangat keemasan
-          hemiLight.groundColor.setHex(0x2d142b); // Refleksi tanah ungu fajar pekat
-        }
-        if (dirLight) {
-          dirLight.color.setHex(0xFFE29A); // Sorot sinar mentari terbit
-          dirLight.intensity = 1.25;
-        }
-        if (ambLight) {
-          ambLight.color.setHex(0xFFF1E6); // Cahaya hangat menyeluruh
-          ambLight.intensity = 1.35;
-        }
-        if (sharedCloudMat) {
-          sharedCloudMat.color.setHex(0xFFE5D4); // Awan tersapu semburat fajar lembut
-        }
-        if (starsMesh && starsMesh.material) {
-          starsMesh.material.color.setHex(0xFFEAA7);
-          starsMesh.material.opacity = 0.50; // Bintang memudar lembut menjelang pagi
-        }
-      } else if (skinId === 'aurora') {
-        // Tema Aurora: Lembayung mistis aurora malam & zamrud langit kutub
-        if (scene && scene.fog) scene.fog.color.setHex(0x0a1a24);
-        if (hemiLight) {
-          hemiLight.color.setHex(0x34d399); // Pendar hijau zamrud kutub
-          hemiLight.groundColor.setHex(0x150b2e); // Refleksi tanah biru-indigo kosmis
-        }
-        if (dirLight) {
-          dirLight.color.setHex(0xC4B5FD); // Sinar rembulan ungu lembayung mistis
-          dirLight.intensity = 1.10;
-        }
-        if (ambLight) {
-          ambLight.color.setHex(0xE6FFFA); // Cahaya sejuk kehijauan
-          ambLight.intensity = 1.25;
-        }
-        if (sharedCloudMat) {
-          sharedCloudMat.color.setHex(0xD5F5E3); // Awan berpendar hijau mint aurora
-        }
-        if (starsMesh && starsMesh.material) {
-          starsMesh.material.color.setHex(0xE0F2FE);
-          starsMesh.material.opacity = 0.95; // Bintang kristal es kutub berkilau tajam
-        }
-      } else {
-        // Tema Embun (Default): Ketenangan embun jernih & langit senja syahdu
-        if (scene && scene.fog) scene.fog.color.setHex(0x16163A);
-        if (hemiLight) {
-          hemiLight.color.setHex(0x7FE0C3);
-          hemiLight.groundColor.setHex(0x16163A);
-        }
-        if (dirLight) {
-          dirLight.color.setHex(0x9DE7D7);
-          dirLight.intensity = 0.85;
-        }
-        if (ambLight) {
-          ambLight.color.setHex(0xFFFFFF);
-          ambLight.intensity = 1.20;
-        }
-        if (sharedCloudMat) {
-          sharedCloudMat.color.setHex(0xF4F7FA);
-        }
-        if (starsMesh && starsMesh.material) {
-          starsMesh.material.color.setHex(0xFFFFFF);
-          starsMesh.material.opacity = 0.85;
-        }
       }
     },
 

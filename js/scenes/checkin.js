@@ -77,7 +77,7 @@ class CheckinScene extends Phaser.Scene {
 
   /**
    * Membuat header simetris di Zona Header (y: 0 - 120 px).
-   * Kiri: Identitas brand resmi JEDA profesional sejajar margin 120 px.
+   * Kiri: Identitas brand JEDA sejajar margin 120 px.
    * Kanan: Tombol Pengaturan sejajar margin kanan (W - 120 px).
    */
   createHeaderButtons() {
@@ -86,9 +86,22 @@ class CheckinScene extends Phaser.Scene {
     const btnW = 200;
     const btnH = 50;
 
-    // Badge Kiri Atas: Identitas Brand JEDA Profesional (rata margin kiri 120)
+    // Badge Kiri Atas: Identitas Game (rata margin kiri 120)
     const leftX = Layout.M + btnW / 2;
-    JEDA.UI.brandBadge(this, leftX, headerY, { width: btnW, height: btnH, radius: 25 });
+    const brandContainer = this.add.container(leftX, headerY);
+    const bgL = this.add.graphics();
+    bgL.fillStyle(0x181A3C, 0.95);
+    bgL.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 25);
+    bgL.lineStyle(2, 0x485278, 0.65);
+    bgL.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 25);
+
+    const brandText = this.add.text(0, 0, 'JEDA', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '22px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.calm
+    }).setOrigin(0.5).setResolution(2);
+    brandContainer.add([bgL, brandText]);
 
     // Tombol Pengaturan Kanan Atas (rata margin kanan 1800)
     const rightX = (Layout.W - Layout.M) - btnW / 2;

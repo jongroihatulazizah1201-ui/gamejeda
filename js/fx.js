@@ -68,22 +68,6 @@ JEDA.FX = {
   },
 
   /**
-   * Memperbarui latar belakang 2D sesuai skin aktif jika mode 2D fallback digunakan.
-   * @param {Phaser.Scene} scene
-   * @param {string} skinId
-   */
-  updateBackgroundSkin(scene, skinId) {
-    if (!scene || !scene.bg || !scene.bg.setTint) return;
-    if (skinId === 'fajar') {
-      scene.bg.setTint(0xffd5be);
-    } else if (skinId === 'aurora') {
-      scene.bg.setTint(0xafeeee);
-    } else {
-      scene.bg.clearTint();
-    }
-  },
-
-  /**
    * Transisi halus keluar dan masuk antar scene sesuai Bagian 4 PRD (350 ms).
    */
   transitionTo(scene, nextSceneKey, data = {}) {

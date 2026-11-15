@@ -51,10 +51,6 @@ JEDA.State = {
    */
   init() {
     this.load();
-    if (typeof document !== 'undefined' && document.body) {
-      const activeSkin = (this.data && this.data.skin) || 'embun';
-      document.body.setAttribute('data-skin', activeSkin);
-    }
   },
 
   /**
@@ -159,11 +155,6 @@ JEDA.State = {
 
     this.data.skin = skinId;
     this.save();
-
-    // Terapkan atribut tema pada elemen body dokumen
-    if (typeof document !== 'undefined' && document.body) {
-      document.body.setAttribute('data-skin', skinId);
-    }
 
     if (window.JEDA && JEDA.Stage3D && JEDA.Stage3D.setSkin) {
       JEDA.Stage3D.setSkin(skinId);

@@ -171,29 +171,6 @@ html, body {
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-  transition: background 0.8s ease, background-color 0.8s ease;
-}
-
-body {
-  transition: background-color 0.8s ease;
-}
-
-/* Tema Skin Fajar: Kehangatan Fajar Keemasan & Langit Merah-Emas */
-body[data-skin="fajar"] {
-  background-color: #24112c !important;
-}
-body[data-skin="fajar"] #stage3d {
-  background-color: #24112c !important;
-  background: radial-gradient(circle at 50% 30%, #7c2d47 0%, #301438 55%, #15091e 100%) !important;
-}
-
-/* Tema Skin Aurora: Lembayung Mistis Aurora & Zamrud Langit Kutub */
-body[data-skin="aurora"] {
-  background-color: #07091a !important;
-}
-body[data-skin="aurora"] #stage3d {
-  background-color: #07091a !important;
-  background: radial-gradient(circle at 50% 25%, #0d383b 0%, #101938 55%, #060714 100%) !important;
 }
 
 /* Canvas Three.js Mengisi Layar Penuh secara Absolut */
