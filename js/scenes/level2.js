@@ -31,8 +31,16 @@ class Level2Scene extends Phaser.Scene {
     this.pileUpTimer = 0;
     this.miniBreathActive = false;
 
-    // Siapkan antrean 10 pikiran teracak tanpa 3 kategori sama berturut-turut
-    this.thoughtQueue = this.getShuffledThoughts(JEDA.DATA.thoughts || []);
+    // Siapkan antrean 10 pikiran teracak dengan komposisi 3 Cemas, 3 Rencana, 2 Menilai Diri, 2 Kenangan (PRD 8.1 & 15.5)
+    const prevIds = (JEDA.State && JEDA.State.session && JEDA.State.session.lastDeckIds) || [];
+    const drawnDeck = (JEDA.Score && JEDA.Score.drawDeck)
+      ? JEDA.Score.drawDeck(prevIds)
+      : this.getShuffledThoughts(JEDA.DATA.thoughts || []);
+
+    if (JEDA.State && JEDA.State.session) {
+      JEDA.State.session.lastDeckIds = drawnDeck.map(t => t.id);
+    }
+    this.thoughtQueue = drawnDeck.map(item => ({ ...item, hasFailed: false }));
 
     // 1. Latar Belakang & Vinyet
     JEDA.FX.createBackground(this);

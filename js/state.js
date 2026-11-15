@@ -24,7 +24,8 @@ JEDA.State = {
     l2Passed: false,
     l3StopCount: 0,
     l3AllStop: false,
-    l3Passed: false
+    l3Passed: false,
+    lastDeckIds: []
   },
 
   /**
@@ -232,7 +233,8 @@ JEDA.State = {
       checkinLabel: '',
       levelScores: { l1: 0, l2: 0, l3: 0 },
       distractHits: 0,
-      panicHits: 0
+      panicHits: 0,
+      lastDeckIds: []
     };
     this.save();
   },

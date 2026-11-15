@@ -118,6 +118,81 @@ JEDA.Score = {
   },
 
   /**
+   * Mengambil dek 10 pikiran untuk Level 2 (PRD Bagian 8.1 & 15.5).
+   * - Komposisi tetap: 3 Cemas, 3 Rencana, 2 Menilai Diri, 2 Kenangan
+   * - Menghindari pengulangan pikiran dari run sebelumnya (previousIds)
+   * - Mengacak urutan kemunculan dan mencegah 3 kategori sama berturut-turut (PRD 8.1)
+   * @param {Array<number|string|Object>} previousIds - Daftar ID pikiran dari run sebelumnya
+   * @returns {Array<Object>} 10 pikiran teracak siap dimainkan
+   */
+  drawDeck(previousIds = []) {
+    const allThoughts = (window.JEDA && JEDA.DATA && JEDA.DATA.thoughts) || [];
+    if (!allThoughts.length) return [];
+
+    // Normalisasi previousIds ke Set angka/id
+    const prevSet = new Set(
+      Array.isArray(previousIds)
+        ? previousIds.map(x => (typeof x === 'object' && x !== null ? x.id : x))
+        : []
+    );
+
+    const quotas = {
+      'Cemas': 3,
+      'Rencana': 3,
+      'Menilai Diri': 2,
+      'Kenangan': 2
+    };
+
+    // Helper Fisher-Yates shuffle murni
+    const shuffleArray = (arr) => {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    };
+
+    const selected = [];
+
+    // Ambil per kategori sesuai kuota, utamakan yang belum dipakai di run sebelumnya
+    for (const [catName, quota] of Object.entries(quotas)) {
+      const pool = allThoughts.filter(t => (t.cat === catName || t.category === catName));
+      const fresh = shuffleArray(pool.filter(t => !prevSet.has(t.id)));
+      const used = shuffleArray(pool.filter(t => prevSet.has(t.id)));
+
+      // Ambil dari fresh terlebih dahulu
+      let chosen = fresh.slice(0, quota);
+      // Jika fresh belum mencukupi kuota, isi kekurangannya dari used
+      if (chosen.length < quota) {
+        const remaining = quota - chosen.length;
+        chosen = chosen.concat(used.slice(0, remaining));
+      }
+      selected.push(...chosen);
+    }
+
+    // Acak urutan seluruh 10 pikiran dan pastikan tidak ada 3 kategori berturut-turut yang sama (PRD 8.1)
+    let result = shuffleArray(selected);
+    for (let attempt = 0; attempt < 100; attempt++) {
+      let hasThreeConsecutive = false;
+      for (let i = 0; i < result.length - 2; i++) {
+        const c1 = result[i].cat || result[i].category;
+        const c2 = result[i + 1].cat || result[i + 1].category;
+        const c3 = result[i + 2].cat || result[i + 2].category;
+        if (c1 === c2 && c2 === c3) {
+          hasThreeConsecutive = true;
+          break;
+        }
+      }
+      if (!hasThreeConsecutive) break;
+      result = shuffleArray(selected);
+    }
+
+    // Kembalikan salinan baru objek pikiran
+    return result.map(t => ({ ...t }));
+  },
+
+  /**
    * Menghitung skor Level 3 (Jeda S.T.O.P.).
    * @param {Array<Object>} scenarioResults - Hasil 3 skenario:
    *        [{ choseStop: boolean, responseScore: number (100|60|0), observedCorrect: boolean }, ...]

@@ -8,69 +8,231 @@ window.JEDA = window.JEDA || {};
 
 JEDA.DATA = {
   /**
-   * 10 Gelembung Pikiran Level 2 (PRD Bagian 8.1)
-   * Kategori: Cemas, Rencana, Menilai Diri, Kenangan
+   * 30 Gelembung Pikiran Level 2 (PRD Bagian 8.1 & 15.5)
+   * 10 pikiran lama + 20 pikiran baru yang mencakup akademik, sosial, keuangan, dan masa depan.
+   * Komposisi dek: 8 Cemas, 8 Rencana, 7 Menilai Diri, 7 Kenangan.
+   * Tiap item memiliki id, text, cat, category, dan hint edukatif yang hangat & bebas penghakiman.
    */
   thoughts: [
+    // --- 10 Pikiran Awal (PRD Bagian 8.1) ---
     {
       id: 1,
       text: 'Aku pasti gagal presentasi besok.',
+      cat: 'Cemas',
       category: 'Cemas',
       hint: 'Pikiran ini mencemaskan hal buruk yang belum tentu terjadi, bukan rencana nyata.'
     },
     {
       id: 2,
       text: 'Besok pagi aku bagi tugas kelompok dulu.',
+      cat: 'Rencana',
       category: 'Rencana',
       hint: 'Ini adalah langkah praktis ke depan yang terjadwal, bukan kekhawatiran.'
     },
     {
       id: 3,
       text: 'Kenapa aku begini terus?',
+      cat: 'Menilai Diri',
       category: 'Menilai Diri',
       hint: 'Pikiran ini menghakimi dan menyalahkan diri sendiri.'
     },
     {
       id: 4,
       text: 'Waktu itu aku salah bicara di kelas.',
+      cat: 'Kenangan',
       category: 'Kenangan',
       hint: 'Pikiran ini menengok ke peristiwa masa lalu yang sudah berlalu.'
     },
     {
       id: 5,
       text: 'Bagaimana kalau IPK-ku turun?',
+      cat: 'Cemas',
       category: 'Cemas',
       hint: 'Ini adalah rasa takut akan kemungkinan di masa depan.'
     },
     {
       id: 6,
       text: 'Nanti malam aku cicil bab dua.',
+      cat: 'Rencana',
       category: 'Rencana',
       hint: 'Pikiran ini berupa agenda konkret yang hendak dikerjakan.'
     },
     {
       id: 7,
       text: 'Aku nggak sepintar teman-temanku.',
+      cat: 'Menilai Diri',
       category: 'Menilai Diri',
       hint: 'Pikiran ini membandingkan dan merendahkan kapasitas dirimu.'
     },
     {
       id: 8,
       text: 'Dulu dosen pernah menegurku di depan semua orang.',
+      cat: 'Kenangan',
       category: 'Kenangan',
       hint: 'Ini adalah rekaman memori masa lalu yang terputar kembali.'
     },
     {
       id: 9,
       text: 'Kalau dosen marah, aku harus bagaimana?',
+      cat: 'Cemas',
       category: 'Cemas',
       hint: 'Pikiran ini mengantisipasi skenario menakutkan yang belum tentu terjadi.'
     },
     {
       id: 10,
       text: 'Aku harus balas pesan grup sebelum jam lima.',
+      cat: 'Rencana',
       category: 'Rencana',
       hint: 'Pikiran ini tentang rencana tindakan yang perlu diselesaikan hari ini.'
+    },
+
+    // --- 20 Pikiran Tambahan (PRD Bagian 15.5) ---
+    // Cemas Tambahan (5 item)
+    {
+      id: 11,
+      text: 'Kalau tugas akhirku tidak selesai tepat waktu, bagaimana?',
+      cat: 'Cemas',
+      category: 'Cemas',
+      hint: 'Pikiran ini mencemaskan masa depan yang belum terjadi, bukan masalah saat ini.'
+    },
+    {
+      id: 12,
+      text: 'Bagaimana kalau uang bulananku tidak cukup?',
+      cat: 'Cemas',
+      category: 'Cemas',
+      hint: 'Ini adalah rasa khawatir akan kemungkinan kekurangan, bukan tindakan nyata.'
+    },
+    {
+      id: 13,
+      text: 'Jangan-jangan temanku diam-diam kesal padaku.',
+      cat: 'Cemas',
+      category: 'Cemas',
+      hint: 'Pikiran ini mengasumsikan perasaan orang lain tanpa bukti nyata.'
+    },
+    {
+      id: 14,
+      text: 'Setelah lulus nanti aku takut menganggur.',
+      cat: 'Cemas',
+      category: 'Cemas',
+      hint: 'Ini adalah kecemasan tentang masa depan karir yang belum dihadapi.'
+    },
+    {
+      id: 15,
+      text: 'Kalau aku salah jawab di kelas, semua orang akan menertawakanku.',
+      cat: 'Cemas',
+      category: 'Cemas',
+      hint: 'Pikiran ini membesar-besarkan rasa malu atas skenario yang belum terjadi.'
+    },
+
+    // Rencana Tambahan (5 item)
+    {
+      id: 16,
+      text: 'Setelah kelas aku mau ke perpustakaan.',
+      cat: 'Rencana',
+      category: 'Rencana',
+      hint: 'Ini adalah niat tindakan nyata yang akan kamu lakukan nanti.'
+    },
+    {
+      id: 17,
+      text: 'Akhir pekan ini aku rapikan catatan kuliah.',
+      cat: 'Rencana',
+      category: 'Rencana',
+      hint: 'Pikiran ini berupa agenda konkret yang dijadwalkan ke depan.'
+    },
+    {
+      id: 18,
+      text: 'Aku harus daftar magang sebelum Jumat.',
+      cat: 'Rencana',
+      category: 'Rencana',
+      hint: 'Ini adalah langkah terencana dengan batas waktu tertentu.'
+    },
+    {
+      id: 19,
+      text: 'Nanti sore aku cuci baju dulu baru mengerjakan laporan.',
+      cat: 'Rencana',
+      category: 'Rencana',
+      hint: 'Pikiran ini mengatur urutan aktivitas praktis yang hendak dilakukan.'
+    },
+    {
+      id: 20,
+      text: 'Besok aku tanya dosen soal revisi.',
+      cat: 'Rencana',
+      category: 'Rencana',
+      hint: 'Ini adalah rencana komunikasi terarah untuk menyelesaikan tugas.'
+    },
+
+    // Menilai Diri Tambahan (5 item)
+    {
+      id: 21,
+      text: 'Aku selalu lambat dibanding teman-temanku.',
+      cat: 'Menilai Diri',
+      category: 'Menilai Diri',
+      hint: 'Pikiran ini menghakimi diri dengan perbandingan yang memberatkan.'
+    },
+    {
+      id: 22,
+      text: 'Aku nggak cocok di jurusan ini.',
+      cat: 'Menilai Diri',
+      category: 'Menilai Diri',
+      hint: 'Ini adalah vonis keras terhadap kemampuan dan potensi dirimu sendiri.'
+    },
+    {
+      id: 23,
+      text: 'Orang lain terlihat lebih sukses dariku.',
+      cat: 'Menilai Diri',
+      category: 'Menilai Diri',
+      hint: 'Pikiran ini mengukur harga diri dari penampilan luar orang lain.'
+    },
+    {
+      id: 24,
+      text: 'Aku malas, makanya hidupku berantakan.',
+      cat: 'Menilai Diri',
+      category: 'Menilai Diri',
+      hint: 'Ini adalah pelabelan negatif terhadap diri sendiri tanpa belas kasih.'
+    },
+    {
+      id: 25,
+      text: 'Aku payah dalam presentasi.',
+      cat: 'Menilai Diri',
+      category: 'Menilai Diri',
+      hint: 'Pikiran ini memberi penilaian buruk menyeluruh terhadap satu keterampilan.'
+    },
+
+    // Kenangan Tambahan (5 item)
+    {
+      id: 26,
+      text: 'Kemarin aku diam saja saat kerja kelompok.',
+      cat: 'Kenangan',
+      category: 'Kenangan',
+      hint: 'Ini adalah memori tentang kejadian kemarin yang sudah berlalu.'
+    },
+    {
+      id: 27,
+      text: 'Waktu semester dua nilaiku jelek sekali.',
+      cat: 'Kenangan',
+      category: 'Kenangan',
+      hint: 'Pikiran ini menengok kembali masa lalu yang sudah tidak bisa diubah.'
+    },
+    {
+      id: 28,
+      text: 'Tadi pagi temanku cuek saat kusapa.',
+      cat: 'Kenangan',
+      category: 'Kenangan',
+      hint: 'Ini adalah rekaman peristiwa tadi pagi yang masih terngiang.'
+    },
+    {
+      id: 29,
+      text: 'Dulu aku pernah ditolak masuk organisasi itu.',
+      cat: 'Kenangan',
+      category: 'Kenangan',
+      hint: 'Pikiran ini mengingat penolakan lama yang telah usai.'
+    },
+    {
+      id: 30,
+      text: 'Minggu lalu aku terlambat dan semua orang melihatku.',
+      cat: 'Kenangan',
+      category: 'Kenangan',
+      hint: 'Ini adalah kilas balik kejadian minggu lalu yang telah lewat.'
     }
   ],
 
