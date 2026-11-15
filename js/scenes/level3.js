@@ -53,6 +53,7 @@ class Level3Scene extends Phaser.Scene {
    */
   createHeader(W) {
     JEDA.UI.createButton(this, 140, 65, 180, 50, '← Menu', () => {
+      if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
     }, { fontSize: 20, radius: 25 });
 

@@ -374,11 +374,13 @@ class ResultScene extends Phaser.Scene {
         distractHits: 0,
         panicHits: 0
       };
+      if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
     }, { primary: true, radius: 30 });
 
     // Tombol Menu Utama
     JEDA.UI.createButton(this, cx + 170, y, 280, 60, 'Menu Utama', () => {
+      if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
     }, { radius: 30 });
   }

@@ -16,15 +16,17 @@ JEDA.FX = {
   createBackground(scene) {
     const W = JEDA.CFG.W;
     const H = JEDA.CFG.H;
+    const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
 
-    // 1. Gambar latar gradasi
+    // 1. Gambar latar gradasi (disembunyikan bila panggung 3D aktif)
     const bg = scene.add.image(W / 2, H / 2, 'bg_gradient').setDepth(-100);
+    if (is3D) bg.setAlpha(0);
 
-    // 2. Debu melayang jika mode kurangi gerakan tidak aktif (BR-12)
+    // 2. Debu melayang jika mode kurangi gerakan tidak aktif dan 3D tidak aktif
     const reduceMotion = JEDA.State && JEDA.State.data && JEDA.State.data.settings.reduceMotion;
     const dustGroup = [];
 
-    if (!reduceMotion && scene.textures.exists('dust')) {
+    if (!is3D && !reduceMotion && scene.textures.exists('dust')) {
       for (let i = 0; i < 40; i++) {
         const x = Phaser.Math.Between(W * 0.02, W * 0.98);
         const y = Phaser.Math.Between(H * 0.02, H * 0.98);
@@ -53,9 +55,9 @@ JEDA.FX = {
       }
     }
 
-    // 3. Lapisan vinyet gelap di sudut layar (alpha 0.35)
+    // 3. Lapisan vinyet gelap di sudut layar (alpha 0.20 pada 3D, 0.35 pada 2D)
     const vignette = scene.add.image(W / 2, H / 2, 'vignette')
-      .setAlpha(0.35)
+      .setAlpha(is3D ? 0.20 : 0.35)
       .setDepth(-80);
 
     return { bg, dustGroup, vignette };

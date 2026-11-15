@@ -4,12 +4,27 @@
  * Menunggu font lokal Nunito paling lama 1500 ms sebelum memulai engine.
  */
 function initJedaGame() {
+  // Inisialisasi Panggung 3D Three.js di latar belakang (PRD Bagian 13)
+  const stage3dEl = document.getElementById('stage3d');
+  if (JEDA.CFG.USE_3D && window.THREE && JEDA.Stage3D && stage3dEl) {
+    const ok = JEDA.Stage3D.init(stage3dEl);
+    if (!ok) {
+      JEDA.CFG.USE_3D = false;
+      console.warn('[JEDA] WebGL 3D gagal diinisialisasi, fallback ke mode 2D.');
+    }
+  } else {
+    JEDA.CFG.USE_3D = false;
+  }
+
+  const is3D = !!JEDA.CFG.USE_3D;
+
   const config = {
     type: Phaser.AUTO,
     parent: 'game-container',
     width: JEDA.CFG.W,
     height: JEDA.CFG.H,
-    backgroundColor: '#0d0d1e',
+    transparent: is3D,
+    backgroundColor: is3D ? undefined : '#0d0d1e',
     render: {
       antialias: true,
       pixelArt: false,

@@ -16,9 +16,16 @@ class BootScene extends Phaser.Scene {
 
     // 2. Tampilkan latar gradasi senja terpusat (W/2, H/2)
     this.bg = this.add.image(W / 2, H / 2, 'bg_gradient');
+    const is3D = !!(JEDA.CFG && JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive && JEDA.Stage3D.isActive());
+    if (is3D) {
+      this.bg.setAlpha(0);
+      if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
+    }
 
-    // 3. Tampilkan 40 titik debu bercahaya yang melayang lambat
-    this.createFloatingDust();
+    // 3. Tampilkan 40 titik debu bercahaya yang melayang lambat (bila 2D aktif)
+    if (!is3D) {
+      this.createFloatingDust();
+    }
 
     // 4. Tampilkan lapisan vinyet gelap di tepi layar (alpha 0.35)
     this.vignette = this.add.image(W / 2, H / 2, 'vignette')

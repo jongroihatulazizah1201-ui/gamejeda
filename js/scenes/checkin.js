@@ -21,6 +21,10 @@ class CheckinScene extends Phaser.Scene {
 
     // 1. Tampilkan latar belakang terpadu
     JEDA.FX.createBackground(this);
+    if (JEDA.Stage3D) {
+      JEDA.Stage3D.setMode('menu');
+      JEDA.Stage3D.setSync('good');
+    }
 
     // 2. Transisi masuk kamera
     this.cameras.main.fadeIn(350);

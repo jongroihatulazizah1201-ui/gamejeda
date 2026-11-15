@@ -47,6 +47,11 @@ class Level1Scene extends Phaser.Scene {
 
     // 1. Latar Belakang & Vinyet
     JEDA.FX.createBackground(this);
+    if (JEDA.Stage3D) {
+      JEDA.Stage3D.setMode('l1');
+      JEDA.Stage3D.setSync('good');
+      JEDA.Stage3D.setBreath(0.2);
+    }
     this.cameras.main.fadeIn(350);
 
     // 2. Tombol Navigasi Kiri Atas (Kembali ke Menu)
@@ -91,6 +96,7 @@ class Level1Scene extends Phaser.Scene {
    */
   createHeader(W) {
     const backBtn = JEDA.UI.createButton(this, 140, 65, 180, 50, '← Menu', () => {
+      if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
     }, { fontSize: 20, radius: 25 });
 
@@ -123,6 +129,11 @@ class Level1Scene extends Phaser.Scene {
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.orbContainer.add([this.outerRing, this.innerRing, this.coreCircle]);
+
+    // Jika Stage3D aktif, sembunyikan visual orb 2D (orb 3D Three.js tampil di belakang pada posisi yang sama)
+    if (JEDA.CFG.USE_3D && JEDA.Stage3D && JEDA.Stage3D.isActive()) {
+      this.orbContainer.setAlpha(0);
+    }
 
     // Animasi idle berdenyut pelan saat menunggu input
     this.idlePulse = this.tweens.add({
@@ -232,6 +243,10 @@ class Level1Scene extends Phaser.Scene {
     this.state = 'HOLDING';
     this.holdStartTime = Date.now();
 
+    if (JEDA.Stage3D) {
+      JEDA.Stage3D.setSync('good');
+    }
+
     // Hentikan denyut idle dan bersihkan animasi orb sebelumnya
     if (this.idlePulse) this.idlePulse.pause();
     this.tweens.killTweensOf(this.orbContainer);
@@ -279,6 +294,11 @@ class Level1Scene extends Phaser.Scene {
       this.state = 'WAITING_HOLD';
       this.feedbackText.setText('Tahan sedikit lebih lama (minimal 1 detik). Mari ulangi.');
       this.feedbackText.setColor(JEDA.CFG.COLOR.hex.warn);
+
+      if (JEDA.Stage3D) {
+        JEDA.Stage3D.setSync('warn');
+        JEDA.Stage3D.setBreath(0.1);
+      }
 
       // Kembalikan orb ke ukuran normal
       this.tweens.killTweensOf(this.orbContainer);
@@ -356,10 +376,23 @@ class Level1Scene extends Phaser.Scene {
       dotColor = JEDA.CFG.COLOR.calm;
       feedbackWord = 'Pas';
       wordColor = JEDA.CFG.COLOR.hex.calm;
+      if (JEDA.Stage3D) {
+        JEDA.Stage3D.setSync('good');
+        JEDA.Stage3D.pulse(0.6);
+      }
     } else if (cycleScore >= 0.5) {
       dotColor = JEDA.CFG.COLOR.warn;
       feedbackWord = 'Sedikit meleset';
       wordColor = JEDA.CFG.COLOR.hex.warn;
+      if (JEDA.Stage3D) {
+        JEDA.Stage3D.setSync('warn');
+        JEDA.Stage3D.pulse(0.4);
+      }
+    } else {
+      if (JEDA.Stage3D) {
+        JEDA.Stage3D.setSync('off');
+        JEDA.Stage3D.pulse(0.3);
+      }
     }
 
     if (ind) this.drawIndicatorDot(ind.g, ind.x, ind.y, 'filled', dotColor);
@@ -474,6 +507,12 @@ class Level1Scene extends Phaser.Scene {
 
     // 2. Orb berkedip warna 'off' (#FF8FA3)
     this.flashOrbOff();
+    if (JEDA.Stage3D) {
+      JEDA.Stage3D.setSync('off');
+      this.time.delayedCall(600, () => {
+        if (JEDA.Stage3D) JEDA.Stage3D.setSync('good');
+      });
+    }
   }
 
   /**
@@ -502,6 +541,11 @@ class Level1Scene extends Phaser.Scene {
   finishLevel() {
     if (this.isFinished) return;
     this.isFinished = true;
+
+    if (JEDA.Stage3D) {
+      JEDA.Stage3D.setBreath(0.35);
+      JEDA.Stage3D.pulse(0.7);
+    }
 
     // Kalkulasi skor menggunakan fungsi murni JEDA.Score.calcL1
     const result = JEDA.Score.calcL1(this.completedCycles, this.distractHits);
@@ -629,20 +673,30 @@ class Level1Scene extends Phaser.Scene {
     const btnY = cardH / 2 - 80;
     if (result.passed) {
       const nextBtn = JEDA.UI.createButton(this, 170, btnY, 280, 60, 'Lanjut ke Level 2', () => {
+        if (JEDA.Stage3D) JEDA.Stage3D.setMode('l2');
         JEDA.FX.transitionTo(this, 'Level2Scene');
       }, { primary: true, radius: 30 });
 
       const repeatBtn = JEDA.UI.createButton(this, -170, btnY, 280, 60, 'Ulangi Latihan', () => {
+        if (JEDA.Stage3D) {
+          JEDA.Stage3D.setMode('l1');
+          JEDA.Stage3D.setSync('good');
+        }
         this.scene.restart();
       }, { radius: 30 });
 
       modal.add([nextBtn, repeatBtn]);
     } else {
       const repeatBtn = JEDA.UI.createButton(this, 150, btnY, 260, 60, 'Ulangi Latihan', () => {
+        if (JEDA.Stage3D) {
+          JEDA.Stage3D.setMode('l1');
+          JEDA.Stage3D.setSync('good');
+        }
         this.scene.restart();
       }, { primary: true, radius: 30 });
 
       const menuBtn = JEDA.UI.createButton(this, -150, btnY, 260, 60, 'Menu Utama', () => {
+        if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
         JEDA.FX.transitionTo(this, 'CheckinScene');
       }, { radius: 30 });
 
@@ -656,6 +710,29 @@ class Level1Scene extends Phaser.Scene {
       duration: 300,
       ease: 'Sine.easeOut'
     });
+  }
+
+  /**
+   * Update per-frame: sinkronisasi ritme pernapasan ke panggung 3D (PRD 13.2).
+   */
+  update(time, delta) {
+    if (!JEDA.Stage3D || !JEDA.Stage3D.isActive()) return;
+
+    if (this.state === 'HOLDING' && this.holdStartTime > 0) {
+      // Tarik napas: skala 3D membesar mengikuti durasi hold relatif terhadap target inMs
+      const elapsed = Date.now() - this.holdStartTime;
+      const t = Math.min(1.0, elapsed / this.inMs);
+      JEDA.Stage3D.setBreath(t);
+    } else if (this.state === 'RELEASING' && this.releaseStartTime > 0) {
+      // Hembuskan napas: skala 3D mengecil kembali mengikuti durasi outMs
+      const elapsed = Date.now() - this.releaseStartTime;
+      const t = Math.max(0.0, 1.0 - (elapsed / this.outMs));
+      JEDA.Stage3D.setBreath(t);
+    } else if (this.state === 'WAITING_HOLD') {
+      // Denyut napas santai (idle)
+      const idleT = 0.18 + Math.sin(time * 0.0025) * 0.07;
+      JEDA.Stage3D.setBreath(idleT);
+    }
   }
 }
 

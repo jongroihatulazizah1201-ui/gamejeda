@@ -7,6 +7,7 @@ window.JEDA = window.JEDA || {};
 JEDA.CFG = {
   W: 1920,
   H: 1080,
+  USE_3D: true, // Panggung 3D Three.js aktif (PRD Bagian 13)
   PASS: 60,
   L1: {
     cycles: 6,

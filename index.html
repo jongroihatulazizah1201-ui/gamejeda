@@ -8,16 +8,22 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Panggung 3D Three.js di latar belakang (PRD Bagian 13) -->
+  <div id="stage3d"></div>
+
+  <!-- Induk Game Phaser 2D di lapisan atas transparan -->
   <div id="game-container"></div>
 
-  <!-- Urutan pemuatan script sesuai PRD Bagian 3:
-       phaser.min.js -> config -> data -> state -> score -> guard -> fx -> ui -> scenes/* -> main -->
+  <!-- Urutan pemuatan script sesuai PRD Bagian 13.1:
+       phaser -> three -> config -> data -> state -> score -> guard -> stage3d -> fx -> ui -> scenes/* -> main -->
   <script src="lib/phaser.min.js"></script>
+  <script src="lib/three.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/data.js"></script>
   <script src="js/state.js"></script>
   <script src="js/score.js"></script>
   <script src="js/guard.js"></script>
+  <script src="js/stage3d.js"></script>
   <script src="js/fx.js"></script>
   <script src="js/ui.js"></script>
   
