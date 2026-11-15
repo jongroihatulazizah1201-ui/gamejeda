@@ -93,6 +93,11 @@ class BootScene extends Phaser.Scene {
       dCtx.fillRect(0, 0, 24, 24);
       dustCanvas.refresh();
     }
+
+    // D. Tekstur Logo Resmi JEDA (Zen Pause & Breathing Emblem)
+    if (JEDA.UI && JEDA.UI.ensureLogoTexture) {
+      JEDA.UI.ensureLogoTexture(this);
+    }
   }
 
   /**
@@ -140,8 +145,13 @@ class BootScene extends Phaser.Scene {
     const cx = JEDA.CFG.W / 2;
     const cy = JEDA.CFG.H / 2;
 
-    // Posisi teks tepat di tengah ruang langit (bebas tabrakan dari orb di atas dan pulau di bawah)
-    this.titleText = this.add.text(cx, cy - 75, 'JEDA', {
+    // Posisi teks dan logo tepat di tengah ruang langit (bebas tabrakan dari orb di atas dan pulau di bawah)
+    JEDA.UI.ensureLogoTexture(this);
+    this.logoIcon = this.add.image(cx, cy - 145, 'logo_jeda')
+      .setDisplaySize(72, 72)
+      .setAlpha(0);
+
+    this.titleText = this.add.text(cx, cy - 70, 'JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '76px',
       fontStyle: '800',
@@ -149,7 +159,7 @@ class BootScene extends Phaser.Scene {
       shadow: { offsetX: 0, offsetY: 3, blur: 14, color: 'rgba(5, 5, 20, 0.9)', fill: true }
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
-    this.subtitleText = this.add.text(cx, cy - 5, 'Latihan berhenti sejenak', {
+    this.subtitleText = this.add.text(cx, cy - 2, 'Latihan berhenti sejenak', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '28px',
       fontStyle: '600',
@@ -158,7 +168,7 @@ class BootScene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
     // Kapsul petunjuk interaksi (frosted pill beraksen tenang, bebas tabrakan dari lentera pulau)
-    this.hintContainer = this.add.container(cx, cy + 70).setAlpha(0);
+    this.hintContainer = this.add.container(cx, cy + 72).setAlpha(0);
     const pillW = 380;
     const pillH = 48;
     const pillBg = this.add.graphics();
@@ -178,7 +188,7 @@ class BootScene extends Phaser.Scene {
 
     // Animasi kemunculan cepat dan tegas
     this.tweens.add({
-      targets: [this.titleText, this.subtitleText, this.hintContainer],
+      targets: [this.logoIcon, this.titleText, this.subtitleText, this.hintContainer],
       alpha: 1,
       y: '-=12',
       duration: 500,

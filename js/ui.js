@@ -45,6 +45,141 @@ JEDA.UI = {
   },
 
   /**
+   * Menjamin tekstur logo resmi JEDA (Zen Pause Emblem) telah dibuat di memori tekstur Phaser.
+   * Dibuat secara prosedural pada kanvas 128x128 Retina untuk ketajaman subpixel sempurna.
+   * Logo terdiri atas:
+   * 1. Aura pendaran luar Zen (soft teal glow)
+   * 2. Piringan dasar emblem (slate-teal gradient)
+   * 3. Ring beraksen elegan (mindful breath circle)
+   * 4. Dua kapsul jeda vertikal bersudut membulat (simbol jeda zen)
+   * @param {Phaser.Scene} scene
+   * @returns {string} Key tekstur: 'logo_jeda'
+   */
+  ensureLogoTexture(scene) {
+    if (scene.textures && scene.textures.exists('logo_jeda')) {
+      return 'logo_jeda';
+    }
+
+    const size = 128;
+    const canvas = scene.textures.createCanvas('logo_jeda', size, size);
+    const ctx = canvas.context;
+    const cx = size / 2;
+    const cy = size / 2;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // 1. Pendaran Luar Zen (Glow Halus)
+    const glowGrad = ctx.createRadialGradient(cx, cy, 34, cx, cy, 62);
+    glowGrad.addColorStop(0, 'rgba(127, 224, 195, 0.32)');
+    glowGrad.addColorStop(0.65, 'rgba(127, 224, 195, 0.08)');
+    glowGrad.addColorStop(1, 'rgba(127, 224, 195, 0.0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 62, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Piringan Emblem Zen (Gradasi Slate Teal Elegan)
+    const baseGrad = ctx.createLinearGradient(cx - 48, cy - 48, cx + 48, cy + 48);
+    baseGrad.addColorStop(0, '#1c3e47');
+    baseGrad.addColorStop(0.5, '#132832');
+    baseGrad.addColorStop(1, '#0c1a22');
+    ctx.fillStyle = baseGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 48, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Lingkaran Ring Luar (Aura Napas JEDA)
+    ctx.strokeStyle = '#7FE0C3';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 48, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 4. Dua Batang Jeda Bersudut Bulat Penuh (Simbol Jeda / Zen Pause Capsules)
+    const barW = 12;
+    const barH = 42;
+    const barRadius = 6;
+    const barGap = 12;
+
+    const barGrad = ctx.createLinearGradient(0, cy - barH / 2, 0, cy + barH / 2);
+    barGrad.addColorStop(0, '#A7F3D0'); // Aksen cerah lembut di pucuk
+    barGrad.addColorStop(1, '#7FE0C3'); // Warna utama brand
+    ctx.fillStyle = barGrad;
+
+    const drawPill = (x, y, w, h, r) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    // Batang Kiri
+    const leftX = cx - (barGap / 2) - barW;
+    const barY = cy - (barH / 2);
+    drawPill(leftX, barY, barW, barH, barRadius);
+
+    // Batang Kanan
+    const rightX = cx + (barGap / 2);
+    drawPill(rightX, barY, barW, barH, barRadius);
+
+    canvas.refresh();
+    return 'logo_jeda';
+  },
+
+  /**
+   * Membuat lencana identitas resmi JEDA (Logo + Tipografi) berstandar profesional.
+   * Menggantikan teks darurat/bintang dengan logo mark vektor Zen Pause yang presisi.
+   * @param {Phaser.Scene} scene
+   * @param {number} x
+   * @param {number} y
+   * @param {object} options - { width: 200, height: 50, radius: 25 }
+   * @returns {Phaser.GameObjects.Container}
+   */
+  brandBadge(scene, x, y, options = {}) {
+    this.ensureLogoTexture(scene);
+    const w = options.width || 200;
+    const h = options.height || 50;
+    const radius = options.radius || 25;
+    const container = scene.add.container(x, y);
+
+    // 1. Kapsul Latar Belakang Kaca Frosted Simetris
+    const bg = scene.add.graphics();
+    bg.fillStyle(0x141838, 0.94);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+    bg.lineStyle(1.5, 0x3F486E, 0.65);
+    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+
+    // 2. Logo Mark Zen Pause (Retina crisp 128x128 di skala ke 30x30)
+    const iconSize = 30;
+    const logoImg = scene.add.image(0, 0, 'logo_jeda');
+    logoImg.setDisplaySize(iconSize, iconSize);
+
+    // 3. Tipografi "JEDA" Modern Berjarak Rapi
+    const brandText = scene.add.text(0, 0, 'JEDA', {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '22px',
+      fontStyle: '800',
+      color: '#FFFFFF'
+    }).setOrigin(0, 0.5).setResolution(2);
+
+    // 4. Penataan Posisi Simetris Optik di Tengah Kapsul
+    const gap = 10;
+    const totalContentW = iconSize + gap + brandText.width;
+    const startX = -totalContentW / 2;
+
+    logoImg.setPosition(startX + iconSize / 2, 0);
+    brandText.setPosition(startX + iconSize + gap, 0);
+
+    container.add([bg, logoImg, brandText]);
+    return container;
+  },
+
+  /**
    * Membuat tombol baku JEDA.UI (PRD Bagian 14.3 Prinsip 6, 7, 10, 12).
    * - Standar tinggi: 88 px, lebar minimal 280 px, bentuk kapsul (radius 44)
    * - Aksi utama (primary: true): background calm 0x7FE0C3, teks gelap #16163A
@@ -875,7 +1010,7 @@ JEDA.UI = {
         wordWrap: { width: w - 66 }
       }).setOrigin(0, 0.5).setResolution(2);
 
-      const status = scene.add.text(-w / 2 + 56, 12, 'Terbuka ✦', {
+      const status = scene.add.text(-w / 2 + 56, 12, 'Terbuka ✓', {
         fontFamily: JEDA.CFG.FONT.family,
         fontSize: '12px',
         fontStyle: '700',
@@ -969,7 +1104,7 @@ JEDA.UI = {
 
     // Menampilkan toast syarat lencana saat diklik
     container.on('pointerup', () => {
-      const statusNote = isUnlocked ? '✦ Lencana ini telah kamu raih!' : '○ Syarat:';
+      const statusNote = isUnlocked ? '✓ Lencana ini telah kamu raih!' : '○ Syarat:';
       JEDA.UI.toast(scene, `${badge.name}: ${badge.desc} (${statusNote})`);
     });
 
