@@ -41,30 +41,33 @@ class ResultScene extends Phaser.Scene {
     }
     this.cameras.main.fadeIn(350);
 
-    // 4. Header di Zona Header (y: 0 - 120 px)
+    // 4. Header di Zona Header (y: 0 - 100 px)
     this.createHeader(cx);
 
-    // 5. Panel Ringkasan Skor Akhir & Bintang (y = 230)
-    this.createFinalScoreCard(cx, 230);
+    // 5. Panel Ringkasan Skor Akhir & Bintang (y = 175)
+    this.createFinalScoreCard(cx, 175);
 
-    // 6. Kartu Rincian 3 Level (Horizontal, y = 430)
-    this.createLevelBreakdownCards(cx, 430);
+    // 6. Kartu Rincian 3 Level (Horizontal, y = 320)
+    this.createLevelBreakdownCards(cx, 320);
 
-    // 7. Perbandingan Check-in Awal vs Akhir (BR-10, y = 620)
-    this.createCheckinComparison(cx, 620);
+    // 7. Perbandingan Check-in Awal vs Akhir (BR-10, y = 465)
+    this.createCheckinComparison(cx, 465);
 
-    // 8. Lima Slot Lencana (PRD 14.5: rowCenter, y = 780)
-    this.createBadgeSlots(cx, 780);
+    // 8. Lima Slot Lencana (PRD 14.5: rowCenter, y = 600)
+    this.createBadgeSlots(cx, 600);
 
-    // 9. Pengingat Istirahat jika runsToday >= 3 (BR-11, y = 880)
+    // 9. Pemilih Tema Visual Tiga Kartu Pratinjau (PRD 15.3, y = 745)
+    this.createThemeSelector(cx, 745);
+
+    // 10. Pengingat Istirahat jika runsToday >= 3 (BR-11, y = 865)
     if (JEDA.State.data.runs.count >= (JEDA.CFG.RUNS_PER_DAY_NOTE || 3)) {
-      this.createRestReminder(cx, 880);
+      this.createRestReminder(cx, 865);
     }
 
-    // 10. Tombol Navigasi Bawah di Zona Aksi (y = 980)
-    this.createActionButtons(cx, 980);
+    // 11. Tombol Navigasi Bawah di Zona Aksi (y = 960)
+    this.createActionButtons(cx, 960);
 
-    // 11. Pasang listener tombol debug grid 'G'
+    // 12. Pasang listener tombol debug grid 'G'
     Layout.attachDebugKeyListener(this);
   }
 
@@ -85,14 +88,14 @@ class ResultScene extends Phaser.Scene {
    * Membuat header layar hasil di Zona Header.
    */
   createHeader(cx) {
-    this.add.text(cx, 50, 'Hasil Latihan JEDA', {
+    this.add.text(cx, 44, 'Hasil Latihan JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '44px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    this.add.text(cx, 90, 'Refleksi dan Evaluasi Sesi Mindfulness', {
+    this.add.text(cx, 80, 'Refleksi dan Evaluasi Sesi Mindfulness', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -106,15 +109,15 @@ class ResultScene extends Phaser.Scene {
   createFinalScoreCard(cx, y) {
     const Layout = JEDA.Layout;
     const cardW = Layout.panelSize.M; // 960 px
-    const cardH = 176;
+    const cardH = 140;
 
     const bg = this.add.graphics();
     bg.fillStyle(0x16163A, 0.95);
-    bg.fillRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 28);
+    bg.fillRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 24);
     bg.lineStyle(2, this.finalResult.passed ? JEDA.CFG.COLOR.calm : JEDA.CFG.COLOR.warn, 0.5);
-    bg.strokeRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 28);
+    bg.strokeRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 24);
 
-    this.add.text(cx, y - 48, `Skor Akhir: ${this.finalResult.score}`, {
+    this.add.text(cx, y - 36, `Skor Akhir: ${this.finalResult.score}`, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '44px',
       fontStyle: '800',
@@ -122,15 +125,15 @@ class ResultScene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2);
 
     const weightFormula = '(Bobot: 25% Napas + 30% Awan Pikiran + 45% Jeda S.T.O.P.)';
-    this.add.text(cx, y - 4, weightFormula, {
+    this.add.text(cx, y - 2, weightFormula, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
 
-    // Tiga Bintang (PRD 14.5: rowCenter([48, 48, 48], 24))
-    const starWidths = [48, 48, 48];
+    // Tiga Bintang (PRD 14.5: rowCenter([44, 44, 44], 24))
+    const starWidths = [44, 44, 44];
     const starXs = Layout.rowCenter(starWidths, 24);
     const starTotal = this.finalResult.stars;
 
@@ -139,9 +142,9 @@ class ResultScene extends Phaser.Scene {
       const starChar = isGold ? '★' : '☆';
       const color = isGold ? JEDA.CFG.COLOR.hex.warn : JEDA.CFG.COLOR.hex.muted;
 
-      const star = this.add.text(starXs[i], y + 44, starChar, {
+      const star = this.add.text(starXs[i], y + 36, starChar, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '44px',
+        fontSize: '40px',
         fontStyle: '800',
         color: color
       }).setOrigin(0.5).setResolution(2).setScale(0);
@@ -163,7 +166,7 @@ class ResultScene extends Phaser.Scene {
   createLevelBreakdownCards(cx, y) {
     const Layout = JEDA.Layout;
     const cardW = 320;
-    const cardH = 136;
+    const cardH = 116;
     const cardGap = 24;
     const cardWidths = [cardW, cardW, cardW];
     const cardXs = Layout.rowCenter(cardWidths, cardGap);
@@ -182,7 +185,7 @@ class ResultScene extends Phaser.Scene {
       bg.lineStyle(1.5, 0x485278, 0.7);
       bg.strokeRoundedRect(bx - cardW / 2, y - cardH / 2, cardW, cardH, 20);
 
-      const title = this.add.text(bx, y - 36, lvl.name, {
+      const title = this.add.text(bx, y - 30, lvl.name, {
         fontFamily: JEDA.CFG.FONT.family,
         fontSize: '27px',
         fontStyle: '800',
@@ -198,7 +201,7 @@ class ResultScene extends Phaser.Scene {
 
       const starsCount = JEDA.Score.calcStars(lvl.score);
       const starStr = '★'.repeat(starsCount) + '☆'.repeat(3 - starsCount);
-      const starT = this.add.text(bx, y + 38, starStr, {
+      const starT = this.add.text(bx, y + 34, starStr, {
         fontFamily: JEDA.CFG.FONT.family,
         fontSize: '27px',
         fontStyle: '600',
@@ -222,19 +225,19 @@ class ResultScene extends Phaser.Scene {
   createCheckinComparison(cx, y) {
     const Layout = JEDA.Layout;
     const cardW = Layout.panelSize.M; // 960 px
-    const cardH = 192;
+    const cardH = 140;
 
     const bg = this.add.graphics();
     bg.fillStyle(0x16163A, 0.95);
-    bg.fillRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 28);
+    bg.fillRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 24);
     bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.3);
-    bg.strokeRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 28);
+    bg.strokeRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 24);
 
     const startScore = JEDA.State.session.checkinStart || 3;
     const startLabel = JEDA.State.session.checkinLabel || 'Netral';
 
     const info = `Check-in Awal: ${startScore}/5 (${startLabel})`;
-    this.add.text(cx, y - 56, info, {
+    this.add.text(cx, y - 44, info, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -242,22 +245,22 @@ class ResultScene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2);
 
     const question = 'Bagaimana perasaanmu sekarang setelah latihan?';
-    this.add.text(cx, y - 18, question, {
+    this.add.text(cx, y - 14, question, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '33px',
+      fontSize: '27px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
     // 5 Tombol Bulat Skor Akhir menggunakan rowCenter (PRD 14.5)
-    const btnSize = 64;
+    const btnSize = 52;
     const btnWidths = [btnSize, btnSize, btnSize, btnSize, btnSize];
-    const btnXs = Layout.rowCenter(btnWidths, 32);
-    const btnY = y + 26;
+    const btnXs = Layout.rowCenter(btnWidths, 28);
+    const btnY = y + 22;
     this.endScoreButtons = [];
 
     // Teks refleksi (BR-10)
-    this.reflectionText = this.add.text(cx, y + 68, 'Pilih perasaanmu sekarang untuk melihat refleksi.', {
+    this.reflectionText = this.add.text(cx, y + 54, 'Pilih perasaanmu sekarang untuk melihat refleksi.', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -276,7 +279,7 @@ class ResultScene extends Phaser.Scene {
 
   createCircularEndButton(x, y, value, onSelect) {
     const container = this.add.container(x, y);
-    const radius = 32;
+    const radius = 24;
 
     const bg = this.add.graphics();
     const drawBg = (selected) => {
@@ -357,7 +360,7 @@ class ResultScene extends Phaser.Scene {
     const earned = badgeResult.earned || [];
 
     // Label judul bagian lencana
-    this.add.text(cx, y - 56, 'Lencana Sikap Positif', {
+    this.add.text(cx, y - 50, 'Lencana Sikap Positif', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '800',
@@ -365,7 +368,7 @@ class ResultScene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2);
 
     const slotW = 304;
-    const slotH = 88;
+    const slotH = 76;
     const slotWidths = [slotW, slotW, slotW, slotW, slotW];
     const slotXs = Layout.rowCenter(slotWidths, 24);
 
@@ -387,11 +390,34 @@ class ResultScene extends Phaser.Scene {
   }
 
   /**
+   * Pemilih Tiga Tema Visual JEDA di Layar Hasil (PRD Bagian 15.3 & BR-16).
+   * Menampilkan tiga kartu pratinjau tema (Embun, Fajar, Aurora) dengan gembok untuk yang belum terbuka.
+   */
+  createThemeSelector(cx, y) {
+    const totalStars = (window.JEDA && JEDA.State && JEDA.State.getTotalStars)
+      ? JEDA.State.getTotalStars()
+      : 0;
+
+    this.add.text(cx, y - 52, `Tema Visual Sesi Berikutnya (Koleksi: ${totalStars}/9 ★)`, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: '27px',
+      fontStyle: '800',
+      color: JEDA.CFG.COLOR.hex.text
+    }).setOrigin(0.5).setResolution(2);
+
+    JEDA.UI.themeCards(this, cx, y + 22, {
+      cardW: 304,
+      cardH: 136,
+      gap: 24
+    });
+  }
+
+  /**
    * Menampilkan Pengingat Istirahat jika runsToday >= 3 (BR-11).
    */
   createRestReminder(cx, y) {
     const cardW = 960;
-    const cardH = 56;
+    const cardH = 44;
 
     const bg = this.add.graphics();
     bg.fillStyle(0x2B4C7E, 0.4);
@@ -410,12 +436,12 @@ class ResultScene extends Phaser.Scene {
 
   /**
    * Tombol navigasi aksi akhir di Zona Aksi (PRD 14.3 Prinsip 6 & 14.5).
-   * Tombol Main lagi dan Menu sama lebar 320, tinggi 88, aksi utama di kanan.
+   * Tombol Main lagi dan Menu sama lebar 320, tinggi 80, aksi utama di kanan.
    */
   createActionButtons(cx, y) {
     const Layout = JEDA.Layout;
     const btnW = 320;
-    const btnH = 88;
+    const btnH = 80;
     const btnGap = 32;
     const btnWidths = [btnW, btnW];
     const btnXs = Layout.rowCenter(btnWidths, btnGap);
@@ -424,7 +450,7 @@ class ResultScene extends Phaser.Scene {
     JEDA.UI.createButton(this, btnXs[0], y, btnW, btnH, 'Menu Utama', () => {
       if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
-    }, { radius: 44, fontSize: 33 });
+    }, { radius: 40, fontSize: 33 });
 
     // Kanan: Aksi Utama (Main Lagi)
     JEDA.UI.createButton(this, btnXs[1], y, btnW, btnH, 'Main Lagi', () => {
@@ -437,7 +463,7 @@ class ResultScene extends Phaser.Scene {
       };
       if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
-    }, { primary: true, radius: 44, fontSize: 33 });
+    }, { primary: true, radius: 40, fontSize: 33 });
   }
 }
 

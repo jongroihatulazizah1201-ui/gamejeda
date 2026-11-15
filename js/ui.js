@@ -595,8 +595,221 @@ JEDA.UI = {
   },
 
   /**
+   * Komponen Pemilih Tiga Tema Visual JEDA (PRD Bagian 15.3 & BR-16).
+   * Menampilkan tiga kartu pratinjau tema (Embun, Fajar, Aurora) dengan:
+   * - Swatch pita palet langit 3 warna (top, mid, bottom)
+   * - Nama tema & suasana (mood)
+   * - Status aktif, tombol gunakan, atau gembok 🔒 bila terkunci
+   * - Transisi silang 1,2 detik memanggil JEDA.Theme.apply
+   * 
+   * @param {Phaser.Scene} scene
+   * @param {number} cx
+   * @param {number} cy
+   * @param {Object} options - { cardW, cardH, gap, container, onSelect }
+   * @returns {Phaser.GameObjects.Container}
+   */
+  themeCards(scene, cx, cy, options = {}) {
+    const Layout = window.JEDA && JEDA.Layout;
+    const cardW = options.cardW || 248;
+    const cardH = options.cardH || 140;
+    const gap = options.gap || 20;
+    const parentContainer = options.container;
+
+    const rootContainer = scene.add.container(0, 0);
+    if (parentContainer) parentContainer.add(rootContainer);
+
+    const cardWidths = [cardW, cardW, cardW];
+    const cardXs = Layout ? Layout.rowCenter(cardWidths, gap) : [cx - cardW - gap, cx, cx + cardW + gap];
+
+    const themeKeys = ['embun', 'fajar', 'aurora'];
+    const themes = (window.JEDA && JEDA.THEMES) || {};
+
+    let cardsList = [];
+
+    const render = () => {
+      cardsList.forEach(c => c.destroy());
+      cardsList = [];
+
+      const currentThemeId = (window.JEDA && JEDA.Theme && JEDA.Theme.getCurrent)
+        ? JEDA.Theme.getCurrent().id
+        : ((window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun');
+
+      const totalStars = (window.JEDA && JEDA.State && JEDA.State.getTotalStars)
+        ? JEDA.State.getTotalStars()
+        : 0;
+
+      themeKeys.forEach((key, idx) => {
+        const theme = themes[key];
+        if (!theme) return;
+
+        const bx = cardXs[idx];
+        const isUnlocked = totalStars >= theme.reqStars;
+        const isActive = (currentThemeId === theme.id);
+
+        const card = scene.add.container(bx, cy);
+
+        // 1. Latar Belakang Kartu (Panel kaca gelap alpha >= 0.35 untuk kontras >= 4.5:1)
+        const bg = scene.add.graphics();
+        const drawCardBg = (hover = false) => {
+          bg.clear();
+          if (isUnlocked) {
+            if (isActive) {
+              bg.fillStyle(0x181D42, 0.96);
+              bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+              bg.lineStyle(2.5, theme.btnAccent.fromHex, 0.95);
+              bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+            } else if (hover) {
+              bg.fillStyle(0x1E2452, 0.96);
+              bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+              bg.lineStyle(2.0, 0x5C699A, 0.9);
+              bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+            } else {
+              bg.fillStyle(0x131738, 0.94);
+              bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+              bg.lineStyle(1.5, 0x384166, 0.65);
+              bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+            }
+          } else {
+            bg.fillStyle(0x101228, 0.60);
+            bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+            bg.lineStyle(1.5, 0x2A2E4C, 0.55);
+            bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
+          }
+        };
+        drawCardBg(false);
+        card.add(bg);
+
+        // 2. Swatch Pita Palet Tiga Warna Langit (Atas, Tengah, Bawah)
+        const swatchW = cardW - 32;
+        const pillGap = 6;
+        const singlePillW = Math.floor((swatchW - pillGap * 2) / 3);
+        const swatchH = 14;
+        const swatchY = -cardH / 2 + 20;
+
+        const swatchG = scene.add.graphics();
+        const skyColors = [theme.sky.topHex, theme.sky.midHex, theme.sky.bottomHex];
+        const pillStartX = -swatchW / 2 + singlePillW / 2;
+
+        for (let s = 0; s < 3; s++) {
+          const px = pillStartX + s * (singlePillW + pillGap);
+          swatchG.fillStyle(skyColors[s], isUnlocked ? 1.0 : 0.4);
+          swatchG.fillRoundedRect(px - singlePillW / 2, swatchY - swatchH / 2, singlePillW, swatchH, 7);
+          swatchG.lineStyle(1, 0xFFFFFF, isUnlocked ? 0.25 : 0.1);
+          swatchG.strokeRoundedRect(px - singlePillW / 2, swatchY - swatchH / 2, singlePillW, swatchH, 7);
+        }
+        card.add(swatchG);
+
+        // 3. Nama Tema & Suasana (PRD 14.3: minimal 27px)
+        const nameText = scene.add.text(0, -cardH / 2 + 48, theme.name, {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '800',
+          color: isUnlocked ? '#FFFFFF' : '#757D99'
+        }).setOrigin(0.5).setResolution(2);
+
+        const moodText = scene.add.text(0, -cardH / 2 + 76, theme.mood, {
+          fontFamily: JEDA.CFG.FONT.family,
+          fontSize: '27px',
+          fontStyle: '600',
+          color: isUnlocked ? JEDA.CFG.COLOR.hex.muted : '#555C75'
+        }).setOrigin(0.5).setResolution(2);
+        card.add([nameText, moodText]);
+
+        // 4. Status Pill di Bawah Kartu
+        const pillY = -cardH / 2 + 110;
+        const pillW = Math.min(cardW - 44, 150);
+        const pillH = 30;
+        const pillG = scene.add.graphics();
+
+        if (isUnlocked) {
+          if (isActive) {
+            pillG.fillStyle(theme.btnAccent.fromHex, 0.20);
+            pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+            pillG.lineStyle(1.5, theme.btnAccent.fromHex, 0.9);
+            pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+
+            const activeLabel = scene.add.text(0, pillY, '✓ Aktif', {
+              fontFamily: JEDA.CFG.FONT.family,
+              fontSize: '27px',
+              fontStyle: '800',
+              color: theme.btnAccent.from
+            }).setOrigin(0.5).setResolution(2);
+            card.add([pillG, activeLabel]);
+          } else {
+            pillG.fillStyle(0x222752, 0.92);
+            pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+            pillG.lineStyle(1.2, 0x485280, 0.7);
+            pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+
+            const useLabel = scene.add.text(0, pillY, 'Gunakan', {
+              fontFamily: JEDA.CFG.FONT.family,
+              fontSize: '27px',
+              fontStyle: '700',
+              color: '#FFFFFF'
+            }).setOrigin(0.5).setResolution(2);
+            card.add([pillG, useLabel]);
+          }
+        } else {
+          // Terkunci
+          pillG.fillStyle(0x161830, 0.8);
+          pillG.fillRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+          pillG.lineStyle(1.2, 0x363C5C, 0.5);
+          pillG.strokeRoundedRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 15);
+
+          const lockLabel = scene.add.text(0, pillY, `🔒 ${theme.reqStars} ★`, {
+            fontFamily: JEDA.CFG.FONT.family,
+            fontSize: '27px',
+            fontStyle: '700',
+            color: JEDA.CFG.COLOR.hex.warn
+          }).setOrigin(0.5).setResolution(2);
+          card.add([pillG, lockLabel]);
+        }
+
+        // 5. Interaksi Klik & Hover
+        card.setSize(cardW, cardH);
+        card.setInteractive({
+          hitArea: new Phaser.Geom.Rectangle(-cardW / 2, -cardH / 2, cardW, cardH),
+          hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+          useHandCursor: true
+        });
+
+        card.on('pointerover', () => {
+          drawCardBg(true);
+          scene.tweens.add({ targets: card, scaleX: 1.025, scaleY: 1.025, duration: 100 });
+        });
+
+        card.on('pointerout', () => {
+          drawCardBg(false);
+          scene.tweens.add({ targets: card, scaleX: 1.0, scaleY: 1.0, duration: 100 });
+        });
+
+        card.on('pointerup', () => {
+          if (isUnlocked) {
+            if (currentThemeId !== theme.id) {
+              const success = JEDA.Theme.apply(theme.id, 1200);
+              if (success) {
+                JEDA.UI.toast(scene, `Tema visual diubah ke ${theme.name} ✨`);
+                render();
+                if (typeof options.onSelect === 'function') options.onSelect(theme.id);
+              }
+            }
+          } else {
+            JEDA.UI.toast(scene, `Kumpulkan ${theme.reqStars} bintang untuk membuka tema ${theme.name}. (Saat ini: ${totalStars}★)`);
+          }
+        });
+
+        rootContainer.add(card);
+        cardsList.push(card);
+      });
+    };
+
+    render();
+    return rootContainer;
+  },
+
+  /**
    * Menampilkan Modal Pengaturan:
-   * - Pilihan Skin Orb (Embun, Fajar, Aurora - PRD 14.2 G5 / Fase G-4)
+   * - Pilihan Tema Visual (Embun, Fajar, Aurora - PRD 15.3 & BR-16)
    * - Kurangi Gerakan (BR-12)
    * - Hapus Data Saya (BR-13)
    */
@@ -610,8 +823,8 @@ JEDA.UI = {
       .setInteractive();
     container.add(backdrop);
 
-    const cardW = 820;
-    const cardH = 680;
+    const cardW = 860;
+    const cardH = 700;
     const cx = W / 2;
     const cy = H / 2;
 
@@ -623,14 +836,14 @@ JEDA.UI = {
     container.add(bg);
 
     // 1. Judul & Subjudul
-    const title = scene.add.text(cx, cy - cardH / 2 + 54, 'Pengaturan JEDA', {
+    const title = scene.add.text(cx, cy - cardH / 2 + 50, 'Pengaturan JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '44px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    const subtitle = scene.add.text(cx, cy - cardH / 2 + 96, 'Kustomisasi Visual & Aksesibilitas', {
+    const subtitle = scene.add.text(cx, cy - cardH / 2 + 90, 'Kustomisasi Visual & Aksesibilitas', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -638,153 +851,27 @@ JEDA.UI = {
     }).setOrigin(0.5).setResolution(2);
     container.add([title, subtitle]);
 
-    // 2. Bagian Pilihan Skin Orb (PRD 14.2 G5 / Fase G-4)
+    // 2. Bagian Pilihan Tema Visual (PRD 15.3 / BR-16)
     const totalStars = (JEDA.State && JEDA.State.getTotalStars) ? JEDA.State.getTotalStars() : 0;
-    const skinLabel = scene.add.text(cx, cy - 195, `Skin Orb Napas (Koleksi: ${totalStars}/9 ★)`, {
+    const themeLabel = scene.add.text(cx, cy - 180, `Tema Visual Mindfulness (Koleksi: ${totalStars}/9 ★)`, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '800',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
-    container.add(skinLabel);
+    container.add(themeLabel);
 
-    const skinButtonsGroup = [];
-    const renderSkinButtons = () => {
-      skinButtonsGroup.forEach(b => b.destroy());
-      skinButtonsGroup.length = 0;
-
-      const currentSkinId = (JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
-      const skins = (JEDA.CFG && JEDA.CFG.SKINS) || {};
-      const skinKeys = ['embun', 'fajar', 'aurora'];
-      const skinBtnW = 240;
-      const skinBtnH = 76;
-      const skinBtnXs = Layout ? Layout.rowCenter([skinBtnW, skinBtnW, skinBtnW], 24) : [cx - 264, cx, cx + 264];
-      const skinBtnY = cy - 132;
-
-      skinKeys.forEach((key, idx) => {
-        const skin = skins[key];
-        if (!skin) return;
-
-        const bx = skinBtnXs[idx];
-        const isUnlocked = totalStars >= skin.reqStars;
-        const isActive = currentSkinId === skin.id;
-
-        const btnContainer = scene.add.container(bx, skinBtnY);
-        const btnBg = scene.add.graphics();
-
-        if (isUnlocked) {
-          if (isActive) {
-            btnBg.fillStyle(0x1B2148, 0.96);
-            btnBg.fillRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
-            btnBg.lineStyle(2.5, skin.color, 0.95);
-            btnBg.strokeRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
-
-            const dot = scene.add.circle(-skinBtnW / 2 + 24, 0, 8, skin.color, 1.0);
-            const nameText = scene.add.text(-skinBtnW / 2 + 42, -12, skin.name, {
-              fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '27px',
-              fontStyle: '800',
-              color: '#FFFFFF'
-            }).setOrigin(0, 0.5).setResolution(2);
-
-            const activeLabel = scene.add.text(-skinBtnW / 2 + 42, 16, '✓ Aktif', {
-              fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '27px',
-              fontStyle: '700',
-              color: skin.hex
-            }).setOrigin(0, 0.5).setResolution(2);
-
-            btnContainer.add([btnBg, dot, nameText, activeLabel]);
-          } else {
-            btnBg.fillStyle(0x141838, 0.92);
-            btnBg.fillRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
-            btnBg.lineStyle(1.5, 0x3F486E, 0.65);
-            btnBg.strokeRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
-
-            const dot = scene.add.circle(-skinBtnW / 2 + 24, 0, 7, skin.color, 0.5);
-            const nameText = scene.add.text(-skinBtnW / 2 + 42, -12, skin.name, {
-              fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '27px',
-              fontStyle: '700',
-              color: '#FFFFFF'
-            }).setOrigin(0, 0.5).setResolution(2);
-
-            const useLabel = scene.add.text(-skinBtnW / 2 + 42, 16, 'Gunakan', {
-              fontFamily: JEDA.CFG.FONT.family,
-              fontSize: '27px',
-              fontStyle: '600',
-              color: JEDA.CFG.COLOR.hex.muted
-            }).setOrigin(0, 0.5).setResolution(2);
-
-            btnContainer.add([btnBg, dot, nameText, useLabel]);
-          }
-
-          btnContainer.setSize(skinBtnW, skinBtnH);
-          btnContainer.setInteractive({
-            hitArea: new Phaser.Geom.Rectangle(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH),
-            hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-            useHandCursor: true
-          });
-
-          btnContainer.on('pointerup', () => {
-            if (currentSkinId !== skin.id) {
-              JEDA.State.setSkin(skin.id);
-              JEDA.UI.toast(scene, `Skin orb diubah ke ${skin.name} ✨`);
-              renderSkinButtons();
-            }
-          });
-
-          btnContainer.on('pointerover', () => {
-            scene.tweens.add({ targets: btnContainer, scaleX: 1.03, scaleY: 1.03, duration: 100 });
-          });
-          btnContainer.on('pointerout', () => {
-            scene.tweens.add({ targets: btnContainer, scaleX: 1.0, scaleY: 1.0, duration: 100 });
-          });
-        } else {
-          // Terkunci
-          btnBg.fillStyle(0x101228, 0.5);
-          btnBg.fillRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
-          btnBg.lineStyle(1.5, 0x343956, 0.5);
-          btnBg.strokeRoundedRect(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH, 20);
-
-          const icon = scene.add.text(-skinBtnW / 2 + 24, 0, '🔒', { fontSize: '28px' }).setOrigin(0.5);
-          const nameText = scene.add.text(-skinBtnW / 2 + 42, -12, skin.name, {
-            fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '27px',
-            fontStyle: '700',
-            color: '#6B7280'
-          }).setOrigin(0, 0.5).setResolution(2);
-
-          const reqLabel = scene.add.text(-skinBtnW / 2 + 42, 16, `Butuh ${skin.reqStars} ★`, {
-            fontFamily: JEDA.CFG.FONT.family,
-            fontSize: '27px',
-            fontStyle: '600',
-            color: '#4B5578'
-          }).setOrigin(0, 0.5).setResolution(2);
-
-          btnContainer.add([btnBg, icon, nameText, reqLabel]);
-          btnContainer.setSize(skinBtnW, skinBtnH);
-          btnContainer.setInteractive({
-            hitArea: new Phaser.Geom.Rectangle(-skinBtnW / 2, -skinBtnH / 2, skinBtnW, skinBtnH),
-            hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-            useHandCursor: true
-          });
-
-          btnContainer.on('pointerup', () => {
-            JEDA.UI.toast(scene, `Kumpulkan ${skin.reqStars} bintang untuk membuka skin ${skin.name}. (Saat ini: ${totalStars}★)`);
-          });
-        }
-
-        container.add(btnContainer);
-        skinButtonsGroup.push(btnContainer);
-      });
-    };
-    renderSkinButtons();
+    this.themeCards(scene, cx, cy - 88, {
+      cardW: 254,
+      cardH: 140,
+      gap: 18,
+      container: container
+    });
 
     // 3. Opsi Kurangi Gerakan (BR-12)
     const isReduceMotion = JEDA.State.data.settings.reduceMotion;
     const motionBtnText = isReduceMotion ? 'Kurangi Gerakan: [AKTIF]' : 'Kurangi Gerakan: [NONAKTIF]';
-    const motionBtn = this.createButton(scene, cx, cy - 20, 560, 72, motionBtnText, () => {
+    const motionBtn = this.createButton(scene, cx, cy + 42, 560, 68, motionBtnText, () => {
       JEDA.State.data.settings.reduceMotion = !JEDA.State.data.settings.reduceMotion;
       JEDA.State.save();
       if (JEDA.Stage3D && JEDA.Stage3D.setReduceMotion) {
@@ -792,22 +879,22 @@ JEDA.UI = {
       }
       motionBtn.textObj.setText(JEDA.State.data.settings.reduceMotion ? 'Kurangi Gerakan: [AKTIF]' : 'Kurangi Gerakan: [NONAKTIF]');
       JEDA.UI.toast(scene, 'Pengaturan animasi diperbarui.');
-    }, { fontSize: 33, radius: 36 });
+    }, { fontSize: 33, radius: 34 });
     container.add(motionBtn);
 
     // 4. Opsi Hapus Data Saya (BR-13)
-    const deleteBtn = this.createButton(scene, cx, cy + 68, 560, 72, 'Hapus Data Saya', () => {
+    const deleteBtn = this.createButton(scene, cx, cy + 128, 560, 68, 'Hapus Data Saya', () => {
       JEDA.State.resetData();
       JEDA.UI.toast(scene, 'Seluruh data lokal berhasil dihapus.');
       container.destroy();
       if (typeof onDataReset === 'function') onDataReset();
-    }, { textColor: '#FF8FA3', fontSize: 33, radius: 36 });
+    }, { textColor: '#FF8FA3', fontSize: 33, radius: 34 });
     container.add(deleteBtn);
 
     // 5. Tombol Tutup
-    const closeBtn = this.createButton(scene, cx, cy + 172, 280, 72, 'Tutup', () => {
+    const closeBtn = this.createButton(scene, cx, cy + 224, 280, 68, 'Tutup', () => {
       container.destroy();
-    }, { fontSize: 33, radius: 36 });
+    }, { fontSize: 33, radius: 34 });
     container.add(closeBtn);
 
     return container;

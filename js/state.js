@@ -186,6 +186,9 @@ JEDA.State = {
    * @returns {boolean} true jika skin berhasil diterapkan
    */
   setSkin(skinId) {
+    if (window.JEDA && JEDA.Theme && JEDA.Theme.apply) {
+      return JEDA.Theme.apply(skinId, 1200);
+    }
     if (!this.data) return false;
     const skins = (window.JEDA && JEDA.CFG && JEDA.CFG.SKINS) || {};
     const skin = skins[skinId];

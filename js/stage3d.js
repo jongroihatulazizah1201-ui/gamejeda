@@ -19,6 +19,32 @@ JEDA.Stage3D = (function() {
 
   // Objek panggung 3D
   let skyDome = null;
+  let skyCanvas = null;
+  let skyTexture = null;
+  let currentSkyTop = new THREE.Color(0x0F2A3A);
+  let currentSkyMid = new THREE.Color(0x2C6E7F);
+  let currentSkyBottom = new THREE.Color(0xBFE8DC);
+  let startSkyTop = new THREE.Color(0x0F2A3A);
+  let startSkyMid = new THREE.Color(0x2C6E7F);
+  let startSkyBottom = new THREE.Color(0xBFE8DC);
+  let targetSkyTop = new THREE.Color(0x0F2A3A);
+  let targetSkyMid = new THREE.Color(0x2C6E7F);
+  let targetSkyBottom = new THREE.Color(0xBFE8DC);
+
+  let isThemeTransitioning = false;
+  let themeTransitionStart = 0;
+  let themeTransitionDuration = 1200;
+  let targetLanternColor = new THREE.Color(0xBFFFE9);
+  let startLanternColor = new THREE.Color(0xBFFFE9);
+  let currentLanternColor = new THREE.Color(0xBFFFE9);
+  let targetParticleColor = new THREE.Color(0xD8F3EC);
+  let startParticleColor = new THREE.Color(0xD8F3EC);
+  let currentParticleColor = new THREE.Color(0xD8F3EC);
+  let targetHemiSky = new THREE.Color(0x2C6E7F);
+  let startHemiSky = new THREE.Color(0x2C6E7F);
+  let targetHemiGround = new THREE.Color(0x0F2A3A);
+  let startHemiGround = new THREE.Color(0x0F2A3A);
+
   let starsMesh = null;
   let orbGroup = null;
   let orbMesh = null;
@@ -93,26 +119,26 @@ JEDA.Stage3D = (function() {
 
   /**
    * Membuat tekstur kanvas prosedural gradasi senja untuk skydome.
+   * Mendukung pembaruan dinamis saat transisi tema (PRD Bagian 15.3).
    */
   function createSkyTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
+    skyCanvas = document.createElement('canvas');
+    skyCanvas.width = 512;
+    skyCanvas.height = 512;
+    const ctx = skyCanvas.getContext('2d');
 
     const grad = ctx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0.0, '#16163A'); // Atas gelap
-    grad.addColorStop(0.5, '#2B4C7E'); // Tengah biru senja
-    grad.addColorStop(0.85, '#B87288'); // Transisi ungu lembayung
-    grad.addColorStop(1.0, '#E8A598'); // Bawah cakrawala hangat
+    grad.addColorStop(0.0, '#' + currentSkyTop.getHexString());
+    grad.addColorStop(0.5, '#' + currentSkyMid.getHexString());
+    grad.addColorStop(1.0, '#' + currentSkyBottom.getHexString());
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.generateMipmaps = false;
-    texture.minFilter = THREE.LinearFilter;
-    return texture;
+    skyTexture = new THREE.CanvasTexture(skyCanvas);
+    skyTexture.generateMipmaps = false;
+    skyTexture.minFilter = THREE.LinearFilter;
+    return skyTexture;
   }
 
   /**
@@ -666,6 +692,65 @@ JEDA.Stage3D = (function() {
       hemiLight.intensity = 0.5 * panicDimVal;
     }
 
+    // 10b. Pembaruan Transisi Silang Tema 1,2 Detik (PRD Bagian 15.3 & BR-16)
+    if (isThemeTransitioning) {
+      const elapsed = performance.now() - themeTransitionStart;
+      const progress = Math.min(1.0, elapsed / themeTransitionDuration);
+      // Easing gelombang sinus lembut (Sine in-out)
+      const t = 0.5 - 0.5 * Math.cos(progress * Math.PI);
+
+      currentSkyTop.lerpColors(startSkyTop, targetSkyTop, t);
+      currentSkyMid.lerpColors(startSkyMid, targetSkyMid, t);
+      currentSkyBottom.lerpColors(startSkyBottom, targetSkyBottom, t);
+
+      if (skyCanvas && skyTexture) {
+        const ctx = skyCanvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 512);
+        grad.addColorStop(0.0, '#' + currentSkyTop.getHexString());
+        grad.addColorStop(0.5, '#' + currentSkyMid.getHexString());
+        grad.addColorStop(1.0, '#' + currentSkyBottom.getHexString());
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 512, 512);
+        skyTexture.needsUpdate = true;
+      }
+
+      currentLanternColor.lerpColors(startLanternColor, targetLanternColor, t);
+      currentParticleColor.lerpColors(startParticleColor, targetParticleColor, t);
+
+      // Perbarui warna lentera pulau
+      islands.forEach(isl => {
+        if (isl.lantern) {
+          if (isl.lantern.light) isl.lantern.light.color.copy(currentLanternColor);
+          if (isl.lantern.halo && isl.lantern.halo.material) isl.lantern.halo.material.color.copy(currentLanternColor);
+          if (isl.lantern.mat) isl.lantern.mat.color.copy(currentLanternColor);
+        }
+      });
+
+      // Perbarui partikel & bintang
+      if (particlesMesh && particlesMesh.material) {
+        particlesMesh.material.color.copy(currentParticleColor);
+      }
+      if (starsMesh && starsMesh.material) {
+        starsMesh.material.color.copy(currentParticleColor);
+      }
+
+      // Perbarui pencahayaan langit & tanah
+      if (hemiLight) {
+        hemiLight.color.lerpColors(startHemiSky, targetHemiSky, t);
+        hemiLight.groundColor.lerpColors(startHemiGround, targetHemiGround, t);
+      }
+      if (scene && scene.fog) {
+        scene.fog.color.lerpColors(startSkyTop, targetSkyTop, t);
+      }
+      if (dirLight) {
+        dirLight.color.lerpColors(startLanternColor, targetLanternColor, t);
+      }
+
+      if (progress >= 1.0) {
+        isThemeTransitioning = false;
+      }
+    }
+
     // 11. Bintang Berkilau & Skydome Berputar Perlahan
     if (skyDome && !reduceMotion) {
       skyDome.rotation.y += 0.0003 * timeScale;
@@ -887,7 +972,7 @@ JEDA.Stage3D = (function() {
         animFrameId = requestAnimationFrame(animate);
 
         const savedSkin = (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
-        this.setSkin(savedSkin);
+        this.setTheme(savedSkin, 0);
 
         console.log('[Stage3D] Panggung 3D Three.js r128 berhasil diinisialisasi.');
         return true;
@@ -1151,6 +1236,87 @@ JEDA.Stage3D = (function() {
       if (particlesMesh && particlesMesh.material) {
         particlesMesh.material.color.copy(skinColor);
       }
+    },
+
+    /**
+     * Menerapkan seluruh tema visual panggung 3D dengan transisi silang 1,2 detik (PRD Bagian 15.3 & BR-16).
+     * Mengubah palet langit skydome, cahaya lentera kepulauan, partikel/bintang, dan pencahayaan global.
+     * @param {string} themeName - 'embun' | 'fajar' | 'aurora'
+     * @param {number} duration - Durasi transisi silang dalam ms (default 1200)
+     */
+    setTheme(themeName, duration = 1200) {
+      if (!active) return;
+      const themes = (window.JEDA && JEDA.THEMES) || {};
+      const theme = themes[themeName] || themes.embun;
+      if (!theme) return;
+
+      const sky = theme.sky;
+      targetSkyTop = new THREE.Color(sky.topHex);
+      targetSkyMid = new THREE.Color(sky.midHex);
+      targetSkyBottom = new THREE.Color(sky.bottomHex);
+      targetLanternColor = new THREE.Color(theme.lanternHex);
+      targetParticleColor = new THREE.Color(theme.particlesHex);
+      targetHemiSky = new THREE.Color(theme.hemiSky);
+      targetHemiGround = new THREE.Color(theme.hemiGround);
+
+      // Selaraskan juga palet orb napas
+      this.setSkin(theme.id);
+
+      if (duration <= 0) {
+        currentSkyTop.copy(targetSkyTop);
+        currentSkyMid.copy(targetSkyMid);
+        currentSkyBottom.copy(targetSkyBottom);
+        currentLanternColor.copy(targetLanternColor);
+        currentParticleColor.copy(targetParticleColor);
+
+        if (skyCanvas && skyTexture) {
+          const ctx = skyCanvas.getContext('2d');
+          const grad = ctx.createLinearGradient(0, 0, 0, 512);
+          grad.addColorStop(0.0, '#' + currentSkyTop.getHexString());
+          grad.addColorStop(0.5, '#' + currentSkyMid.getHexString());
+          grad.addColorStop(1.0, '#' + currentSkyBottom.getHexString());
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 512, 512);
+          skyTexture.needsUpdate = true;
+        }
+
+        islands.forEach(isl => {
+          if (isl.lantern) {
+            if (isl.lantern.light) isl.lantern.light.color.copy(targetLanternColor);
+            if (isl.lantern.halo && isl.lantern.halo.material) isl.lantern.halo.material.color.copy(targetLanternColor);
+            if (isl.lantern.mat) isl.lantern.mat.color.copy(targetLanternColor);
+          }
+        });
+
+        if (particlesMesh && particlesMesh.material) particlesMesh.material.color.copy(targetParticleColor);
+        if (starsMesh && starsMesh.material) starsMesh.material.color.copy(targetParticleColor);
+        if (hemiLight) {
+          hemiLight.color.copy(targetHemiSky);
+          hemiLight.groundColor.copy(targetHemiGround);
+        }
+        if (scene && scene.fog) {
+          scene.fog.color.copy(targetSkyTop);
+        }
+        if (dirLight) {
+          dirLight.color.copy(targetLanternColor);
+        }
+        isThemeTransitioning = false;
+        return;
+      }
+
+      startSkyTop = currentSkyTop.clone();
+      startSkyMid = currentSkyMid.clone();
+      startSkyBottom = currentSkyBottom.clone();
+      startLanternColor = currentLanternColor.clone();
+      startParticleColor = currentParticleColor.clone();
+      if (hemiLight) {
+        startHemiSky = hemiLight.color.clone();
+        startHemiGround = hemiLight.groundColor.clone();
+      }
+
+      themeTransitionDuration = duration;
+      themeTransitionStart = performance.now();
+      isThemeTransitioning = true;
     },
 
     /**

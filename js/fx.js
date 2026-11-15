@@ -91,6 +91,26 @@ JEDA.FX = {
   },
 
   /**
+   * Menerapkan tema visual pada versi 2D (PRD Bagian 15.3).
+   * @param {string} themeName - 'embun' | 'fajar' | 'aurora'
+   * @param {number} duration - Durasi transisi (default 1200)
+   */
+  setTheme(themeName, duration = 1200) {
+    const themes = (window.JEDA && JEDA.THEMES) || {};
+    const theme = themes[themeName] || themes.embun;
+    if (!theme) return;
+
+    if (window.JEDA && JEDA.CFG && JEDA.CFG.COLOR) {
+      JEDA.CFG.COLOR.bgTop = theme.sky.topHex;
+      JEDA.CFG.COLOR.bgMid = theme.sky.midHex;
+      JEDA.CFG.COLOR.bgBottom = theme.sky.bottomHex;
+      JEDA.CFG.COLOR.hex.bgTop = theme.sky.top;
+      JEDA.CFG.COLOR.hex.bgMid = theme.sky.mid;
+      JEDA.CFG.COLOR.hex.bgBottom = theme.sky.bottom;
+    }
+  },
+
+  /**
    * Mengambil warna numerik heksadesimal dari skin aktif (PRD Bagian 14.2 G5).
    * @param {string|null} skinId - ID skin opsional, atau baca dari JEDA.State.data.skin
    * @returns {number}
