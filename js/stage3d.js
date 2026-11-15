@@ -96,6 +96,25 @@ JEDA.Stage3D = (function() {
   let auroraShootingStar = null;
   let auroraIceCrystals = [];
 
+  // Data elemen Level 2: Misi Astronot (PRD Bagian 15.4 - Prompt R-5)
+  const L2_ASTRONAUT_CONFIGS = [
+    { index: 0, name: 'Penenang', cat: 'Cemas', color: 0x6EC6FF, x: -4.5, y: -3.2, z: 0.0 },
+    { index: 1, name: 'Navigator', cat: 'Rencana', color: 0xFFB86B, x: -1.5, y: -3.2, z: 0.0 },
+    { index: 2, name: 'Sahabat', cat: 'Menilai Diri', color: 0xB69CFF, x: 1.5, y: -3.2, z: 0.0 },
+    { index: 3, name: 'Arsiparis', cat: 'Kenangan', color: 0xE6EEF7, x: 4.5, y: -3.2, z: 0.0 }
+  ];
+  let l2Group = null;
+  let l2AstronautsGroup = null;
+  let l2MonstersGroup = null;
+  let l2BeamsGroup = null;
+  let l2EffectsGroup = null;
+  let l2Astronauts = [];
+  let l2Monsters = [];
+  let l2ActiveBeams = [];
+  let l2Sparks = [];
+  let l2PuffClouds = [];
+  let raycaster = null;
+
   // Efek Tabel 13.4
   let ringScale = 1.0;
   let ringOpacity = 0.0;
@@ -127,7 +146,7 @@ JEDA.Stage3D = (function() {
   const CAMERA_PRESETS = {
     menu:   { x: 0,   y: 0.6,  z: 22.5, lookX: 0,   lookY: -1.0, lookZ: 0 },
     l1:     { x: 0,   y: 0.0,  z: 11.2, lookX: 0,   lookY: 0.0,  lookZ: 0 },
-    l2:     { x: 3.5, y: 2.2,  z: 15.0, lookX: 1.5, lookY: 2.5,  lookZ: -2 },
+    l2:     { x: 0,   y: 0.2,  z: 16.5, lookX: 0,   lookY: 0.6,  lookZ: -1.5 },
     l3:     { x: 0,   y: -1.0, z: 17.0, lookX: 0,   lookY: -2.0, lookZ: 0 },
     result: { x: 0,   y: 1.6,  z: 24.5, lookX: 0,   lookY: -1.0, lookZ: 0 }
   };
@@ -978,6 +997,759 @@ JEDA.Stage3D = (function() {
     updateThemeElementsVisibility();
   }
 
+  // =========================================================================
+  // SUB-PANGGUNG LEVEL 2: MISI ASTRONOT (PRD Bagian 15.4 - Three.js r128)
+  // =========================================================================
+
+  /**
+   * Helper menggambar persegi bersudut tumpul pada 2D Canvas.
+   */
+  function drawRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  /**
+   * Membungkus teks pikiran ke dalam maksimal 2 baris (maks 56 karakter per baris).
+   */
+  function wrapThoughtText(ctx, text, maxWidth, maxLines = 2) {
+    const words = text.split(' ');
+    const lines = [];
+    let curLine = '';
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const test = curLine ? (curLine + ' ' + word) : word;
+      if (ctx.measureText(test).width > maxWidth) {
+        if (curLine) lines.push(curLine);
+        curLine = word;
+        if (lines.length >= maxLines - 1) break;
+      } else {
+        curLine = test;
+      }
+    }
+    if (curLine && lines.length < maxLines) lines.push(curLine);
+
+    if (lines.length === maxLines) {
+      let last = lines[maxLines - 1];
+      if (words.length > 0 && lines.join(' ').length < text.length) {
+        while (ctx.measureText(last + '...').width > maxWidth && last.length > 3) {
+          last = last.slice(0, -1);
+        }
+        lines[maxLines - 1] = last.trim() + '...';
+      }
+    }
+    return lines;
+  }
+
+  /**
+   * Membuat Sprite kanvas label pikiran (billboarding otomatis selalu menghadap kamera).
+   */
+  function createThoughtSprite(thought) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 160;
+    const ctx = canvas.getContext('2d');
+
+    // Panel kaca gelap pekat (alpha 0.94) untuk kontras tinggi
+    ctx.fillStyle = 'rgba(18, 20, 52, 0.94)';
+    drawRoundRect(ctx, 16, 12, 480, 136, 24);
+    ctx.fill();
+
+    // Border aksen lembut
+    ctx.strokeStyle = '#7FE0C3';
+    ctx.lineWidth = 3;
+    drawRoundRect(ctx, 16, 12, 480, 136, 24);
+    ctx.stroke();
+
+    // Teks pikiran putih tajam
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 23px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const lines = wrapThoughtText(ctx, thought.text || '', 440, 2);
+    if (lines.length === 1) {
+      ctx.fillText(lines[0], 256, 80);
+    } else if (lines.length >= 2) {
+      ctx.fillText(lines[0], 256, 60);
+      ctx.fillText(lines[1], 256, 100);
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthWrite: false
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(4.5, 1.4, 1.0);
+    return sprite;
+  }
+
+  /**
+   * Membuat mesh model 3D satu Astronot tanpa CapsuleGeometry (Three.js r128).
+   */
+  function createAstronautMesh(cfg) {
+    const group = new THREE.Group();
+
+    const whiteMat = new THREE.MeshStandardMaterial({
+      color: 0xEEF2F7,
+      roughness: 0.35,
+      metalness: 0.1
+    });
+
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: cfg.color,
+      emissive: cfg.color,
+      emissiveIntensity: 0.35,
+      roughness: 0.25
+    });
+
+    const visorMat = new THREE.MeshStandardMaterial({
+      color: 0x0E1020,
+      metalness: 0.95,
+      roughness: 0.05
+    });
+
+    // 1. Badan silinder tengah
+    const bodyGeo = new THREE.CylinderGeometry(0.32, 0.36, 0.85, 14);
+    const body = new THREE.Mesh(bodyGeo, whiteMat);
+    body.position.y = 0.42;
+    group.add(body);
+
+    // 2. Ujung atas & bawah badan (dua Sphere)
+    const topCapGeo = new THREE.SphereGeometry(0.32, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const topCap = new THREE.Mesh(topCapGeo, whiteMat);
+    topCap.position.y = 0.845;
+    group.add(topCap);
+
+    const bottomCapGeo = new THREE.SphereGeometry(0.36, 14, 10, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5);
+    const bottomCap = new THREE.Mesh(bottomCapGeo, whiteMat);
+    bottomCap.position.y = 0.0;
+    group.add(bottomCap);
+
+    // 3. Helm bulat
+    const helmGeo = new THREE.SphereGeometry(0.42, 18, 14);
+    const helm = new THREE.Mesh(helmGeo, whiteMat);
+    helm.position.y = 1.35;
+    group.add(helm);
+
+    // 4. Visor gelap mengilap
+    const visorGeo = new THREE.SphereGeometry(0.35, 14, 10, 0, Math.PI, 0, Math.PI * 0.75);
+    const visor = new THREE.Mesh(visorGeo, visorMat);
+    visor.position.set(0, 1.35, 0.16);
+    visor.rotation.x = -Math.PI * 0.1;
+    group.add(visor);
+
+    // 5. Strip warna aksen di dada & helm
+    const chestStripGeo = new THREE.CylinderGeometry(0.33, 0.35, 0.15, 14);
+    const chestStrip = new THREE.Mesh(chestStripGeo, accentMat);
+    chestStrip.position.y = 0.52;
+    group.add(chestStrip);
+
+    const helmBandGeo = new THREE.TorusGeometry(0.43, 0.035, 8, 20);
+    const helmBand = new THREE.Mesh(helmBandGeo, accentMat);
+    helmBand.position.y = 1.35;
+    helmBand.rotation.x = Math.PI * 0.5;
+    group.add(helmBand);
+
+    // 6. Ransel di punggung
+    const packGeo = new THREE.BoxGeometry(0.42, 0.65, 0.22);
+    const pack = new THREE.Mesh(packGeo, whiteMat);
+    pack.position.set(0, 0.55, -0.30);
+    group.add(pack);
+
+    // 7. Cincin sorotan seleksi aktif di bawah kaki
+    const selGeo = new THREE.RingGeometry(0.55, 0.72, 28);
+    const selMat = new THREE.MeshBasicMaterial({
+      color: cfg.color,
+      transparent: true,
+      opacity: (cfg.index === 0) ? 0.9 : 0.0,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+    const selRing = new THREE.Mesh(selGeo, selMat);
+    selRing.rotation.x = -Math.PI * 0.5;
+    selRing.position.y = -0.35;
+    group.add(selRing);
+
+    group.userData = {
+      cfg: cfg,
+      selRing: selRing,
+      accentMat: accentMat,
+      baseY: cfg.y,
+      baseZ: cfg.z,
+      recoilZ: 0.0
+    };
+
+    group.position.set(cfg.x, cfg.y, cfg.z);
+    return group;
+  }
+
+  /**
+   * Membuat mesh monster gelembung pikiran (PRD Bagian 15.4).
+   */
+  function createMonsterMesh(thought, monsterId) {
+    const group = new THREE.Group();
+
+    // 1. Badan monster icosahedron bersudut flat
+    const bodyGeo = new THREE.IcosahedronGeometry(0.75, 1);
+    const bodyMat = new THREE.MeshPhongMaterial({
+      color: 0x4A4268,
+      emissive: 0x241C3C,
+      flatShading: true,
+      shininess: 12
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.userData = { monsterId: monsterId };
+    group.add(body);
+
+    // 2. 8 Duri kerucut di sekeliling badan
+    const spikeGeo = new THREE.ConeGeometry(0.18, 0.55, 5);
+    spikeGeo.rotateX(Math.PI * 0.5);
+    const spikeMat = new THREE.MeshPhongMaterial({
+      color: 0x383056,
+      flatShading: true
+    });
+
+    const spikeDirs = [
+      new THREE.Vector3( 1,  0.5,  0).normalize(),
+      new THREE.Vector3(-1,  0.5,  0).normalize(),
+      new THREE.Vector3( 0,  1.0,  0.5).normalize(),
+      new THREE.Vector3( 0, -0.9,  0.3).normalize(),
+      new THREE.Vector3( 0.7, -0.5, 0.7).normalize(),
+      new THREE.Vector3(-0.7, -0.5, 0.7).normalize(),
+      new THREE.Vector3( 0.6,  0.6, -0.7).normalize(),
+      new THREE.Vector3(-0.6,  0.6, -0.7).normalize()
+    ];
+
+    spikeDirs.forEach(dir => {
+      const spike = new THREE.Mesh(spikeGeo, spikeMat);
+      spike.position.copy(dir.clone().multiplyScalar(0.72));
+      spike.lookAt(dir.clone().multiplyScalar(5));
+      spike.userData = { monsterId: monsterId };
+      group.add(spike);
+    });
+
+    // 3. Dua mata bulat mengamati
+    const eyeWhiteMat = new THREE.MeshBasicMaterial({ color: 0xF0F4FF });
+    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x1A1428 });
+    const eyeGeo = new THREE.SphereGeometry(0.14, 10, 10);
+    const pupilGeo = new THREE.SphereGeometry(0.07, 8, 8);
+
+    const eyeL = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+    eyeL.position.set(-0.25, 0.15, 0.68);
+    const pupilL = new THREE.Mesh(pupilGeo, pupilMat);
+    pupilL.position.set(-0.25, 0.15, 0.78);
+    group.add(eyeL);
+    group.add(pupilL);
+
+    const eyeR = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+    eyeR.position.set(0.25, 0.15, 0.68);
+    const pupilR = new THREE.Mesh(pupilGeo, pupilMat);
+    pupilR.position.set(0.25, 0.15, 0.78);
+    group.add(eyeR);
+    group.add(pupilR);
+
+    // 4. Cangkang gelembung transparan
+    const bubbleGeo = new THREE.SphereGeometry(1.22, 18, 14);
+    const bubbleMat = new THREE.MeshPhongMaterial({
+      color: 0x9B8CFF,
+      transparent: true,
+      opacity: 0.24,
+      shininess: 38,
+      depthWrite: false
+    });
+    const bubble = new THREE.Mesh(bubbleGeo, bubbleMat);
+    bubble.userData = { monsterId: monsterId };
+    group.add(bubble);
+
+    // 5. Label Teks Pikiran (Sprite dengan CanvasTexture)
+    const labelSprite = createThoughtSprite(thought);
+    labelSprite.position.set(0, 1.55, 0);
+    group.add(labelSprite);
+
+    group.userData = {
+      monsterId: monsterId,
+      thought: thought,
+      body: body,
+      bubble: bubble,
+      labelSprite: labelSprite,
+      shake: 0.0,
+      isDying: false,
+      deathTimer: 0.0,
+      hasFailed: false,
+      speed: 0.38 + Math.random() * 0.15,
+      baseY: 0.6 + Math.random() * 3.4,
+      phase: Math.random() * Math.PI * 2
+    };
+
+    return group;
+  }
+
+  /**
+   * Membangun grup panggung Level 2 di Three.js.
+   */
+  function buildL2Scene() {
+    l2Group = new THREE.Group();
+    l2AstronautsGroup = new THREE.Group();
+    l2MonstersGroup = new THREE.Group();
+    l2BeamsGroup = new THREE.Group();
+    l2EffectsGroup = new THREE.Group();
+
+    l2Group.add(l2AstronautsGroup);
+    l2Group.add(l2MonstersGroup);
+    l2Group.add(l2BeamsGroup);
+    l2Group.add(l2EffectsGroup);
+
+    // Buat 4 astronot
+    l2Astronauts = [];
+    L2_ASTRONAUT_CONFIGS.forEach(cfg => {
+      const aMesh = createAstronautMesh(cfg);
+      l2AstronautsGroup.add(aMesh);
+      l2Astronauts.push(aMesh);
+    });
+
+    l2Group.visible = false;
+    scene.add(l2Group);
+    raycaster = new THREE.Raycaster();
+  }
+
+  /**
+   * Menyorot astronot aktif (0..3).
+   */
+  function selectL2Astronaut(index) {
+    l2Astronauts.forEach((a, i) => {
+      if (a.userData && a.userData.selRing) {
+        a.userData.selRing.material.opacity = (i === index) ? 0.95 : 0.0;
+      }
+    });
+  }
+
+  /**
+   * Memunculkan monster pikiran 3D baru di arena kanan.
+   */
+  function spawnL2Monster(thought) {
+    if (!l2MonstersGroup) return null;
+    const monsterId = 'm_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    const mGroup = createMonsterMesh(thought, monsterId);
+
+    // Muncul dari tepi kanan arena melayang masuk
+    const spawnX = 11.5 + Math.random() * 2.5;
+    mGroup.position.set(spawnX, mGroup.userData.baseY, -1.5);
+    l2MonstersGroup.add(mGroup);
+
+    l2Monsters.push({
+      id: monsterId,
+      thought: thought,
+      mesh: mGroup,
+      userData: mGroup.userData
+    });
+
+    return monsterId;
+  }
+
+  /**
+   * Melakukan Raycasting untuk mendeteksi monster yang ditunjuk kursor.
+   * Mendukung objek pointer Phaser atau koordinat (x, y).
+   */
+  function pickL2Monster(clientX, clientY) {
+    if (!camera || !renderer || !l2MonstersGroup || !l2MonstersGroup.visible) return null;
+    let cx = clientX;
+    let cy = clientY;
+    if (cx && typeof cx === 'object') {
+      if (cx.event) {
+        cy = (cx.event.clientY !== undefined) ? cx.event.clientY : cx.y;
+        cx = (cx.event.clientX !== undefined) ? cx.event.clientX : cx.x;
+      } else if (cx.x !== undefined && cx.y !== undefined) {
+        cy = cx.y;
+        cx = cx.x;
+      }
+    }
+    if (typeof cx !== 'number' || typeof cy !== 'number') return null;
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    let mouseX, mouseY;
+    if (rect.width > 0 && rect.height > 0) {
+      if (cx > window.innerWidth || cy > window.innerHeight) {
+        mouseX = (cx / 1920) * 2 - 1;
+        mouseY = -(cy / 1080) * 2 + 1;
+      } else {
+        mouseX = ((cx - rect.left) / rect.width) * 2 - 1;
+        mouseY = -((cy - rect.top) / rect.height) * 2 + 1;
+      }
+    } else {
+      mouseX = (cx / 1920) * 2 - 1;
+      mouseY = -(cy / 1080) * 2 + 1;
+    }
+
+    raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera);
+
+    const targets = [];
+    l2Monsters.forEach(m => {
+      if (!m.userData.isDying && m.mesh) {
+        targets.push(m.mesh);
+      }
+    });
+
+    const intersects = raycaster.intersectObjects(targets, true);
+    if (intersects.length > 0) {
+      let cur = intersects[0].object;
+      while (cur && !cur.userData.monsterId && cur.parent) {
+        cur = cur.parent;
+      }
+      if (cur && cur.userData && cur.userData.monsterId) {
+        return cur.userData.monsterId;
+      }
+    }
+
+    // Toleransi radius layar 2D (120px) agar pembidikan nyaman & pemaaf
+    const W = (window.JEDA && JEDA.CFG && JEDA.CFG.W) || 1920;
+    const H = (window.JEDA && JEDA.CFG && JEDA.CFG.H) || 1080;
+    const gameX = (cx > window.innerWidth || cy > window.innerHeight) ? cx : ((cx - rect.left) / rect.width) * W;
+    const gameY = (cx > window.innerWidth || cy > window.innerHeight) ? cy : ((cy - rect.top) / rect.height) * H;
+
+    let closestId = null;
+    let closestDist = 120;
+    l2Monsters.forEach(m => {
+      if (!m.userData.isDying && m.mesh) {
+        const sPos = getL2MonsterScreenPos(m.id);
+        if (sPos) {
+          const d = Math.hypot(gameX - sPos.x, gameY - sPos.y);
+          if (d < closestDist) {
+            closestDist = d;
+            closestId = m.id;
+          }
+        }
+      }
+    });
+
+    return closestId;
+  }
+
+  /**
+   * Mengambil proyeksi 2D koordinat monster pada layar Phaser.
+   */
+  function getL2MonsterScreenPos(monsterId) {
+    const item = l2Monsters.find(m => m.id === monsterId);
+    if (!item || !item.mesh || !camera || !renderer) return null;
+    const p = item.mesh.position.clone();
+    p.project(camera);
+    const W = (window.JEDA && JEDA.CFG && JEDA.CFG.W) || 1920;
+    const H = (window.JEDA && JEDA.CFG && JEDA.CFG.H) || 1080;
+    return {
+      x: (p.x * 0.5 + 0.5) * W,
+      y: (-(p.y * 0.5) + 0.5) * H
+    };
+  }
+
+  /**
+   * Meluncurkan tembakan sinar laser dari astronot ke monster (0,35 detik).
+   */
+  function fireL2Beam(astronautIndex, monsterId, onResult) {
+    const astronaut = l2Astronauts[astronautIndex];
+    const monsterItem = l2Monsters.find(m => m.id === monsterId && !m.userData.isDying);
+    if (!astronaut || !monsterItem) {
+      if (typeof onResult === 'function') onResult({ correct: false });
+      return false;
+    }
+
+    // Efek recoil penembak
+    astronaut.userData.recoilZ = -0.55;
+
+    const startPos = astronaut.position.clone().add(new THREE.Vector3(0, 0.85, 0.2));
+    const targetPos = monsterItem.mesh.position.clone();
+
+    // Sinar proyektil silinder
+    const dist = startPos.distanceTo(targetPos);
+    const beamGeo = new THREE.CylinderGeometry(0.06, 0.06, Math.min(2.4, dist * 0.35), 8);
+    beamGeo.rotateX(Math.PI * 0.5);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: astronaut.userData.cfg.color,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+    beamMesh.position.copy(startPos);
+    beamMesh.lookAt(targetPos);
+    l2BeamsGroup.add(beamMesh);
+
+    l2ActiveBeams.push({
+      mesh: beamMesh,
+      start: startPos,
+      target: targetPos,
+      cat: astronaut.userData.cfg.cat,
+      monsterId: monsterId,
+      progress: 0.0,
+      duration: 0.35,
+      onResult: onResult
+    });
+
+    return true;
+  }
+
+  /**
+   * Memunculkan efek ledakan awan & partikel saat tembakan benar (PRD 15.4).
+   */
+  function spawnL2CorrectEffects(pos) {
+    // 1. 20 partikel putih menyebar
+    const PART_COUNT = 20;
+    const partGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(PART_COUNT * 3);
+    const vels = [];
+
+    for (let p = 0; p < PART_COUNT; p++) {
+      positions[p * 3] = pos.x;
+      positions[p * 3 + 1] = pos.y;
+      positions[p * 3 + 2] = pos.z;
+
+      const phi = Math.random() * Math.PI * 2;
+      const theta = Math.random() * Math.PI;
+      const spd = 2.4 + Math.random() * 2.8;
+      vels.push({
+        vx: Math.sin(theta) * Math.cos(phi) * spd,
+        vy: Math.cos(theta) * spd,
+        vz: Math.sin(theta) * Math.sin(phi) * spd
+      });
+    }
+    partGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const partMat = new THREE.PointsMaterial({
+      color: 0xFFFFFF,
+      size: 0.22,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const sparksMesh = new THREE.Points(partGeo, partMat);
+    l2EffectsGroup.add(sparksMesh);
+
+    l2Sparks.push({
+      mesh: sparksMesh,
+      vels: vels,
+      age: 0.0,
+      maxAge: 0.65
+    });
+
+    // 2. Awan putih low poly naik dan memudar
+    const cloudGrp = new THREE.Group();
+    const puffGeo = new THREE.DodecahedronGeometry(0.38, 1);
+    const puffMat = new THREE.MeshStandardMaterial({
+      color: 0xF2F6FA,
+      roughness: 0.8,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.92,
+      flatShading: true
+    });
+
+    for (let i = 0; i < 4; i++) {
+      const puff = new THREE.Mesh(puffGeo, puffMat);
+      puff.position.set(
+        (Math.random() - 0.5) * 0.65,
+        (Math.random() - 0.5) * 0.45,
+        (Math.random() - 0.5) * 0.45
+      );
+      puff.scale.setScalar(0.7 + Math.random() * 0.6);
+      cloudGrp.add(puff);
+    }
+    cloudGrp.position.copy(pos);
+    l2EffectsGroup.add(cloudGrp);
+
+    l2PuffClouds.push({
+      group: cloudGrp,
+      age: 0.0,
+      maxAge: 1.1
+    });
+  }
+
+  /**
+   * Membersihkan seluruh elemen Level 2 dari adegan Three.js.
+   */
+  function clearL2() {
+    if (!l2Group) return;
+
+    l2Monsters.forEach(m => {
+      l2MonstersGroup.remove(m.mesh);
+      if (m.userData.labelSprite && m.userData.labelSprite.material.map) {
+        m.userData.labelSprite.material.map.dispose();
+      }
+    });
+    l2Monsters = [];
+
+    l2ActiveBeams.forEach(b => {
+      l2BeamsGroup.remove(b.mesh);
+      b.mesh.geometry.dispose();
+      b.mesh.material.dispose();
+    });
+    l2ActiveBeams = [];
+
+    l2Sparks.forEach(s => {
+      l2EffectsGroup.remove(s.mesh);
+      s.mesh.geometry.dispose();
+      s.mesh.material.dispose();
+    });
+    l2Sparks = [];
+
+    l2PuffClouds.forEach(c => {
+      l2EffectsGroup.remove(c.group);
+      c.group.children.forEach(ch => {
+        if (ch.geometry) ch.geometry.dispose();
+        if (ch.material) ch.material.dispose();
+      });
+    });
+    l2PuffClouds = [];
+  }
+
+  /**
+   * Memperbarui animasi Level 2 per frame (posisi, rotasi, getaran, tembakan).
+   */
+  function updateL2(dt, timeScale) {
+    if (!l2Group || !l2Group.visible) return;
+
+    // 1. Pembaruan astronot (melayang naik-turun halus, pemulihan recoil)
+    l2Astronauts.forEach((a, i) => {
+      if (!reduceMotion) {
+        a.position.y = a.userData.baseY + Math.sin(clockTime * 1.8 + i * 0.8) * 0.12;
+      }
+      if (a.userData.recoilZ < 0) {
+        a.userData.recoilZ += dt * 2.2;
+        if (a.userData.recoilZ > 0) a.userData.recoilZ = 0;
+      }
+      a.position.z = a.userData.baseZ + a.userData.recoilZ;
+    });
+
+    // 2. Pembaruan monster (melayang ke kiri, bergoyang, rotasi badan)
+    for (let m = l2Monsters.length - 1; m >= 0; m--) {
+      const item = l2Monsters[m];
+      const ud = item.userData;
+
+      if (!ud.isDying) {
+        if (!reduceMotion) {
+          item.mesh.position.x -= ud.speed * dt * timeScale;
+          item.mesh.position.y = ud.baseY + Math.sin(clockTime * 1.4 + ud.phase) * 0.22;
+          ud.body.rotation.y += 0.015 * timeScale;
+          ud.body.rotation.z += 0.008 * timeScale;
+          ud.bubble.rotation.y -= 0.008 * timeScale;
+        }
+
+        // Efek getaran saat tembakan salah
+        if (ud.shake > 0) {
+          item.mesh.position.x += (Math.random() - 0.5) * ud.shake * 0.4;
+          ud.shake -= dt * 1.6;
+          if (ud.shake < 0) ud.shake = 0;
+        }
+
+        // Loop melayang kembali bila lewat batas kiri
+        if (item.mesh.position.x < -11.5) {
+          item.mesh.position.x = 11.5;
+        }
+      } else {
+        // Efek menyusut saat tembakan benar (0,4 detik)
+        ud.deathTimer += dt * timeScale;
+        const prog = Math.min(1.0, ud.deathTimer / 0.4);
+        const sc = Math.max(0.001, 1.0 - prog);
+        item.mesh.scale.set(sc, sc, sc);
+
+        if (prog >= 1.0) {
+          l2MonstersGroup.remove(item.mesh);
+          if (ud.labelSprite && ud.labelSprite.material.map) {
+            ud.labelSprite.material.map.dispose();
+          }
+          l2Monsters.splice(m, 1);
+        }
+      }
+    }
+
+    // 3. Pembaruan laser meluncur (0,35 detik durasi)
+    for (let b = l2ActiveBeams.length - 1; b >= 0; b--) {
+      const beam = l2ActiveBeams[b];
+      beam.progress += (dt / beam.duration) * timeScale;
+
+      const t = Math.min(1.0, beam.progress);
+      beam.mesh.position.lerpVectors(beam.start, beam.target, t);
+
+      if (beam.progress >= 1.0) {
+        l2BeamsGroup.remove(beam.mesh);
+        beam.mesh.geometry.dispose();
+        beam.mesh.material.dispose();
+        l2ActiveBeams.splice(b, 1);
+
+        // Kenai sasaran monster
+        const targetMonster = l2Monsters.find(m => m.id === beam.monsterId);
+        if (targetMonster && !targetMonster.userData.isDying) {
+          const isCorrect = (beam.cat === targetMonster.userData.thought.cat);
+          if (isCorrect) {
+            targetMonster.userData.isDying = true;
+            spawnL2CorrectEffects(targetMonster.mesh.position);
+          } else {
+            targetMonster.userData.shake = 0.45;
+            targetMonster.userData.hasFailed = true;
+          }
+
+          if (typeof beam.onResult === 'function') {
+            beam.onResult({ correct: isCorrect });
+          }
+        }
+      }
+    }
+
+    // 4. Pembaruan efek ledakan partikel
+    for (let s = l2Sparks.length - 1; s >= 0; s--) {
+      const sp = l2Sparks[s];
+      sp.age += dt * timeScale;
+      const prog = sp.age / sp.maxAge;
+      const posAttr = sp.mesh.geometry.attributes.position;
+      const arr = posAttr.array;
+
+      for (let p = 0; p < sp.vels.length; p++) {
+        arr[p * 3]     += sp.vels[p].vx * dt * timeScale;
+        arr[p * 3 + 1] += sp.vels[p].vy * dt * timeScale;
+        arr[p * 3 + 2] += sp.vels[p].vz * dt * timeScale;
+      }
+      posAttr.needsUpdate = true;
+      sp.mesh.material.opacity = Math.max(0.0, 1.0 - prog);
+
+      if (sp.age >= sp.maxAge) {
+        l2EffectsGroup.remove(sp.mesh);
+        l2Sparks.splice(s, 1);
+      }
+    }
+
+    // 5. Pembaruan awan putih naik
+    for (let c = l2PuffClouds.length - 1; c >= 0; c--) {
+      const pc = l2PuffClouds[c];
+      pc.age += dt * timeScale;
+      const prog = pc.age / pc.maxAge;
+      pc.group.position.y += dt * 1.8 * timeScale;
+      const sc = 1.0 + prog * 0.4;
+      pc.group.scale.set(sc, sc, sc);
+
+      pc.group.children.forEach(child => {
+        if (child.material) {
+          child.material.opacity = Math.max(0.0, (1.0 - prog) * 0.92);
+        }
+      });
+
+      if (pc.age >= pc.maxAge) {
+        l2EffectsGroup.remove(pc.group);
+        l2PuffClouds.splice(c, 1);
+      }
+    }
+  }
+
   /**
    * Render loop utama Three.js.
    */
@@ -1374,6 +2146,11 @@ JEDA.Stage3D = (function() {
     const cosOrb = Math.cos(celebrateOrbitAngle);
     const sinOrb = Math.sin(celebrateOrbitAngle);
 
+    // 12b. Pembaruan Sub-panggung Level 2 Misi Astronot (Prompt R-5)
+    if (l2Group && l2Group.visible) {
+      updateL2(dt, timeScale);
+    }
+
     camera.position.set(
       (currentCamPos.x + mouse.x) * cosOrb - effCamZ * sinOrb * 0.15,
       currentCamPos.y + mouse.y,
@@ -1555,6 +2332,9 @@ JEDA.Stage3D = (function() {
         // 8b. Elemen 3D Bertema (PRD Bagian 15.3: Embun, Fajar, Aurora - Prompt R-4)
         buildThemeElements();
 
+        // 8c. Sub-panggung Level 2 Misi Astronot (PRD Bagian 15.4 - Prompt R-5)
+        buildL2Scene();
+
         // 9. Event Listeners (Resize, Mouse Parallax, Tab Visibility)
         window.addEventListener('resize', onWindowResize);
         window.addEventListener('mousemove', onMouseMove);
@@ -1624,6 +2404,11 @@ JEDA.Stage3D = (function() {
           particlesMesh.visible = true;
           if (particlesMesh.material) particlesMesh.material.opacity = 0.55;
         }
+      }
+
+      // Visibilitas sub-panggung Level 2 Misi Astronot (PRD Bagian 15.4)
+      if (l2Group) {
+        l2Group.visible = (mode === 'l2');
       }
     },
 
@@ -1934,6 +2719,21 @@ JEDA.Stage3D = (function() {
     },
 
     /**
+     * API Khusus Sub-panggung Level 2: Misi Astronot (PRD Bagian 15.4)
+     */
+    l2: {
+      spawn: spawnL2Monster,
+      pick: pickL2Monster,
+      selectAstronaut: selectL2Astronaut,
+      fire: fireL2Beam,
+      clear: clearL2,
+      getMonsters: () => l2Monsters,
+      getMonsterScreenPos: getL2MonsterScreenPos,
+      isReady: () => !!(active && l2Group)
+    },
+    pick: pickL2Monster,
+
+    /**
      * Mengaktifkan/menonaktifkan mode kurangi gerakan (BR-12).
      */
     setReduceMotion(on) {
@@ -1969,6 +2769,9 @@ JEDA.Stage3D = (function() {
       if (distractionTimer) clearTimeout(distractionTimer);
       if (panicTimer) clearTimeout(panicTimer);
       if (celebrateTimer) clearTimeout(celebrateTimer);
+
+      if (typeof clearL2 === 'function') clearL2();
+      if (l2Group && scene) scene.remove(l2Group);
 
       if (embunGroup && scene) scene.remove(embunGroup);
       if (fajarGroup && scene) scene.remove(fajarGroup);
