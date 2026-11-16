@@ -1094,7 +1094,7 @@ JEDA.UI = {
             if (currentThemeId !== theme.id) {
               const success = JEDA.Theme.apply(theme.id, 1200);
               if (success) {
-                JEDA.UI.toast(scene, `Tema visual diubah ke ${theme.name} ✨`);
+                JEDA.UI.toast(scene, `Tema visual diubah ke ${theme.name}`);
                 render();
                 if (typeof options.onSelect === 'function') options.onSelect(theme.id);
               }
@@ -1387,7 +1387,7 @@ JEDA.UI = {
       bg.fillStyle(0x7FE0C3, 0.12);
       bg.fillCircle(-w / 2 + 36, 0, 26);
 
-      const icon = scene.add.text(-w / 2 + 36, 0, badge.icon || '✦', {
+      const icon = scene.add.text(-w / 2 + 36, 0, badge.icon || '🏅', {
         fontSize: '28px'
       }).setOrigin(0.5);
 
@@ -1440,7 +1440,7 @@ JEDA.UI = {
       drawDashedSegment(-w / 2, h / 2 - radius, -w / 2, -h / 2 + radius);
 
       // Ikon siluet redup
-      const icon = scene.add.text(-w / 2 + 36, 0, badge.icon || '✦', {
+      const icon = scene.add.text(-w / 2 + 36, 0, badge.icon || '🏅', {
         fontSize: '28px'
       }).setOrigin(0.5).setAlpha(0.24);
 
@@ -1822,7 +1822,7 @@ JEDA.UI = {
                 drawCloud(true);
                 cloudText.setText('Awan Damai');
                 cloudText.setColor('#16163A');
-                infoNote.setText('Menjadi Awan ✨');
+                infoNote.setText('Pikiran Terurai');
 
                 scene.time.delayedCall(1100, () => {
                   drawCloud(false);

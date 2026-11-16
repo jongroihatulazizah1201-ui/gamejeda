@@ -783,7 +783,7 @@ class CheckinScene extends Phaser.Scene {
 
     // 1. Notifikasi dengan 60 karakter
     const notifBox = JEDA.UI.textBox(this, cx, 230, {
-      text: '🔔 Info Terkini: Jangan lupa tugas akhir yang harus dikumpul!',
+      text: 'Info Terkini: Jangan lupa tugas akhir yang harus dikumpul!',
       icon: '🔔',
       fontSize: 22,
       padX: 24,

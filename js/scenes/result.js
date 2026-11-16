@@ -390,7 +390,7 @@ class ResultScene extends Phaser.Scene {
       const firstNew = badges.find(b => b.id === badgeResult.newlyUnlocked[0]);
       if (firstNew) {
         this.time.delayedCall(700, () => {
-          JEDA.UI.toast(this, `Lencana Diraih: ${firstNew.name} ${firstNew.icon}`);
+          JEDA.UI.toast(this, `Lencana Diraih: ${firstNew.name}`);
         });
       }
     }

@@ -285,7 +285,7 @@ JEDA.Score = {
       id: 'full_breath',
       name: 'Napas Penuh',
       desc: 'Skor Level 1 sebesar 90 atau lebih',
-      icon: '✨',
+      icon: '🪷',
       check: (run) => (run.l1Score >= 90)
     },
     {

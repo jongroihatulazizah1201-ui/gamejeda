@@ -736,7 +736,7 @@ class Level1Scene extends Phaser.Scene {
         const unlocked = JEDA.State.unlockBadge('no_distract');
         if (unlocked) {
           this.time.delayedCall(1200, () => {
-            JEDA.UI.toast(this, 'Lencana Diraih: Tidak Menoleh 🛡️');
+            JEDA.UI.toast(this, 'Lencana Diraih: Tidak Menoleh');
           });
         }
       }
@@ -903,7 +903,7 @@ class Level1Scene extends Phaser.Scene {
         const badgeObj = JEDA.Score.BADGES.find(b => b.id === badgeRes.newlyUnlocked[0]);
         if (badgeObj) {
           this.time.delayedCall(1200, () => {
-            JEDA.UI.toast(this, `Lencana Diraih: ${badgeObj.name} ${badgeObj.icon}`);
+            JEDA.UI.toast(this, `Lencana Diraih: ${badgeObj.name}`);
           });
         }
       }
