@@ -60,6 +60,7 @@ class Level1Scene extends Phaser.Scene {
       JEDA.Stage3D.setSync('good');
       JEDA.Stage3D.setBreath(0.2);
     }
+    this.cameras.main.resetFX();
     this.cameras.main.fadeIn(350);
 
     // 2. Header di Zona Header (0 - 120 px)

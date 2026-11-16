@@ -31,6 +31,7 @@ class Level3Scene extends Phaser.Scene {
       JEDA.Stage3D.setMode('l3');
       JEDA.Stage3D.setLanterns(2); // Level 1 dan 2 sudah lulus
     }
+    this.cameras.main.resetFX();
     this.cameras.main.fadeIn(350);
 
     // 2. Header di Zona Header (0 - 120 px)

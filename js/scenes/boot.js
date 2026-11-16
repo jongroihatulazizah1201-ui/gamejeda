@@ -8,6 +8,7 @@ class BootScene extends Phaser.Scene {
   }
 
   create() {
+    this.cameras.main.resetFX();
     const W = JEDA.CFG.W;
     const H = JEDA.CFG.H;
 

@@ -96,8 +96,10 @@ JEDA.FX = {
    * @param {number} duration - Durasi transisi (default 1200)
    */
   setTheme(themeName, duration = 1200) {
+    let name = (themeName || 'embun').toLowerCase();
+    if (name === 'senja') name = 'fajar';
     const themes = (window.JEDA && JEDA.THEMES) || {};
-    const theme = themes[themeName] || themes.embun;
+    const theme = themes[name] || themes.embun;
     if (!theme) return;
 
     if (window.JEDA && JEDA.CFG && JEDA.CFG.COLOR) {
@@ -116,7 +118,8 @@ JEDA.FX = {
    * @returns {number}
    */
   getSkinColor(skinId = null) {
-    const id = skinId || (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
+    let id = skinId || (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
+    if (id === 'senja') id = 'fajar';
     const skins = (window.JEDA && JEDA.CFG && JEDA.CFG.SKINS) || {};
     if (skins[id]) {
       return skins[id].color;

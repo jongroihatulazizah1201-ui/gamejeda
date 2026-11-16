@@ -37,7 +37,8 @@ class CheckinScene extends Phaser.Scene {
       JEDA.Stage3D.setLanterns(passedCount);
     }
 
-    // 2. Transisi masuk kamera
+    // 2. Transisi masuk kamera (reset FX untuk menjamin tidak ada residu fade hitam)
+    this.cameras.main.resetFX();
     this.cameras.main.fadeIn(350);
 
     // 3. Header Simetris di Zona Header (0 - 120 px)

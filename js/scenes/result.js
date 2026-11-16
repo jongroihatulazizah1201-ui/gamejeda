@@ -39,6 +39,7 @@ class ResultScene extends Phaser.Scene {
       if ((JEDA.State.data.stars.l3 || 0) > 0 || (JEDA.State.data.best.l3 || 0) >= JEDA.CFG.PASS) passedCount++;
       JEDA.Stage3D.setLanterns(passedCount);
     }
+    this.cameras.main.resetFX();
     this.cameras.main.fadeIn(350);
 
     // 4. Header di Zona Header (y: 0 - 100 px)

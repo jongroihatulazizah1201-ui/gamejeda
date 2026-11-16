@@ -935,9 +935,10 @@ JEDA.UI = {
       cardsList.forEach(c => c.destroy());
       cardsList = [];
 
-      const currentThemeId = (window.JEDA && JEDA.Theme && JEDA.Theme.getCurrent)
+      let currentThemeId = (window.JEDA && JEDA.Theme && JEDA.Theme.getCurrent)
         ? JEDA.Theme.getCurrent().id
         : ((window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun');
+      if (currentThemeId === 'senja') currentThemeId = 'fajar';
 
       const totalStars = (window.JEDA && JEDA.State && JEDA.State.getTotalStars)
         ? JEDA.State.getTotalStars()

@@ -110,6 +110,7 @@ class Level2Scene extends Phaser.Scene {
 
     // Latar belakang lembut & transisi kamera
     JEDA.FX.createBackground(this);
+    this.cameras.main.resetFX();
     this.cameras.main.fadeIn(350);
 
     // 2. Definisi 4 Astronot (Poin 4: Penenang, Navigator, Sahabat, Arsiparis)

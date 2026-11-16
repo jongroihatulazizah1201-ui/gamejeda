@@ -2529,7 +2529,8 @@ JEDA.Stage3D = (function() {
         const skyMat = new THREE.MeshBasicMaterial({
           map: skyTex,
           side: THREE.BackSide,
-          depthWrite: false
+          depthWrite: false,
+          fog: false // Langit skydome bebas pengaruh kabut agar warna senja/fajar selalu cerah
         });
         skyDome = new THREE.Mesh(skyGeo, skyMat);
         scene.add(skyDome);
@@ -2604,7 +2605,8 @@ JEDA.Stage3D = (function() {
         isRunning = true;
         animFrameId = requestAnimationFrame(animate);
 
-        const savedSkin = (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
+        let savedSkin = (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
+        if (savedSkin === 'senja') savedSkin = 'fajar';
         this.setTheme(savedSkin, 0);
 
         console.log('[Stage3D] Panggung 3D Three.js r128 berhasil diinisialisasi.');
@@ -2874,8 +2876,10 @@ JEDA.Stage3D = (function() {
      */
     setSkin(skinId) {
       if (!skinId) return;
+      let id = (skinId || 'embun').toLowerCase();
+      if (id === 'senja') id = 'fajar';
       const skins = (window.JEDA && JEDA.CFG && JEDA.CFG.SKINS) || {};
-      const skin = skins[skinId] || skins.embun;
+      const skin = skins[id] || skins.embun;
       if (!skin) return;
 
       const skinColor = new THREE.Color(skin.color);
@@ -2907,13 +2911,15 @@ JEDA.Stage3D = (function() {
     /**
      * Menerapkan seluruh tema visual panggung 3D dengan transisi silang 1,2 detik (PRD Bagian 15.3 & BR-16).
      * Mengubah palet langit skydome, cahaya lentera kepulauan, partikel/bintang, dan pencahayaan global.
-     * @param {string} themeName - 'embun' | 'fajar' | 'aurora'
+     * @param {string} themeName - 'embun' | 'fajar' | 'senja' | 'aurora'
      * @param {number} duration - Durasi transisi silang dalam ms (default 1200)
      */
     setTheme(themeName, duration = 1200) {
       if (!active) return;
+      let name = (themeName || 'embun').toLowerCase();
+      if (name === 'senja') name = 'fajar';
       const themes = (window.JEDA && JEDA.THEMES) || {};
-      const theme = themes[themeName] || themes.embun;
+      const theme = themes[name] || themes.embun;
       if (!theme) return;
 
       const sky = theme.sky;

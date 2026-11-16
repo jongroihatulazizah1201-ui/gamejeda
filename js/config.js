@@ -121,6 +121,9 @@ JEDA.CFG = {
   }
 };
 
+// Alias 'senja' untuk 'fajar' (tema hangat keemasan / senja visual)
+JEDA.CFG.SKINS.senja = JEDA.CFG.SKINS.fajar;
+
 /**
  * Tiga Tema Lengkap JEDA (PRD Bagian 15.3).
  * Mengatur seluruh suasana visual: langit, aksen tombol, cahaya lentera, partikel, dan suasana cahaya.
@@ -219,6 +222,9 @@ JEDA.THEMES = {
   }
 };
 
+// Alias tema 'senja' untuk 'fajar' (tema hangat keemasan / senja visual)
+JEDA.THEMES.senja = JEDA.THEMES.fajar;
+
 /**
  * API Pengelola Tema JEDA (PRD Bagian 15.3 & BR-16).
  * JEDA.Theme.apply(name) mengganti aksen UI, memanggil Stage3D.setTheme dan FX.setTheme,
@@ -227,12 +233,13 @@ JEDA.THEMES = {
 JEDA.Theme = {
   /**
    * Menerapkan tema yang dipilih.
-   * @param {string} name - 'embun' | 'fajar' | 'aurora'
+   * @param {string} name - 'embun' | 'fajar' | 'senja' | 'aurora'
    * @param {number} duration - Durasi transisi silang dalam ms (default 1200)
    * @returns {boolean} true jika tema berhasil diterapkan
    */
   apply(name, duration = 1200) {
-    const key = (name || '').toLowerCase();
+    let key = (name || '').toLowerCase();
+    if (key === 'senja') key = 'fajar';
     const theme = JEDA.THEMES && JEDA.THEMES[key];
     if (!theme) return false;
 
@@ -293,17 +300,19 @@ JEDA.Theme = {
    * @returns {Object}
    */
   getCurrent() {
-    const currentKey = (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
+    let currentKey = (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';
+    if (currentKey === 'senja') currentKey = 'fajar';
     return (JEDA.THEMES && JEDA.THEMES[currentKey]) || (JEDA.THEMES && JEDA.THEMES.embun);
   },
 
   /**
    * Memeriksa apakah tema tertentu sudah terbuka.
-   * @param {string} name - 'embun' | 'fajar' | 'aurora'
+   * @param {string} name - 'embun' | 'fajar' | 'senja' | 'aurora'
    * @returns {boolean}
    */
   isUnlocked(name) {
-    const key = (name || '').toLowerCase();
+    let key = (name || '').toLowerCase();
+    if (key === 'senja') key = 'fajar';
     const theme = JEDA.THEMES && JEDA.THEMES[key];
     if (!theme) return false;
     const totalStars = (window.JEDA && JEDA.State && JEDA.State.getTotalStars)

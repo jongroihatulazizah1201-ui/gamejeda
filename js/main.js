@@ -33,7 +33,8 @@ function initJedaGame() {
     render: {
       antialias: true,
       pixelArt: false,
-      roundPixels: false
+      roundPixels: false,
+      clearBeforeRender: true
     },
     scale: {
       mode: Phaser.Scale.FIT,
