@@ -591,6 +591,9 @@ JEDA.UI = {
     container.on('pointerdown', () => {
       if (!container.input || !container.input.enabled) return;
       container.setScale(0.97);
+      if (window.JEDA && JEDA.Audio) {
+        JEDA.Audio.playTap();
+      }
     });
 
     container.on('pointerup', () => {
@@ -698,6 +701,7 @@ JEDA.UI = {
     });
 
     container.on('pointerup', () => {
+      if (window.JEDA && JEDA.Audio) JEDA.Audio.playTap();
       if (typeof onClick === 'function') onClick();
     });
 
@@ -1130,7 +1134,7 @@ JEDA.UI = {
     container.add(backdrop);
 
     const cardW = 864; // Kelipatan 8 (108 * 8)
-    const cardH = 704; // Kelipatan 8 (88 * 8)
+    const cardH = 744; // Kelipatan 8 (93 * 8)
     const cx = W / 2;
     const cy = H / 2;
 
@@ -1152,7 +1156,7 @@ JEDA.UI = {
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    const subtitle = scene.add.text(cx, cy - cardH / 2 + 90, 'Kustomisasi Visual & Aksesibilitas', {
+    const subtitle = scene.add.text(cx, cy - cardH / 2 + 90, 'Kustomisasi Visual, Audio & Aksesibilitas', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -1162,7 +1166,7 @@ JEDA.UI = {
 
     // 2. Bagian Pilihan Tema Visual (PRD 15.3 / BR-16)
     const totalStars = (JEDA.State && JEDA.State.getTotalStars) ? JEDA.State.getTotalStars() : 0;
-    const themeLabel = scene.add.text(cx, cy - 180, `Tema Visual Mindfulness (Koleksi: ${totalStars}/9 ★)`, {
+    const themeLabel = scene.add.text(cx, cy - 200, `Tema Visual Mindfulness (Koleksi: ${totalStars}/9 ★)`, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '800',
@@ -1170,17 +1174,29 @@ JEDA.UI = {
     }).setOrigin(0.5).setResolution(2);
     container.add(themeLabel);
 
-    this.themeCards(scene, cx, cy - 88, {
+    this.themeCards(scene, cx, cy - 108, {
       cardW: 254,
       cardH: 140,
       gap: 18,
       container: container
     });
 
-    // 3. Opsi Kurangi Gerakan (BR-12)
+    // 3. Opsi Audio & Musik Mindfulness (Web Audio 432 Hz)
+    const isAudioOn = (window.JEDA && JEDA.Audio && JEDA.Audio.isEnabled());
+    const audioBtnText = isAudioOn ? 'Musik Mindfulness (432Hz): [AKTIF]' : 'Musik Mindfulness (432Hz): [HENING]';
+    const audioBtn = this.createButton(scene, cx, cy + 18, 560, 60, audioBtnText, () => {
+      if (window.JEDA && JEDA.Audio) {
+        const next = JEDA.Audio.toggle();
+        audioBtn.textObj.setText(next ? 'Musik Mindfulness (432Hz): [AKTIF]' : 'Musik Mindfulness (432Hz): [HENING]');
+        JEDA.UI.toast(scene, next ? 'Musik Meditasi 432 Hz Diaktifkan' : 'Suara Dinonaktifkan');
+      }
+    }, { fontSize: 30, radius: 30 });
+    container.add(audioBtn);
+
+    // 4. Opsi Kurangi Gerakan (BR-12)
     const isReduceMotion = JEDA.State.data.settings.reduceMotion;
     const motionBtnText = isReduceMotion ? 'Kurangi Gerakan: [AKTIF]' : 'Kurangi Gerakan: [NONAKTIF]';
-    const motionBtn = this.createButton(scene, cx, cy + 42, 560, 68, motionBtnText, () => {
+    const motionBtn = this.createButton(scene, cx, cy + 90, 560, 60, motionBtnText, () => {
       JEDA.State.data.settings.reduceMotion = !JEDA.State.data.settings.reduceMotion;
       JEDA.State.save();
       if (JEDA.Stage3D && JEDA.Stage3D.setReduceMotion) {
@@ -1188,22 +1204,22 @@ JEDA.UI = {
       }
       motionBtn.textObj.setText(JEDA.State.data.settings.reduceMotion ? 'Kurangi Gerakan: [AKTIF]' : 'Kurangi Gerakan: [NONAKTIF]');
       JEDA.UI.toast(scene, 'Pengaturan animasi diperbarui.');
-    }, { fontSize: 33, radius: 34 });
+    }, { fontSize: 30, radius: 30 });
     container.add(motionBtn);
 
-    // 4. Opsi Hapus Data Saya (BR-13)
-    const deleteBtn = this.createButton(scene, cx, cy + 128, 560, 68, 'Hapus Data Saya', () => {
+    // 5. Opsi Hapus Data Saya (BR-13)
+    const deleteBtn = this.createButton(scene, cx, cy + 162, 560, 60, 'Hapus Data Saya', () => {
       JEDA.State.resetData();
       JEDA.UI.toast(scene, 'Seluruh data lokal berhasil dihapus.');
       container.destroy();
       if (typeof onDataReset === 'function') onDataReset();
-    }, { textColor: '#FF8FA3', fontSize: 33, radius: 34 });
+    }, { textColor: '#FF8FA3', fontSize: 30, radius: 30 });
     container.add(deleteBtn);
 
-    // 5. Tombol Tutup
-    const closeBtn = this.createButton(scene, cx, cy + 224, 280, 68, 'Tutup', () => {
+    // 6. Tombol Tutup
+    const closeBtn = this.createButton(scene, cx, cy + 242, 280, 60, 'Tutup', () => {
       container.destroy();
-    }, { fontSize: 33, radius: 34 });
+    }, { fontSize: 30, radius: 30 });
     container.add(closeBtn);
 
     return container;

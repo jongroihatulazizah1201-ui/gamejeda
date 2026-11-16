@@ -237,6 +237,18 @@ class Level1Scene extends Phaser.Scene {
       variant: 'chip'
     });
     this.cycleCounterText = this.progBox.textObj;
+
+    // Toggle Suara Cepat
+    const soundW = 160;
+    const soundX = (progX - progW / 2) - 16 - soundW / 2;
+    const isSoundOn = (window.JEDA && JEDA.Audio && JEDA.Audio.isEnabled());
+    this.soundBtn = JEDA.UI.createButton(this, soundX, headerY, soundW, btnH, isSoundOn ? 'Suara: 🔊' : 'Suara: 🔈', () => {
+      if (window.JEDA && JEDA.Audio) {
+        const next = JEDA.Audio.toggle();
+        this.soundBtn.textObj.setText(next ? 'Suara: 🔊' : 'Suara: 🔈');
+        JEDA.UI.toast(this, next ? 'Musik Meditasi 432 Hz Aktif' : 'Mode Suara Hening');
+      }
+    }, { fontSize: 24, radius: 24 });
   }
 
   /**
@@ -410,6 +422,10 @@ class Level1Scene extends Phaser.Scene {
     this.state = 'HOLDING';
     this.holdStartTime = Date.now();
 
+    if (window.JEDA && JEDA.Audio) {
+      JEDA.Audio.playInhale(this.inMs / 1000);
+    }
+
     if (JEDA.Stage3D) {
       JEDA.Stage3D.setSync('good');
     }
@@ -481,6 +497,10 @@ class Level1Scene extends Phaser.Scene {
     this.state = 'RELEASING';
     this.releaseStartTime = Date.now();
     this.currentHoldDuration = holdDuration;
+
+    if (window.JEDA && JEDA.Audio) {
+      JEDA.Audio.playExhale(this.outMs / 1000);
+    }
 
     this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Hembuskan napas perlahan...`);
     this.feedbackText.setColor(JEDA.CFG.COLOR.hex.text);
@@ -877,6 +897,7 @@ class Level1Scene extends Phaser.Scene {
     JEDA.State.session.levelScores.l1 = result.score;
 
     if (result.passed) {
+      if (window.JEDA && JEDA.Audio) JEDA.Audio.playSuccess();
       if (JEDA.Lumi) JEDA.Lumi.say('level_pass');
       JEDA.State.saveLevelScore(1, result.score, result.stars);
       JEDA.State.data.fails.l1 = 0;

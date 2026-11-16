@@ -554,6 +554,7 @@ class Level3Scene extends Phaser.Scene {
         });
       }
 
+      if (window.JEDA && JEDA.Audio) JEDA.Audio.playStopBell();
       JEDA.UI.toast(this, 'Reaksi dibekukan. Kamu mengambil jeda.');
       this.time.delayedCall(700, () => {
         this.startStepT();

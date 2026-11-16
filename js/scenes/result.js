@@ -42,6 +42,10 @@ class ResultScene extends Phaser.Scene {
     this.cameras.main.resetFX();
     this.cameras.main.fadeIn(350);
 
+    if (window.JEDA && JEDA.Audio) {
+      JEDA.Audio.playSuccess();
+    }
+
     // 4. Header di Zona Header (y: 0 - 100 px)
     this.createHeader(cx);
 

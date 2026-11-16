@@ -152,7 +152,7 @@ class CheckinScene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2);
     brandContainer.add([bgL, brandText]);
 
-    // Kanan: Tombol Bantuan (?) dan Pengaturan (sejajar margin kanan 1800)
+    // Kanan: Tombol Bantuan (?), Pengaturan, dan Toggle Suara (sejajar margin kanan 1800)
     const helpBtnSize = 48;
     const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1800 - 24 = 1776
     JEDA.UI.createButton(this, helpBtnX, headerY, helpBtnSize, helpBtnSize, '?', () => {
@@ -164,8 +164,22 @@ class CheckinScene extends Phaser.Scene {
     JEDA.UI.createButton(this, settingsX, headerY, settingsW, btnH, 'Pengaturan ⚙', () => {
       JEDA.UI.showSettingsModal(this, () => {
         this.renderLevelCards();
+        if (this.soundBtn && window.JEDA && JEDA.Audio) {
+          this.soundBtn.textObj.setText(JEDA.Audio.isEnabled() ? 'Suara: 🔊' : 'Suara: 🔈');
+        }
       });
     }, { fontSize: 27, radius: 24 });
+
+    const soundW = 160;
+    const soundX = settingsX - settingsW / 2 - 16 - soundW / 2;
+    const isSoundOn = (window.JEDA && JEDA.Audio && JEDA.Audio.isEnabled());
+    this.soundBtn = JEDA.UI.createButton(this, soundX, headerY, soundW, btnH, isSoundOn ? 'Suara: 🔊' : 'Suara: 🔈', () => {
+      if (window.JEDA && JEDA.Audio) {
+        const next = JEDA.Audio.toggle();
+        this.soundBtn.textObj.setText(next ? 'Suara: 🔊' : 'Suara: 🔈');
+        JEDA.UI.toast(this, next ? 'Musik Meditasi 432 Hz Aktif' : 'Mode Suara Hening');
+      }
+    }, { fontSize: 24, radius: 24 });
   }
 
   /**

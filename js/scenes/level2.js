@@ -727,6 +727,7 @@ class Level2Scene extends Phaser.Scene {
 
     if (result && result.correct) {
       // === TEMBAKAN BENAR (Poin 11 e) ===
+      if (window.JEDA && JEDA.Audio) JEDA.Audio.playDefuse();
       if (!monster.hasFailed) {
         this.firstTryCorrect++;
       }
@@ -1056,6 +1057,10 @@ class Level2Scene extends Phaser.Scene {
 
     const beamLine = this.add.graphics().setDepth(2000);
     const astCfg = this.astronautConfigs[astronautIndex];
+
+    if (window.JEDA && JEDA.Audio) {
+      JEDA.Audio.playShoot();
+    }
 
     const tweenObj = { t: 0 };
     this.tweens.add({
