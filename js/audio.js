@@ -15,30 +15,25 @@ window.JEDA = window.JEDA || {};
 JEDA.Audio = (function () {
   let ctx = null;
   let masterGain = null;
-  let bgmGain = null;
   let sfxGain = null;
 
-  // State BGM Melodik
-  let isBgmRunning = false;
-  let bgmTimer = null;
-  let padOscs = [];
-  let padFilter = null;
+  // Audio Player untuk Musik Meditasi Asli (audio/meditation.mp3)
+  let bgmAudio = null;
+  const BGM_SRC = 'audio/meditation.mp3';
 
-  // Tangga Nada F Major Pentatonic / Lydian (Selalu harmonis, hangat, ceria & menenangkan)
-  // Tidak ada nada disonan atau minor yang suram
-  const PEACE_NOTES = [
-    { name: 'F3', freq: 174.61 },
-    { name: 'A3', freq: 220.00 },
-    { name: 'C4', freq: 261.63 },
-    { name: 'D4', freq: 293.66 },
-    { name: 'E4', freq: 329.63 },
-    { name: 'F4', freq: 349.23 },
-    { name: 'G4', freq: 392.00 },
-    { name: 'A4', freq: 440.00 },
-    { name: 'C5', freq: 523.25 },
-    { name: 'D5', freq: 587.33 },
-    { name: 'E5', freq: 659.25 }
-  ];
+  function getBgmAudio() {
+    if (!bgmAudio && typeof Audio !== 'undefined') {
+      try {
+        bgmAudio = new Audio(BGM_SRC);
+        bgmAudio.loop = true;
+        bgmAudio.volume = 0.50;
+        bgmAudio.preload = 'auto';
+      } catch (e) {
+        console.warn('BGM Audio init warning:', e);
+      }
+    }
+    return bgmAudio;
+  }
 
   function isEnabled() {
     return Boolean(
@@ -58,7 +53,7 @@ JEDA.Audio = (function () {
   }
 
   /**
-   * Inisialisasi AudioContext dengan aman
+   * Inisialisasi AudioContext untuk SFX interaktif
    */
   function getContext() {
     if (!ctx) {
@@ -66,17 +61,10 @@ JEDA.Audio = (function () {
       if (!AudioCtx) return null;
       ctx = new AudioCtx();
 
-      // Master bus
       masterGain = ctx.createGain();
       masterGain.gain.setValueAtTime(0.85, ctx.currentTime);
       masterGain.connect(ctx.destination);
 
-      // Jalur BGM (Musik Latar Kalimba / Pad)
-      bgmGain = ctx.createGain();
-      bgmGain.gain.setValueAtTime(0.40, ctx.currentTime);
-      bgmGain.connect(masterGain);
-
-      // Jalur SFX (Efek Suara Interaktif)
       sfxGain = ctx.createGain();
       sfxGain.gain.setValueAtTime(0.50, ctx.currentTime);
       sfxGain.connect(masterGain);
@@ -99,7 +87,7 @@ JEDA.Audio = (function () {
     if (target) {
       getContext();
       startBGM();
-      playKalimbaNote(440.0, 0.25); // Nada sambutan A4 yang manis
+      playTap();
     } else {
       stopBGM();
     }
@@ -108,158 +96,43 @@ JEDA.Audio = (function () {
   }
 
   /**
-   * Sintesis Nada Kalimba / Kotak Musik Kayu (Warm Thumb Piano)
-   * Menggunakan kombinasi gelombang sine murni dengan overton manis berdecay lembut.
-   */
-  function playKalimbaNote(freq, volume = 0.22, duration = 1.8) {
-    const ac = getContext();
-    if (!ac) return;
-
-    const now = ac.currentTime;
-
-    // Filter kayu hangat (Warm low-pass filter)
-    const filter = ac.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(freq * 3.5, 2600), now);
-    filter.connect(bgmGain);
-
-    // 1. Nada Fundamental (Body Kayu)
-    const osc1 = ac.createOscillator();
-    const g1 = ac.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(freq, now);
-
-    g1.gain.setValueAtTime(0.0001, now);
-    g1.gain.exponentialRampToValueAtTime(volume, now + 0.008); // Serangan petikan lembut
-    g1.gain.exponentialRampToValueAtTime(0.00001, now + duration);
-
-    osc1.connect(g1);
-    g1.connect(filter);
-    osc1.start(now);
-    osc1.stop(now + duration + 0.05);
-
-    // 2. Harmonik Lonceng Lembut (Tine Chime)
-    const osc2 = ac.createOscillator();
-    const g2 = ac.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(freq * 2.0, now); // Satu oktaf di atasnya
-
-    g2.gain.setValueAtTime(0.0001, now);
-    g2.gain.exponentialRampToValueAtTime(volume * 0.35, now + 0.005);
-    g2.gain.exponentialRampToValueAtTime(0.00001, now + duration * 0.6);
-
-    osc2.connect(g2);
-    g2.connect(filter);
-    osc2.start(now);
-    osc2.stop(now + duration * 0.65);
-  }
-
-  /**
-   * Memulai Musik Latar Generatif Damai (Peaceful Kalimba & Warm Sunbeam Pad)
-   * Memainkan pola petikan kalimba acak yang santai di tangga nada mayor setiap 2.5–4.5 detik.
+   * Memulai Musik Meditasi Asli (audio/meditation.mp3)
    */
   function startBGM() {
     if (!isEnabled()) return;
-    const ac = getContext();
-    if (!ac) return;
+    const audio = getBgmAudio();
+    if (!audio) return;
 
-    if (isBgmRunning) return;
-    isBgmRunning = true;
-
-    stopBGM(false);
-    isBgmRunning = true;
-
-    const now = ac.currentTime;
-
-    // 1. Warm Sunbeam Pad (Akord Fmaj9 yang sangat hangat, damai, dan terang)
-    // Nada: F3 (174.6 Hz), C4 (261.6 Hz), E4 (329.6 Hz), A4 (440 Hz)
-    const padTones = [174.61, 261.63, 329.63, 440.00];
-
-    padFilter = ac.createBiquadFilter();
-    padFilter.type = 'lowpass';
-    padFilter.frequency.setValueAtTime(450, now); // Sangat lembut, tanpa dengung tajam
-    padFilter.connect(bgmGain);
-
-    padOscs = padTones.map((f, i) => {
-      const osc = ac.createOscillator();
-      const g = ac.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(f, now);
-
-      g.gain.setValueAtTime(0.0001, now);
-      // Volume pad sangat pelan seperti selimut suara di latar belakang
-      g.gain.exponentialRampToValueAtTime(0.045, now + 3.0);
-
-      osc.connect(g);
-      g.connect(padFilter);
-      osc.start(now);
-      return { osc, gain: g };
-    });
-
-    // 2. Loop Petikan Kalimba Santai (Seperti angin meniup genta angin bambu di siang hari)
-    let step = 0;
-    const melodyPattern = [
-      [349.23, 440.00],         // F4, A4
-      [523.25],                 // C5
-      [392.00, 587.33],         // G4, D5
-      [440.00],                 // A4
-      [329.63, 523.25],         // E4, C5
-      [349.23],                 // F4
-      [261.63, 440.00]          // C4, A4
-    ];
-
-    function scheduleNextPluck() {
-      if (!isBgmRunning) return;
-
-      const chord = melodyPattern[step % melodyPattern.length];
-      chord.forEach((noteFreq, idx) => {
-        setTimeout(() => {
-          if (isBgmRunning && isEnabled()) {
-            playKalimbaNote(noteFreq, 0.16, 2.2);
-          }
-        }, idx * 180);
+    audio.volume = 0.50;
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Akan diputar otomatis setelah klik/interaksi pertama pengguna
       });
-
-      step++;
-      // Interval jeda alami antara 2.8 hingga 4.2 detik
-      const nextDelay = 2800 + Math.random() * 1400;
-      bgmTimer = setTimeout(scheduleNextPluck, nextDelay);
     }
-
-    // Mulai petikan pertama setelah 1 detik
-    bgmTimer = setTimeout(scheduleNextPluck, 1000);
   }
 
   /**
-   * Menghentikan Musik Latar dengan Fade-out Lembut
+   * Menghentikan Musik Meditasi dengan fade-out lembut
    */
   function stopBGM(fade = true) {
-    if (bgmTimer) {
-      clearTimeout(bgmTimer);
-      bgmTimer = null;
+    if (!bgmAudio) return;
+    if (fade) {
+      let vol = bgmAudio.volume;
+      const step = vol / 10;
+      const interval = setInterval(() => {
+        if (!bgmAudio) { clearInterval(interval); return; }
+        if (bgmAudio.volume > step) {
+          bgmAudio.volume = Math.max(0, bgmAudio.volume - step);
+        } else {
+          bgmAudio.volume = 0;
+          bgmAudio.pause();
+          clearInterval(interval);
+        }
+      }, 40);
+    } else {
+      bgmAudio.pause();
     }
-
-    if (!ctx || padOscs.length === 0) {
-      isBgmRunning = false;
-      return;
-    }
-
-    const now = ctx.currentTime;
-    const fadeDuration = fade ? 1.2 : 0.04;
-
-    padOscs.forEach(({ osc, gain }) => {
-      try {
-        gain.gain.cancelScheduledValues(now);
-        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
-        gain.gain.exponentialRampToValueAtTime(0.00001, now + fadeDuration);
-        setTimeout(() => {
-          try { osc.stop(); osc.disconnect(); } catch (e) {}
-        }, fadeDuration * 1000 + 50);
-      } catch (e) {}
-    });
-
-    padOscs = [];
-    isBgmRunning = false;
   }
 
   /**
