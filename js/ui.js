@@ -180,6 +180,269 @@ JEDA.UI = {
   },
 
   /**
+   * KOMPONEN TUNGGAL JEDA.UI.textBox(scene, x, y, opts)
+   * Standar Baku Seluruh Panel Teks Pop-up, Notifikasi, Toast, Bubble, dan Chip.
+   * 
+   * Aturan Baku (Prinsip UI/UX PRD 14.3):
+   * 1. Lebar panel = lebar teks terukur + (icon ? iconSlot + gap : 0) + 2 x padX.
+   *    Tinggi = tinggi teks terukur + 2 x padY. Tidak ada ukuran tetap tebakan.
+   * 2. padX = 24 dan padY = 16 (skala 8 px). Padding kiri dan kanan SELALU sama (simetri 100%).
+   * 3. Jarak ikon ke teks 16 px, slot ikon 40 px.
+   * 4. Bila teks melebihi maxW, aktifkan wordWrap dengan wrapWidth = maxW - 2 x padX - slot ikon.
+   * 5. Teks di-center secara vertikal dan horizontal di area isinya dengan setOrigin(0.5).
+   * 6. Jaring pengaman terakhir: fitText mengecilkan font sampai muat tanpa memotong teks atau elipsis.
+   * 7. Sudut bulat dan bayangan mengikuti ukuran akhir, digambar SETELAH ukuran dihitung.
+   * 
+   * @param {Phaser.Scene} scene - Scene Phaser pemilik
+   * @param {number} x - Pusat X panel
+   * @param {number} y - Pusat Y panel
+   * @param {Object} opts - Opsi konfigurasi
+   * @returns {Phaser.GameObjects.Container} Kontainer panel mandiri dengan titik pusat (0.5, 0.5)
+   */
+  textBox(scene, x, y, opts = {}) {
+    const textStr = String(opts.text !== undefined ? opts.text : '');
+    const hasIcon = !!opts.icon;
+    const iconStr = opts.icon || '';
+    const variant = opts.variant || 'default'; // 'toast' | 'notif' | 'bubble' | 'modal' | 'chip' | 'default'
+
+    // Parameter spasi skala 8 px (Aturan 2: padX 24, padY 16 default)
+    const padX = opts.padX !== undefined ? opts.padX : 24;
+    const padY = opts.padY !== undefined ? opts.padY : 16;
+    const iconSlot = hasIcon ? (opts.iconSlot !== undefined ? opts.iconSlot : 40) : 0; // Slot ikon 40 px
+    const iconGap = hasIcon ? (opts.iconGap !== undefined ? opts.iconGap : 16) : 0;   // Jarak ikon ke teks 16 px
+    const iconContentW = hasIcon ? (iconSlot + iconGap) : 0;
+
+    let fontSize = opts.fontSize || 24;
+    const minFontSize = opts.minFontSize !== undefined ? opts.minFontSize : 24;
+    const fontWeight = opts.fontWeight || '700';
+    const fontFamily = opts.fontFamily || (JEDA.CFG && JEDA.CFG.FONT && JEDA.CFG.FONT.family) || 'Nunito, sans-serif';
+    const align = opts.align || 'center';
+    const lineSpacing = opts.lineSpacing !== undefined ? opts.lineSpacing : 4;
+
+    // Warna teks default per varian
+    let textColor = opts.textColor;
+    if (!textColor) {
+      if (variant === 'notif') textColor = '#FFFFFF';
+      else if (variant === 'toast') textColor = '#FFFFFF';
+      else if (variant === 'bubble') textColor = '#FFFFFF';
+      else if (variant === 'chip') textColor = JEDA.CFG ? JEDA.CFG.COLOR.hex.calm : '#7FE0C3';
+      else textColor = '#FFFFFF';
+    }
+
+    // 1. Buat Container di (x, y)
+    const container = scene.add.container(x, y);
+
+    // 2. Buat objek Text awal untuk pengukuran riil (setResolution(2) wajib)
+    const textObj = scene.add.text(0, 0, textStr, {
+      fontFamily: fontFamily,
+      fontSize: `${fontSize}px`,
+      fontStyle: fontWeight,
+      color: textColor,
+      align: align,
+      lineSpacing: lineSpacing
+    }).setOrigin(0.5).setResolution(2);
+
+    // 3. Evaluasi Batas Maksimal (maxW) & Jaring Pengaman fitText (Aturan 4 & 6)
+    let curFontSize = fontSize;
+    const maxW = opts.maxW;
+
+    if (maxW && maxW > (padX * 2 + iconContentW)) {
+      const allowedTextW = maxW - (padX * 2) - iconContentW;
+      const targetWrapW = opts.wrapWidth ? Math.min(opts.wrapWidth, allowedTextW) : allowedTextW;
+
+      // Jika teks melebihi lebar yang diizinkan, aktifkan wordWrap
+      if (textObj.width > allowedTextW) {
+        textObj.setWordWrapWidth(targetWrapW, true);
+      }
+
+      // Jaring pengaman terakhir: Jika masih ada kata tanpa spasi atau teks panjang melebihi allowedTextW,
+      // kecilkan font size secara bertahap sampai muat tanpa tanda elipsis
+      while (textObj.width > allowedTextW && curFontSize > minFontSize) {
+        curFontSize -= 1;
+        textObj.setFontSize(`${curFontSize}px`);
+        textObj.setWordWrapWidth(targetWrapW, true);
+      }
+
+      // Perlindungan kata sangat panjang tanpa spasi (stress test)
+      while (textObj.width > allowedTextW && curFontSize > 12) {
+        curFontSize -= 1;
+        textObj.setFontSize(`${curFontSize}px`);
+        textObj.setWordWrapWidth(targetWrapW, true);
+      }
+    } else if (opts.wrapWidth) {
+      if (textObj.width > opts.wrapWidth) {
+        textObj.setWordWrapWidth(opts.wrapWidth, true);
+      }
+    }
+
+    // 4. Pengukuran final presisi dengan text.getBounds() atau text.width SETELAH style final diterapkan
+    textObj.updateText();
+    const bounds = textObj.getBounds();
+    const measuredTextW = Math.ceil(Math.max(textObj.width, bounds ? bounds.width : 0));
+    const measuredTextH = Math.ceil(Math.max(textObj.height, bounds ? bounds.height : 0));
+
+    // 5. Hitung Ukuran Panel Baku (Aturan 1)
+    // Lebar panel = lebar teks terukur + (icon ? iconSlot + gap : 0) + 2 x padX.
+    // Tinggi = tinggi teks terukur + 2 x padY.
+    const totalContentW = iconContentW + measuredTextW;
+    const totalContentH = Math.max(measuredTextH, iconSlot);
+
+    let panelW = totalContentW + (padX * 2);
+    let panelH = totalContentH + (padY * 2);
+
+    if (opts.minW && panelW < opts.minW) panelW = opts.minW;
+    if (opts.minH && panelH < opts.minH) panelH = opts.minH;
+    if (opts.maxW && panelW > opts.maxW) panelW = opts.maxW;
+
+    // Bulatkan ke kelipatan 8 px
+    panelW = Math.ceil(panelW / 8) * 8;
+    panelH = Math.ceil(panelH / 8) * 8;
+
+    // 6. Penataan Posisi Child (Simetri 100% Sempurna)
+    // Sumbu X: Area konten diletakkan tepat di tengah (-totalContentW / 2 s.d. +totalContentW / 2)
+    // Jarak dari tepi kiri panel ke konten = (panelW - totalContentW) / 2
+    // Jarak dari akhir konten ke tepi kanan panel = (panelW - totalContentW) / 2
+    // PADDING KIRI DAN KANAN SELALU SAMA PERSIS (selisih = 0 px)
+    const contentStartX = -totalContentW / 2;
+    let iconObj = null;
+
+    if (hasIcon) {
+      const iconCenterX = contentStartX + (iconSlot / 2);
+      iconObj = scene.add.text(iconCenterX, 0, iconStr, {
+        fontSize: `${opts.iconSize || 24}px`
+      }).setOrigin(0.5).setResolution(2);
+
+      const textCenterX = contentStartX + iconSlot + iconGap + (measuredTextW / 2);
+      textObj.setPosition(textCenterX, 0);
+    } else {
+      textObj.setPosition(0, 0);
+    }
+
+    // 7. Penggambaran Grafis Panel (Aturan 7: sudut bulat dan bayangan SETELAH ukuran dihitung)
+    let radius = opts.radius;
+    if (radius === undefined) {
+      if (variant === 'notif' || variant === 'toast') radius = 20;
+      else if (variant === 'bubble') radius = 24;
+      else if (variant === 'chip') radius = Math.min(24, Math.floor(panelH / 2));
+      else if (variant === 'modal') radius = 28;
+      else radius = 20;
+    }
+
+    const bg = scene.add.graphics();
+
+    let baseColor = 0x0E1026;
+    let fillColor = 0x16163A;
+    let fillAlpha = 0.96;
+    let strokeColor = 0x485278;
+    let strokeAlpha = 0.75;
+    let strokeWidth = opts.strokeWidth !== undefined ? opts.strokeWidth : 2;
+
+    if (variant === 'notif') {
+      fillColor = 0x181C3D;
+      fillAlpha = 0.96;
+      strokeColor = opts.strokeColor || (JEDA.CFG ? JEDA.CFG.COLOR.warn : 0xFFB86B);
+      strokeAlpha = 0.75;
+    } else if (variant === 'toast') {
+      fillColor = 0x16163A;
+      fillAlpha = 0.96;
+      strokeColor = opts.strokeColor || (JEDA.CFG ? JEDA.CFG.COLOR.panelLine : 0x485278);
+      strokeAlpha = 0.65;
+    } else if (variant === 'bubble') {
+      fillColor = 0x121538;
+      fillAlpha = 0.96;
+      strokeColor = opts.strokeColor || (JEDA.CFG ? JEDA.CFG.COLOR.calm : 0x7FE0C3);
+      strokeAlpha = 0.85;
+    } else if (variant === 'chip') {
+      fillColor = 0x181A3C;
+      fillAlpha = 0.95;
+      strokeColor = opts.strokeColor || 0x485278;
+      strokeAlpha = 0.75;
+    } else if (variant === 'modal') {
+      fillColor = 0x16163A;
+      fillAlpha = 0.96;
+      strokeColor = opts.strokeColor || 0x485278;
+      strokeAlpha = 0.50;
+    }
+
+    if (opts.bgColor !== undefined) fillColor = opts.bgColor;
+    if (opts.bgAlpha !== undefined) fillAlpha = opts.bgAlpha;
+    if (opts.strokeColor !== undefined) strokeColor = opts.strokeColor;
+    if (opts.strokeAlpha !== undefined) strokeAlpha = opts.strokeAlpha;
+
+    // Bayangan lembut
+    if (opts.shadow !== false) {
+      bg.fillStyle(0x000000, 0.35);
+      bg.fillRoundedRect(-panelW / 2 + 2, -panelH / 2 + 4, panelW, panelH, radius);
+    }
+
+    // 100% Solid Opaque Base (menjamin 0% tembus pandang)
+    bg.fillStyle(baseColor, 1.0);
+    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, radius);
+
+    // Lapisan Frosted Glass
+    bg.fillStyle(fillColor, fillAlpha);
+    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, radius);
+
+    // Ekor Gelembung jika varian 'bubble'
+    if (variant === 'bubble' && opts.bubbleTail !== false) {
+      const tailHalfW = 12;
+      const tailH = 14;
+      bg.fillStyle(baseColor, 1.0);
+      bg.fillTriangle(-tailHalfW, -panelH / 2, tailHalfW, -panelH / 2, 0, -panelH / 2 - tailH);
+      bg.fillStyle(fillColor, fillAlpha);
+      bg.fillTriangle(-tailHalfW, -panelH / 2, tailHalfW, -panelH / 2, 0, -panelH / 2 - tailH);
+    }
+
+    // Garis Tepi (Stroke)
+    if (strokeWidth > 0) {
+      bg.lineStyle(strokeWidth, strokeColor, strokeAlpha);
+      bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, radius);
+      if (variant === 'bubble' && opts.bubbleTail !== false) {
+        bg.lineBetween(-12, -panelH / 2, 0, -panelH / 2 - 14);
+        bg.lineBetween(0, -panelH / 2 - 14, 12, -panelH / 2);
+      }
+    }
+
+    // 8. Masukkan elemen ke dalam Container terpadu
+    const elements = [bg];
+    if (iconObj) elements.push(iconObj);
+    elements.push(textObj);
+
+    // Titik pendar toska khas Lumi jika varian 'bubble'
+    if (variant === 'bubble' && opts.glowDot !== false) {
+      const dotX = -panelW / 2 + 24;
+      const glowDot = scene.add.circle(dotX, 0, 6, 0x7FE0C3, 0.9);
+      elements.push(glowDot);
+      container.glowDot = glowDot;
+    }
+
+    container.add(elements);
+    container.setSize(panelW, panelH);
+
+    // 9. Simpan metadata ukuran dan verifikasi simetri untuk debug mode (tombol G)
+    const calcLeftP = (panelW - totalContentW) / 2;
+    const calcRightP = (panelW - totalContentW) / 2;
+
+    container.panelW = panelW;
+    container.panelH = panelH;
+    container.padX = padX;
+    container.padY = padY;
+    container.leftPadding = calcLeftP;
+    container.rightPadding = calcRightP;
+    container.paddingDelta = Math.abs(calcLeftP - calcRightP);
+    container.measuredTextW = measuredTextW;
+    container.measuredTextH = measuredTextH;
+    container.totalContentW = totalContentW;
+    container.totalContentH = totalContentH;
+    container.textObj = textObj;
+    container.iconObj = iconObj;
+    container.bg = bg;
+    container.variant = variant;
+
+    return container;
+  },
+
+  /**
    * Membuat tombol baku JEDA.UI (PRD Bagian 14.3 Prinsip 6, 7, 10, 12).
    * - Standar tinggi: 88 px, lebar minimal 280 px, bentuk kapsul (radius 44)
    * - Aksi utama (primary: true): background calm 0x7FE0C3, teks gelap #16163A
@@ -231,7 +494,7 @@ JEDA.UI = {
     // Fungsi otomatis pas-kan teks (fitText & wrap) agar tidak pernah keluar dari tombol (Prinsip UI/UX PRD 14.3)
     const fitButtonText = () => {
       // Padding horizontal aman memperhitungkan lengkungan sudut tombol (radius)
-      const minPadX = Math.max(36, Math.ceil((radius + 16) / 8) * 8);
+      const minPadX = Math.max(48, Math.ceil((radius + 20) / 8) * 8);
       const maxTextW = Math.max(60, w - minPadX * 2);
       let currentSize = fontSize;
       textObj.setFontSize(currentSize + 'px');
@@ -247,7 +510,7 @@ JEDA.UI = {
         textObj.setLineSpacing(4);
         currentSize = Math.min(currentSize, 22);
         textObj.setFontSize(currentSize + 'px');
-        while (textObj.height > (h - 20) && currentSize > 16) {
+        while ((textObj.width > maxTextW || textObj.height > (h - 20)) && currentSize > 15) {
           currentSize -= 1;
           textObj.setFontSize(currentSize + 'px');
         }
@@ -263,7 +526,7 @@ JEDA.UI = {
           textObj.setWordWrapWidth(maxTextW, true);
           textObj.setAlign('center');
           textObj.setLineSpacing(4);
-          while (textObj.height > (h - 16) && currentSize > 14) {
+          while ((textObj.width > maxTextW || textObj.height > (h - 16)) && currentSize > 14) {
             currentSize -= 1;
             textObj.setFontSize(currentSize + 'px');
           }
@@ -459,37 +722,22 @@ JEDA.UI = {
 
   /**
    * Menampilkan pesan toast melayang di bagian atas layar (BR-01, BR-14).
+   * Menggunakan komponen baku JEDA.UI.textBox (Prinsip UI/UX PRD 14.3).
    */
   toast(scene, message, duration = 3000) {
     const W = JEDA.CFG.W;
     const yTarget = 110;
-    const container = scene.add.container(W / 2, yTarget - 20).setDepth(1000);
 
-    const textObj = scene.add.text(0, 0, message, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: JEDA.CFG.FONT.body + 'px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.text,
-      align: 'center',
-      wordWrap: { width: Math.min(1080, W - 240) },
-      lineSpacing: 6
-    }).setOrigin(0.5).setResolution(2);
+    const container = this.textBox(scene, W / 2, yTarget - 20, {
+      text: message,
+      fontSize: 24,
+      fontWeight: '600',
+      padX: 24,
+      padY: 16,
+      maxW: Math.min(1080, W - 120),
+      variant: 'toast'
+    }).setDepth(2000);
 
-    const padX = 48;
-    const padY = 24;
-    const w = Math.min(1120, Math.max(360, Math.ceil((textObj.width + padX * 2) / 8) * 8));
-    const h = Math.ceil((textObj.height + padY * 2) / 8) * 8;
-
-    const bg = scene.add.graphics();
-    // 100% Solid Base
-    bg.fillStyle(0x0E1026, 1.0);
-    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 20);
-    bg.fillStyle(0x16163A, 0.96);
-    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 20);
-    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.5);
-    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 20);
-
-    container.add([bg, textObj]);
     container.setAlpha(0);
 
     // Animasi muncul
@@ -501,17 +749,21 @@ JEDA.UI = {
       ease: 'Sine.easeOut',
       onComplete: () => {
         scene.time.delayedCall(duration, () => {
-          scene.tweens.add({
-            targets: container,
-            alpha: 0,
-            y: yTarget - 20,
-            duration: 250,
-            ease: 'Sine.easeIn',
-            onComplete: () => container.destroy()
-          });
+          if (container && container.scene) {
+            scene.tweens.add({
+              targets: container,
+              alpha: 0,
+              y: yTarget - 20,
+              duration: 250,
+              ease: 'Sine.easeIn',
+              onComplete: () => container.destroy()
+            });
+          }
         });
       }
     });
+
+    return container;
   },
 
   /**
@@ -565,58 +817,44 @@ JEDA.UI = {
     }).setOrigin(0.5).setResolution(2);
     modalContainer.add(messageText);
 
-    // 5. Dua kontak bantuan berdampingan (119 ext. 8 dan healing119.id)
+    // 5. Dua kontak bantuan berdampingan (119 ext. 8 dan healing119.id) menggunakan JEDA.UI.textBox
     const boxW = 440;
     const boxH = 135;
     const boxY = cy + 20;
 
     // Kotak Kiri: 119 ext. 8
     const boxLeftX = cx - 235;
-    const bgL = scene.add.graphics();
-    bgL.fillStyle(0x1A1D40, 0.95);
-    bgL.fillRoundedRect(boxLeftX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
-    bgL.lineStyle(2, 0x7FE0C3, 0.5);
-    bgL.strokeRoundedRect(boxLeftX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
-
-    const titleL = scene.add.text(boxLeftX, boxY - 32, 'Telepon Siaga (24 Jam)', {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.muted
-    }).setOrigin(0.5).setResolution(2);
-
-    const contactL = scene.add.text(boxLeftX, boxY + 16, '119 ext. 8', {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '44px',
-      fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.calm
-    }).setOrigin(0.5).setResolution(2);
-
-    modalContainer.add([bgL, titleL, contactL]);
+    const boxL = this.textBox(scene, boxLeftX, boxY, {
+      text: 'Telepon Siaga (24 Jam)\n119 ext. 8',
+      fontSize: 26,
+      fontWeight: '800',
+      textColor: JEDA.CFG.COLOR.hex.calm,
+      padX: 24,
+      padY: 16,
+      minW: boxW,
+      minH: boxH,
+      variant: 'chip',
+      strokeColor: 0x7FE0C3,
+      bgColor: 0x1A1D40
+    });
 
     // Kotak Kanan: healing119.id
     const boxRightX = cx + 235;
-    const bgR = scene.add.graphics();
-    bgR.fillStyle(0x1A1D40, 0.95);
-    bgR.fillRoundedRect(boxRightX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
-    bgR.lineStyle(2, 0x7FE0C3, 0.5);
-    bgR.strokeRoundedRect(boxRightX - boxW / 2, boxY - boxH / 2, boxW, boxH, 20);
+    const boxR = this.textBox(scene, boxRightX, boxY, {
+      text: 'Konseling Online Kemenkes\nhealing119.id',
+      fontSize: 26,
+      fontWeight: '800',
+      textColor: JEDA.CFG.COLOR.hex.calm,
+      padX: 24,
+      padY: 16,
+      minW: boxW,
+      minH: boxH,
+      variant: 'chip',
+      strokeColor: 0x7FE0C3,
+      bgColor: 0x1A1D40
+    });
 
-    const titleR = scene.add.text(boxRightX, boxY - 32, 'Konseling Online Kemenkes', {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.muted
-    }).setOrigin(0.5).setResolution(2);
-
-    const contactR = scene.add.text(boxRightX, boxY + 16, 'healing119.id', {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '44px',
-      fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.calm
-    }).setOrigin(0.5).setResolution(2);
-
-    modalContainer.add([bgR, titleR, contactR]);
+    modalContainer.add([boxL, boxR]);
 
     // 6. Catatan disclaimer
     const disclaimerText = 'Layanan di atas disediakan tenaga profesional independen.\nJEDA adalah media latihan kesadaran, bukan pengganti perawatan medis atau konseling darurat.';
@@ -972,6 +1210,7 @@ JEDA.UI = {
 
   /**
    * Menampilkan overlay peringatan saat pemain melakukan panik klik (BR-05).
+   * Menggunakan komponen baku JEDA.UI.textBox.
    */
   showPanicOverlay(scene) {
     const W = JEDA.CFG.W;
@@ -987,35 +1226,20 @@ JEDA.UI = {
     const backdrop = scene.add.rectangle(0, 0, W, H, 0x050510, 0.65).setInteractive();
     container.add(backdrop);
 
-    const bg = scene.add.graphics();
-    // 100% Solid Base
-    bg.fillStyle(0x0E1026, 1.0);
-    bg.fillRoundedRect(-400, -90, 800, 180, 24);
-    bg.fillStyle(0x16163A, 0.96);
-    bg.fillRoundedRect(-400, -90, 800, 180, 24);
-    bg.lineStyle(2, JEDA.CFG.COLOR.warn, 0.6);
-    bg.strokeRoundedRect(-400, -90, 800, 180, 24);
+    const box = this.textBox(scene, 0, 0, {
+      text: 'Pelan-pelan. Tarik napas dulu.\nInput dijeda sejenak untuk membantumu kembali fokus.',
+      fontSize: 27,
+      fontWeight: '800',
+      textColor: JEDA.CFG.COLOR.hex.warn,
+      strokeColor: JEDA.CFG.COLOR.warn,
+      padX: 32,
+      padY: 24,
+      minW: 720,
+      maxW: 880,
+      variant: 'modal'
+    });
 
-    const text = scene.add.text(0, -15, 'Pelan-pelan. Tarik napas dulu.', {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: JEDA.CFG.FONT.subtitle + 'px',
-      fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.warn,
-      align: 'center',
-      wordWrap: { width: 720 }
-    }).setOrigin(0.5).setResolution(2);
-
-    const sub = scene.add.text(0, 35, 'Input dijeda sejenak untuk membantumu kembali fokus.', {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: JEDA.CFG.FONT.body + 'px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.muted,
-      align: 'center',
-      wordWrap: { width: 720 },
-      lineSpacing: 4
-    }).setOrigin(0.5).setResolution(2);
-
-    container.add([bg, text, sub]);
+    container.add(box);
 
     scene.time.delayedCall(3000, () => {
       scene.tweens.add({
@@ -1091,63 +1315,37 @@ JEDA.UI = {
   /**
    * Gelembung Ucapan Lumi (PRD Bagian 14.1 & 14.2 G1).
    * - Menampilkan pesan hangat Lumi di bawah orb (PRD 14.5: y = 760 di L1)
+   * - Menggunakan komponen baku JEDA.UI.textBox dengan varian 'bubble'
    * - Kotak kaca rounded ber-aksen toska (calm) dengan ekor penunjuk ke atas
-   * - Maksimal 2 baris, font 27 px, lebar responsif proporsional
+   * - Simetri padding kiri dan kanan 100% presisi
    */
   speechBubble(scene, x, y, text, options = {}) {
     const maxW = options.maxWidth || 1000;
     const wrapW = options.wrapWidth || Math.min(880, maxW - 96);
-    const container = scene.add.container(x, y).setDepth(1500);
 
-    const textObj = scene.add.text(0, 3, text, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
-      fontStyle: '700',
-      color: '#FFFFFF',
-      align: 'center',
-      wordWrap: { width: wrapW },
-      lineSpacing: 6
-    }).setOrigin(0.5).setResolution(2);
-
-    const padX = 64;
-    const padY = 28;
-    const w = Math.max(384, Math.min(maxW, Math.ceil((textObj.width + padX * 2) / 8) * 8));
-    const h = Math.ceil((textObj.height + padY * 2) / 8) * 8;
-    const radius = 24;
+    const container = this.textBox(scene, x, y, {
+      text: text,
+      fontSize: 27,
+      fontWeight: '700',
+      padX: options.padX || 32,
+      padY: options.padY || 20,
+      maxW: maxW,
+      wrapWidth: wrapW,
+      variant: 'bubble',
+      bubbleTail: true,
+      glowDot: true
+    }).setDepth(1500);
 
     // Pastikan tidak menyentuh header (y minimal 140, PRD Poin 2)
+    const h = container.panelH;
     let actualY = y;
     if (actualY - h / 2 < 140) {
       actualY = 140 + h / 2;
     }
     container.setPosition(x, actualY);
 
-    const bg = scene.add.graphics();
-    // 0. 100% Solid Base (menjamin 0% tembus pandang)
-    bg.fillStyle(0x0E1026, 1.0);
-    bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
-
-    // 1. Latar belakang kaca gelap solid (0x121538 alpha 0.96)
-    bg.fillStyle(0x121538, 0.96);
-    bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
-
-    // 2. Ekor segitiga runcing menunjuk ke arah atas (-h / 2)
-    bg.fillTriangle(-12, -h / 2, 12, -h / 2, 0, -h / 2 - 14);
-
-    // 3. Garis tepi pendar toska tenang (0x7FE0C3)
-    bg.lineStyle(2, 0x7FE0C3, 0.85);
-    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
-    bg.lineBetween(-12, -h / 2, 0, -h / 2 - 14);
-    bg.lineBetween(0, -h / 2 - 14, 12, -h / 2);
-
-    // 4. Ikon pendar kecil Lumi di samping kiri teks
-    const glowDot = scene.add.circle(-w / 2 + 28, 0, 8, 0x7FE0C3, 0.9);
-
-    container.add([bg, glowDot, textObj]);
-    container.textObj = textObj;
-    container.bg = bg;
-    container.bubbleW = w;
-    container.bubbleH = h;
+    container.bubbleW = container.panelW;
+    container.bubbleH = container.panelH;
 
     return container;
   },
@@ -1420,22 +1618,17 @@ JEDA.UI = {
     // 3. Header Panel: Kapsul Kategori, Judul, & Subjudul
     const headerContainer = scene.add.container(cx, cy - cardH / 2 + 56);
 
-    // Kapsul Kategori "PETUNJUK BERMAIN" (Prinsip 3 & 8: Skala 8 px & Hierarki Teks)
-    const catText = scene.add.text(0, 0, 'PETUNJUK BERMAIN', {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '18px',
-      fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.calm
-    }).setOrigin(0.5).setResolution(2);
-
-    const catBadgeW = Math.max(200, Math.ceil((catText.width + 48) / 8) * 8);
-    const catBadgeH = 32; // Kelipatan 8
-    const catBg = scene.add.graphics();
-    catBg.fillStyle(0x1A2048, 0.95);
-    catBg.fillRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 16);
-    catBg.lineStyle(1.5, 0x7FE0C3, 0.6);
-    catBg.strokeRoundedRect(-catBadgeW / 2, -catBadgeH / 2, catBadgeW, catBadgeH, 16);
-    headerContainer.add([catBg, catText]);
+    // Kapsul Kategori "PETUNJUK BERMAIN" menggunakan JEDA.UI.textBox
+    const catBadge = this.textBox(scene, 0, 0, {
+      text: 'PETUNJUK BERMAIN',
+      fontSize: 18,
+      fontWeight: '800',
+      padX: 24,
+      padY: 6,
+      minH: 32,
+      variant: 'chip'
+    });
+    headerContainer.add(catBadge);
 
     // Judul Utama (Hierarki teks 38 px)
     const titleText = scene.add.text(0, 44, options.title || 'Petunjuk Bermain', {
@@ -1828,22 +2021,17 @@ JEDA.UI = {
         // --- Mode Multi-Halaman (Pembuka 3 Halaman) ---
         const curPage = options.pages[currentPageIndex] || {};
 
-        // 1. Kapsul Indikator Langkah / Eyebrow Badge di Bagian Atas
+        // 1. Kapsul Indikator Langkah / Eyebrow Badge di Bagian Atas menggunakan JEDA.UI.textBox
         const badgeLabel = `${currentPageIndex + 1} dari ${totalPages} • ${curPage.badge || 'Panduan'}`;
-        const bText = scene.add.text(0, -88, badgeLabel, {
-          fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '18px',
-          fontStyle: '800',
-          color: JEDA.CFG.COLOR.hex.calm
-        }).setOrigin(0.5).setResolution(2);
-
-        const badgeW = Math.max(220, Math.ceil((bText.width + 48) / 8) * 8);
-        const badgeH = 32;
-        const bBg = scene.add.graphics();
-        bBg.fillStyle(0x19224A, 0.95);
-        bBg.fillRoundedRect(-badgeW / 2, -88 - badgeH / 2, badgeW, badgeH, 16);
-        bBg.lineStyle(1.5, 0x425488, 0.7);
-        bBg.strokeRoundedRect(-badgeW / 2, -88 - badgeH / 2, badgeW, badgeH, 16);
+        const bBadge = this.textBox(scene, 0, -88, {
+          text: badgeLabel,
+          fontSize: 18,
+          fontWeight: '800',
+          padX: 24,
+          padY: 6,
+          minH: 32,
+          variant: 'chip'
+        });
 
         // 2. Judul Halaman
         const pageTitle = scene.add.text(0, -50, curPage.pageTitle || `Langkah ${currentPageIndex + 1}`, {
@@ -1884,7 +2072,7 @@ JEDA.UI = {
           dotContainer.add(dot);
         }
 
-        contentRightContainer.add([bBg, bText, pageTitle, pageText, dotContainer]);
+        contentRightContainer.add([bBadge, pageTitle, pageText, dotContainer]);
 
         // Tombol Kanan: 'Lanjut →' jika masih ada halaman, 'Mulai' jika halaman terakhir
         const isLastPage = currentPageIndex === totalPages - 1;

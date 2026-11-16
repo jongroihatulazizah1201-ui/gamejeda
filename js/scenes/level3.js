@@ -90,30 +90,17 @@ class Level3Scene extends Phaser.Scene {
       this.showHelpModal();
     }, { fontSize: 27, radius: 24 });
 
-    // Kontainer kapsul status skenario (dimensi & posisi diatur dinamis di updateScenarioCounter)
-    this.scContainer = this.add.container(0, headerY).setDepth(10);
-    this.scBg = this.add.graphics();
-    this.stepCounterText = this.add.text(0, 0, 'Skenario 1 dari 3', {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '24px',
-      fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.calm
-    }).setOrigin(0.5).setResolution(2);
-    this.scContainer.add([this.scBg, this.stepCounterText]);
-
-    // Format dan posisikan kapsul sesuai skala 8 px dan lebar dinamis terukur
+    // Format dan posisikan kapsul sesuai skala 8 px dan lebar dinamis terukur dengan JEDA.UI.textBox
     this.updateScenarioCounter(0);
   }
 
   /**
-   * Memperbarui teks dan dimensi kapsul status skenario sesuai prinsip UI/UX (PRD 14.3).
+   * Memperbarui teks dan dimensi kapsul status skenario menggunakan JEDA.UI.textBox.
    * Lebar diukur dari teks + padding skala 8 px, rata kanan dengan jarak 16 px dari tombol ?.
    */
   updateScenarioCounter(idx = 0) {
-    if (!this.stepCounterText || !this.scBg || !this.scContainer) return;
     const total = (this.scenarios && this.scenarios.length) || 3;
     const label = `Skenario ${idx + 1} dari ${total}`;
-    this.stepCounterText.setText(label);
 
     const Layout = JEDA.Layout;
     const headerY = 64;
@@ -123,24 +110,23 @@ class Level3Scene extends Phaser.Scene {
     const gap = 16; // Skala 8 px
     const rightAnchor = helpLeftEdge - gap; // 1736
 
-    // Ukur lebar teks, berikan padding horizontal minimal 48 px kiri & kanan (total 96 px)
-    // Bulatkan lebar ke kelipatan 8 terdekat (PRD 14.3 Prinsip 3)
-    const textW = this.stepCounterText.width;
-    const scW = Math.max(328, Math.ceil((textW + 96) / 8) * 8);
-    const scH = 48; // Kelipatan 8
-    const radius = 24; // Kelipatan 8
+    if (this.scenarioCounterBox) {
+      this.scenarioCounterBox.destroy();
+    }
 
+    this.scenarioCounterBox = JEDA.UI.textBox(this, 0, headerY, {
+      text: label,
+      fontSize: 24,
+      fontWeight: '800',
+      padX: 24,
+      padY: 10,
+      minH: 48,
+      variant: 'chip'
+    }).setDepth(10);
+
+    const scW = this.scenarioCounterBox.panelW;
     const scX = rightAnchor - scW / 2;
-    this.scContainer.setPosition(scX, headerY);
-
-    this.scBg.clear();
-    // 100% Solid Base
-    this.scBg.fillStyle(0x0E1026, 1.0);
-    this.scBg.fillRoundedRect(-scW / 2, -scH / 2, scW, scH, radius);
-    this.scBg.fillStyle(0x181A3C, 0.95);
-    this.scBg.fillRoundedRect(-scW / 2, -scH / 2, scW, scH, radius);
-    this.scBg.lineStyle(2, 0x485278, 0.75);
-    this.scBg.strokeRoundedRect(-scW / 2, -scH / 2, scW, scH, radius);
+    this.scenarioCounterBox.setPosition(scX, headerY);
   }
 
   /**

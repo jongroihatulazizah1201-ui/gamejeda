@@ -420,29 +420,23 @@ class ResultScene extends Phaser.Scene {
 
   /**
    * Menampilkan Pengingat Istirahat jika runsToday >= 3 (BR-11).
+   * Menggunakan komponen baku JEDA.UI.textBox.
    */
   createRestReminder(cx, y) {
-    const cardW = 1056; // Skala 8 px (132 * 8)
-    const cardH = 56;  // Skala 8 px (7 * 8)
-
-    const bg = this.add.graphics();
-    // 100% Solid Base
-    bg.fillStyle(0x0E1026, 1.0);
-    bg.fillRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 20);
-    bg.fillStyle(0x24264E, 0.95);
-    bg.fillRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 20);
-    bg.lineStyle(1.5, JEDA.CFG.COLOR.warn, 0.7);
-    bg.strokeRoundedRect(cx - cardW / 2, y - cardH / 2, cardW, cardH, 20);
-
-    const msg = `☕ Pengingat Istirahat (BR-11): Kamu telah menyelesaikan 3+ sesi latihan hari ini. Luangkan waktu untuk istirahat sejenak.`;
-    this.add.text(cx, y, msg, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.warn,
-      wordWrap: { width: cardW - 64 },
-      align: 'center'
-    }).setOrigin(0.5).setResolution(2);
+    const msg = `Pengingat Istirahat (BR-11): Kamu telah menyelesaikan 3+ sesi latihan hari ini. Luangkan waktu untuk istirahat sejenak.`;
+    return JEDA.UI.textBox(this, cx, y, {
+      text: msg,
+      icon: '☕',
+      fontSize: 20,
+      fontWeight: '600',
+      textColor: JEDA.CFG.COLOR.hex.warn,
+      strokeColor: JEDA.CFG.COLOR.warn,
+      padX: 24,
+      padY: 12,
+      minW: 1056,
+      maxW: 1120,
+      variant: 'notif'
+    });
   }
 
   /**

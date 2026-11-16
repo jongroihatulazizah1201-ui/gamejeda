@@ -54,8 +54,8 @@ function initJedaGame() {
   window.JEDA.game = new Phaser.Game(config);
 }
 
-// Menunggu font lokal termuat paling lama 1500 ms (PRD Bagian 2)
-window.addEventListener('DOMContentLoaded', () => {
+// Menunggu font lokal termuat paling lama 1500 ms (PRD Bagian 2 & Poin 1 UI/UX)
+window.addEventListener('DOMContentLoaded', async () => {
   let started = false;
   const launch = () => {
     if (!started) {
@@ -65,19 +65,26 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   // Batas waktu tunggu font 1500 ms
-  const timeoutId = setTimeout(launch, 1500);
+  const timeoutId = setTimeout(() => {
+    console.warn('[JEDA] Batas waktu pemuatan font tercapai (1500 ms), memulai game.');
+    launch();
+  }, 1500);
 
   if (document.fonts && document.fonts.load) {
-    Promise.all([
-      document.fonts.load('800 66px Nunito'),
-      document.fonts.load('600 33px Nunito')
-    ]).then(() => {
+    try {
+      await Promise.all([
+        document.fonts.load('600 24px Nunito'),
+        document.fonts.load('800 24px Nunito'),
+        document.fonts.load('700 27px Nunito'),
+        document.fonts.load('800 33px Nunito'),
+        document.fonts.load('800 66px Nunito')
+      ]);
       clearTimeout(timeoutId);
       launch();
-    }).catch(() => {
+    } catch (e) {
       clearTimeout(timeoutId);
       launch();
-    });
+    }
   } else {
     clearTimeout(timeoutId);
     launch();

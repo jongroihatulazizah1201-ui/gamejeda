@@ -301,6 +301,17 @@ JEDA.State = {
     } catch (e) {
       return false;
     }
+  },
+
+  /**
+   * Mendeteksi apakah URL mengandung parameter &stress=1 atau ?stress=1 (Mode Uji Stress Teks).
+   */
+  isStress() {
+    try {
+      return window.location.search.includes('stress=1');
+    } catch (e) {
+      return false;
+    }
   }
 };
 

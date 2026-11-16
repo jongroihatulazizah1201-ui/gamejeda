@@ -55,6 +55,9 @@ class CheckinScene extends Phaser.Scene {
     // 7. Mode Debug jika aktif (?debug=1)
     if (JEDA.State.isDebug()) {
       this.setupDebugMode();
+      if (JEDA.State.isStress()) {
+        this.setupStressMode();
+      }
     }
 
     // 8. Dukungan Keyboard (Prinsip 15: Enter menekan aksi utama)
@@ -761,6 +764,94 @@ class CheckinScene extends Phaser.Scene {
       this.renderLevelCards();
       JEDA.UI.toast(this, 'Mode Debug: Data berhasil direset.');
     });
+  }
+
+  /**
+   * Menyiapkan pengujian stres visual (?debug=1&stress=1) untuk membuktikan simetri dan toleransi teks ekstrem.
+   * Menampilkan seluruh komponen dengan teks terpanjang yang mungkin:
+   * 1. Notifikasi (60 karakter)
+   * 2. Toast umpan balik (90 karakter)
+   * 3. Gelembung ucapan Lumi (120 karakter)
+   * 4. Plat label pikiran (100 karakter)
+   * 5. Kata sangat panjang tanpa spasi (unbroken string)
+   */
+  setupStressMode() {
+    const Layout = JEDA.Layout;
+    const cx = Layout.cx();
+    const stressContainer = this.add.container(0, 0).setDepth(8000);
+
+    // 1. Notifikasi dengan 60 karakter
+    const notifBox = JEDA.UI.textBox(this, cx, 230, {
+      text: '🔔 Info Terkini: Jangan lupa tugas akhir yang harus dikumpul!',
+      icon: '🔔',
+      fontSize: 22,
+      padX: 24,
+      padY: 16,
+      variant: 'notif'
+    });
+
+    // 2. Toast dengan 90 karakter
+    const toastBox = JEDA.UI.textBox(this, cx, 330, {
+      text: 'Umpan Balik: Latihan napas berhasil diselesaikan dengan ketenangan penuh dan fokus sadar.',
+      fontSize: 24,
+      padX: 24,
+      padY: 16,
+      maxW: 1080,
+      variant: 'toast'
+    });
+
+    // 3. Gelembung ucapan Lumi dengan 120 karakter
+    const lumiBox = JEDA.UI.textBox(this, cx, 470, {
+      text: 'Lumi berbisik lembut: Kamu telah melangkah dengan berani hari ini. Setiap napas perlahan membawamu kembali ke ruang damai.',
+      fontSize: 26,
+      padX: 32,
+      padY: 20,
+      maxW: 1000,
+      variant: 'bubble'
+    });
+
+    // 4. Label pikiran dengan 100 karakter
+    const thoughtBox = JEDA.UI.textBox(this, cx - 320, 640, {
+      text: 'Pikiran: Mengapa semua tugas terasa begitu menumpuk dan apakah aku mampu menyelesaikannya tepat waktu?',
+      fontSize: 24,
+      padX: 20,
+      padY: 12,
+      minW: 400,
+      maxW: 560,
+      variant: 'chip',
+      strokeColor: 0x7FE0C3
+    });
+
+    // 5. Teks kata sangat panjang tanpa spasi (unbroken string)
+    const unbrokenBox = JEDA.UI.textBox(this, cx + 320, 640, {
+      text: 'KATA_EKSTREM: SUPERPANJANGTANPASPASIUNTUKMENGUJIAUTOFITDANKEMAMPUANTEXTBOXAGARTIDAKPERNAHMELUAP',
+      fontSize: 24,
+      padX: 24,
+      padY: 16,
+      minW: 400,
+      maxW: 560,
+      variant: 'notif'
+    });
+
+    stressContainer.add([notifBox, toastBox, lumiBox, thoughtBox, unbrokenBox]);
+
+    console.log('=== [STRESS TEST METRICS] ===');
+    const items = [
+      { name: 'Notifikasi (60 char)', box: notifBox },
+      { name: 'Toast (90 char)', box: toastBox },
+      { name: 'Lumi Bubble (120 char)', box: lumiBox },
+      { name: 'Thought Label (100 char)', box: thoughtBox },
+      { name: 'Unbroken Word (81 char)', box: unbrokenBox }
+    ];
+    console.table(items.map(i => ({
+      Component: i.name,
+      PanelW: i.box.panelW,
+      PanelH: i.box.panelH,
+      TextW: i.box.measuredTextW,
+      LeftPad: Math.round(i.box.leftPadding),
+      RightPad: Math.round(i.box.rightPadding),
+      Delta: `${i.box.paddingDelta}px`
+    })));
   }
 }
 

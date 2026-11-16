@@ -1077,41 +1077,54 @@ JEDA.Stage3D = (function() {
   }
 
   /**
-   * Membungkus teks pikiran ke dalam maksimal 2 baris (wrapWidth 360 px di layar / 720 px di kanvas 1024).
+   * Merender teks pikiran ke dalam kanvas dengan auto-fit font dinamis.
+   * Dilarang memotong teks atau memakai tanda elipsis (Prinsip UI/UX PRD 14.3).
    */
-  function wrapThoughtText(ctx, text, maxWidth, maxLines = 2) {
-    const words = String(text || '').split(' ');
-    const lines = [];
-    let curLine = '';
+  function renderThoughtTextToCanvas(ctx, text, maxWidth, maxHeight) {
+    let fontSize = 56; // 28 px di layar 1920x1080 (56 px pada kanvas 1024)
+    let lines = [];
 
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i];
-      const test = curLine ? (curLine + ' ' + word) : word;
-      if (ctx.measureText(test).width > maxWidth) {
-        if (curLine) lines.push(curLine);
-        curLine = word;
-        if (lines.length >= maxLines - 1) break;
-      } else {
-        curLine = test;
-      }
-    }
-    if (curLine && lines.length < maxLines) lines.push(curLine);
+    while (fontSize >= 20) {
+      ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
+      const words = String(text || '').split(' ');
+      lines = [];
+      let curLine = '';
+      let overflow = false;
 
-    if (lines.length === maxLines) {
-      let last = lines[maxLines - 1];
-      if (words.length > 0 && lines.join(' ').length < text.length) {
-        while (ctx.measureText(last + '...').width > maxWidth && last.length > 3) {
-          last = last.slice(0, -1);
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        if (ctx.measureText(word).width > maxWidth) {
+          overflow = true;
+          break;
         }
-        lines[maxLines - 1] = last.trim() + '...';
+        const test = curLine ? (curLine + ' ' + word) : word;
+        if (ctx.measureText(test).width > maxWidth) {
+          if (curLine) lines.push(curLine);
+          curLine = word;
+        } else {
+          curLine = test;
+        }
       }
+      if (curLine) lines.push(curLine);
+
+      const totalH = lines.length * (fontSize * 1.22);
+      if (!overflow && totalH <= maxHeight && lines.length <= 3) {
+        break;
+      }
+      fontSize -= 2;
     }
-    return lines;
+
+    // Gambar baris-baris teks terpusat secara simetris
+    const lineHeight = fontSize * 1.22;
+    const startY = 128 - ((lines.length - 1) * lineHeight) / 2;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], 512, startY + (i * lineHeight));
+    }
   }
 
   /**
    * Membuat Sprite kanvas label pikiran tajam (CanvasTexture 1024x256, ukuran layar tetap 400x104 px).
-   * Teks Nunito 700 putih minimal 28 px (56 px pada kanvas 1024).
+   * Teks Nunito 700 putih dengan fitText tanpa elipsis.
    */
   function createThoughtSprite(thought) {
     const canvas = document.createElement('canvas');
@@ -1130,19 +1143,12 @@ JEDA.Stage3D = (function() {
     drawRoundRect(ctx, 24, 16, 976, 224, 32);
     ctx.stroke();
 
-    // Teks pikiran putih tajam (Nunito 700 bold, 56 px di kanvas = 28 px di layar 1920x1080)
+    // Teks pikiran putih tajam
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 56px Nunito, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const lines = wrapThoughtText(ctx, thought.text || '', 720, 2);
-    if (lines.length === 1) {
-      ctx.fillText(lines[0], 512, 128);
-    } else if (lines.length >= 2) {
-      ctx.fillText(lines[0], 512, 94);
-      ctx.fillText(lines[1], 512, 162);
-    }
+    renderThoughtTextToCanvas(ctx, thought.text || '', 920, 180);
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.generateMipmaps = false;

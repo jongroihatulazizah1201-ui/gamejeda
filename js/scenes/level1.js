@@ -72,28 +72,28 @@ class Level1Scene extends Phaser.Scene {
 
     this.instructionText = this.add.text(cx, pillY - 16, 'Tahan untuk menarik napas, lepas untuk menghembuskan', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
+      fontSize: '24px',
       fontStyle: '700',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
     this.feedbackText = this.add.text(cx, pillY + 18, 'Mulai dengan menekan dan menahan...', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '20px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
 
-    // Hitung lebar kapsul dengan batas minimal 1024 px dan padding aman 64 px per sisi
-    const minPillW = 1024; // Skala 8 px (128 * 8)
+    // Hitung lebar kapsul dengan batas minimal 1080 px dan padding aman 64 px per sisi
+    const minPillW = 1080; // Skala 8 px (135 * 8)
     const reqTextW = Math.max(this.instructionText.width, this.feedbackText.width) + 128;
     const pillW = Math.max(minPillW, Math.ceil(reqTextW / 8) * 8);
 
     // Jaminan auto-fit teks instruksi agar tidak pernah mendekati lengkungan kapsul
     const maxTextW = pillW - 128;
     if (this.instructionText.width > maxTextW) {
-      let curSize = 27;
-      while (this.instructionText.width > maxTextW && curSize > 18) {
+      let curSize = 24;
+      while (this.instructionText.width > maxTextW && curSize > 16) {
         curSize -= 1;
         this.instructionText.setFontSize(curSize);
       }
@@ -104,13 +104,13 @@ class Level1Scene extends Phaser.Scene {
     this.feedbackText.setText = (txt) => {
       origFeedbackSetText(txt);
       if (this.feedbackText.width > maxTextW) {
-        let curSize = 22;
-        while (this.feedbackText.width > maxTextW && curSize > 16) {
+        let curSize = 20;
+        while (this.feedbackText.width > maxTextW && curSize > 14) {
           curSize -= 1;
           this.feedbackText.setFontSize(curSize);
         }
       } else {
-        this.feedbackText.setFontSize(22);
+        this.feedbackText.setFontSize(20);
       }
       return this.feedbackText;
     };
@@ -224,20 +224,18 @@ class Level1Scene extends Phaser.Scene {
 
     const progW = 208; // Kelipatan 8 (26 * 8)
     const progX = helpBtnX - helpBtnSize / 2 - 16 - progW / 2; // 1752 - 16 - 104 = 1632
-    const progContainer = this.add.container(progX, headerY);
-    const progBg = this.add.graphics();
-    progBg.fillStyle(0x181A3C, 0.95);
-    progBg.fillRoundedRect(-progW / 2, -btnH / 2, progW, btnH, 24);
-    progBg.lineStyle(2, 0x485278, 0.65);
-    progBg.strokeRoundedRect(-progW / 2, -btnH / 2, progW, btnH, 24);
 
-    this.cycleCounterText = this.add.text(0, 0, `Siklus 1/${this.totalCycles}`, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '24px',
-      fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.calm
-    }).setOrigin(0.5).setResolution(2);
-    progContainer.add([progBg, this.cycleCounterText]);
+    this.progBox = JEDA.UI.textBox(this, progX, headerY, {
+      text: `Siklus 1/${this.totalCycles}`,
+      fontSize: 24,
+      fontWeight: '800',
+      padX: 24,
+      padY: 10,
+      minW: progW,
+      minH: btnH,
+      variant: 'chip'
+    });
+    this.cycleCounterText = this.progBox.textObj;
   }
 
   /**
@@ -746,95 +744,65 @@ class Level1Scene extends Phaser.Scene {
 
   /**
    * Memunculkan satu kartu notifikasi palsu dari tepi kanan (BR-03).
-   * Lebar dinamis terukur presisi dari teks, tinggi 72 px, padding 8px grid.
+   * Menggunakan komponen baku JEDA.UI.textBox dengan simetri padding 100%.
    */
   spawnDistractionCard(W, message, yPos = 190, lifeMs = 5000) {
     const Layout = JEDA.Layout;
 
-    // 1. Buat teks terlebih dahulu untuk mengukur lebar persis
-    const fontSize = 22;
-    const text = this.add.text(0, 0, message, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: `${fontSize}px`,
-      fontStyle: '600',
-      color: '#FFFFFF'
-    }).setOrigin(0, 0.5).setResolution(2);
+    // Gunakan komponen tunggal baku JEDA.UI.textBox
+    const card = JEDA.UI.textBox(this, 0, 0, {
+      text: message,
+      icon: '🔔',
+      fontSize: 22,
+      fontWeight: '600',
+      padX: 24,
+      padY: 16,
+      minW: 440,
+      maxW: 680,
+      variant: 'notif'
+    }).setDepth(500);
 
-    // Padding & dimensi (Prinsip 3: Skala 8 px)
-    const iconW = 28;
-    const padL = 24;
-    const gap = 12;
-    const padR = 28;
-    const minCardW = 440;
-    const neededW = padL + iconW + gap + text.width + padR;
-    const cardW = Math.max(minCardW, Math.ceil(neededW / 8) * 8);
-    const cardH = 72; // Skala 8 px (9 * 8)
-    const radius = 20;
-
-    // Pastikan teks tidak meluap jika ada pesan yang sangat panjang
-    const maxTextW = cardW - (padL + iconW + gap + padR);
-    if (text.width > maxTextW) {
-      let curSize = fontSize;
-      while (text.width > maxTextW && curSize > 16) {
-        curSize -= 1;
-        text.setFontSize(curSize);
-      }
-    }
-
-    // Posisikan elemen di dalam kontainer
-    const iconX = -cardW / 2 + padL;
-    const textX = iconX + iconW + gap;
-    text.setPosition(textX, 0);
-
-    const icon = this.add.text(iconX, 0, '🔔', { fontSize: '24px' }).setOrigin(0, 0.5);
-
+    const cardW = card.panelW;
+    const cardH = card.panelH;
     const startX = W + cardW;
     const targetX = Layout.W - Layout.M - cardW / 2;
     const targetY = yPos;
 
-    const container = this.add.container(startX, targetY).setDepth(500);
-    const bg = this.add.graphics();
-    // 100% Solid Base (menjamin 0% bleed-through)
-    bg.fillStyle(0x0E1026, 1.0);
-    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, radius);
-    bg.fillStyle(0x181C3D, 0.96);
-    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, radius);
-    bg.lineStyle(2, JEDA.CFG.COLOR.warn, 0.75);
-    bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, radius);
+    card.setPosition(startX, targetY);
 
-    container.add([bg, icon, text]);
-    container.setSize(cardW, cardH);
-    container.setInteractive({
+    card.setInteractive({
       hitArea: new Phaser.Geom.Rectangle(-cardW / 2, -cardH / 2, cardW, cardH),
       hitAreaCallback: Phaser.Geom.Rectangle.Contains,
       useHandCursor: true
     });
 
-    container.on('pointerdown', (pointer) => {
+    card.on('pointerdown', (pointer) => {
       pointer.event.stopPropagation();
-      this.handleDistractionClicked(container);
+      this.handleDistractionClicked(card);
     });
 
     this.tweens.add({
-      targets: container,
+      targets: card,
       x: targetX,
       duration: 350,
       ease: 'Sine.easeOut',
       onComplete: () => {
         this.time.delayedCall(lifeMs, () => {
-          if (container.active) {
+          if (card && card.active) {
             this.tweens.add({
-              targets: container,
+              targets: card,
               x: startX,
               alpha: 0,
               duration: 300,
               ease: 'Sine.easeIn',
-              onComplete: () => container.destroy()
+              onComplete: () => card.destroy()
             });
           }
         });
       }
     });
+
+    return card;
   }
 
   /**

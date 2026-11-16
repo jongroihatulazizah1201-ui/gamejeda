@@ -231,6 +231,53 @@ JEDA.Layout = {
       }).setOrigin(0.5).setDepth(99999);
       this.debugLabels.push(txt);
     });
+
+    // 5. Gambar Batas Panel (Kuning) & Area Isi (Hijau) untuk Setiap JEDA.UI.textBox (Poin 4)
+    const inspectAndDrawTextBoxes = (obj) => {
+      if (!obj) return;
+      if (obj.panelW && obj.textObj && obj.visible !== false) {
+        const mat = obj.getWorldTransformMatrix ? obj.getWorldTransformMatrix() : { tx: obj.x, ty: obj.y };
+        const wx = mat.tx;
+        const wy = mat.ty;
+        const pw = obj.panelW;
+        const ph = obj.panelH;
+
+        // A. Kotak batas panel (Kuning neon - Bounding Box)
+        g.lineStyle(2, 0xFACC15, 0.95);
+        g.strokeRect(wx - pw / 2, wy - ph / 2, pw, ph);
+
+        // B. Kotak area isi (Hijau neon - Content Area)
+        const leftP = obj.leftPadding !== undefined ? obj.leftPadding : obj.padX;
+        const rightP = obj.rightPadding !== undefined ? obj.rightPadding : obj.padX;
+        const padY = obj.padY || 16;
+        const contentW = pw - leftP - rightP;
+        const contentH = ph - (padY * 2);
+        const contentX = wx - pw / 2 + leftP;
+        const contentY = wy - ph / 2 + padY;
+
+        g.lineStyle(1.5, 0x34D399, 0.9);
+        g.strokeRect(contentX, contentY, contentW, contentH);
+
+        // C. Label pembuktian matematis simetri padding (selisih Δ)
+        const delta = Math.abs(Math.round(leftP) - Math.round(rightP));
+        const badgeTxt = scene.add.text(wx, wy - ph / 2 - 12, `[Panel: ${pw}x${ph} | L:${Math.round(leftP)} R:${Math.round(rightP)} | Δ:${delta}px]`, {
+          fontFamily: 'monospace',
+          fontSize: '13px',
+          fontStyle: 'bold',
+          color: delta <= 2 ? '#34D399' : '#EF4444',
+          backgroundColor: '#050614'
+        }).setOrigin(0.5, 1).setDepth(99999);
+        this.debugLabels.push(badgeTxt);
+      }
+
+      if (obj.list && Array.isArray(obj.list)) {
+        obj.list.forEach(inspectAndDrawTextBoxes);
+      }
+    };
+
+    if (scene.children && scene.children.list) {
+      scene.children.list.forEach(inspectAndDrawTextBoxes);
+    }
   },
 
   /**

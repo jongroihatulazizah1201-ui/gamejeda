@@ -244,22 +244,18 @@ class Level2Scene extends Phaser.Scene {
 
     const counterW = 288; // Kelipatan 8 (36 * 8, ruang lega dari lengkungan)
     const counterX = helpBtnX - helpBtnSize / 2 - 16 - counterW / 2; // 1752 - 16 - 144 = 1592
-    const counterBg = this.add.graphics();
-    // 100% Solid Base
-    counterBg.fillStyle(0x0E1026, 1.0);
-    counterBg.fillRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
-    counterBg.fillStyle(0x181A3C, 0.95);
-    counterBg.fillRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
-    counterBg.lineStyle(2, 0x485278, 0.75);
-    counterBg.strokeRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
-    counterBg.setDepth(5);
 
-    this.progressText = this.add.text(counterX, headerY, `Dijinakkan 0 / ${this.totalThoughts}`, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '24px',
-      fontStyle: '800',
-      color: JEDA.CFG.COLOR.hex.calm
-    }).setOrigin(0.5).setResolution(2).setDepth(6);
+    this.progressBox = JEDA.UI.textBox(this, counterX, headerY, {
+      text: `Dijinakkan 0 / ${this.totalThoughts}`,
+      fontSize: 24,
+      fontWeight: '800',
+      padX: 24,
+      padY: 10,
+      minW: counterW,
+      minH: btnH,
+      variant: 'chip'
+    }).setDepth(6);
+    this.progressText = this.progressBox.textObj;
   }
 
   /**
@@ -816,30 +812,17 @@ class Level2Scene extends Phaser.Scene {
       hintText = 'Perhatikan apakah pikiran ini tentang kecemasan, rencana, evaluasi diri, atau kenangan.';
     }
 
-    const container = this.add.container(sx, sy).setDepth(3000);
-    const bubbleBg = this.add.graphics();
-    container.add(bubbleBg);
-
-    const txt = this.add.text(0, 0, `💡 ${hintText}`, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '24px',
-      fontStyle: '700',
-      color: '#FFFFFF',
-      align: 'center',
-      wordWrap: { width: 560 }
-    }).setOrigin(0.5).setResolution(2);
-    container.add(txt);
-
-    const bw = Math.min(680, Math.max(360, Math.ceil((txt.width + 56) / 8) * 8));
-    const bh = Math.ceil((txt.height + 32) / 8) * 8;
-
-    // 100% Solid Base
-    bubbleBg.fillStyle(0x0E1026, 1.0);
-    bubbleBg.fillRoundedRect(-bw / 2, -bh / 2, bw, bh, 18);
-    bubbleBg.fillStyle(0x141838, 0.96);
-    bubbleBg.fillRoundedRect(-bw / 2, -bh / 2, bw, bh, 18);
-    bubbleBg.lineStyle(2, 0xFFA07A, 0.9);
-    bubbleBg.strokeRoundedRect(-bw / 2, -bh / 2, bw, bh, 18);
+    const container = JEDA.UI.textBox(this, sx, sy, {
+      text: hintText,
+      icon: '💡',
+      fontSize: 24,
+      fontWeight: '700',
+      padX: 24,
+      padY: 16,
+      maxW: 680,
+      variant: 'notif',
+      strokeColor: 0xFFA07A
+    }).setDepth(3000);
 
     container.setAlpha(0);
     this.tweens.add({
@@ -850,12 +833,14 @@ class Level2Scene extends Phaser.Scene {
       ease: 'Sine.easeOut',
       onComplete: () => {
         this.time.delayedCall(3200, () => {
-          this.tweens.add({
-            targets: container,
-            alpha: 0,
-            duration: 350,
-            onComplete: () => container.destroy()
-          });
+          if (container && container.scene) {
+            this.tweens.add({
+              targets: container,
+              alpha: 0,
+              duration: 350,
+              onComplete: () => container.destroy()
+            });
+          }
         });
       }
     });
@@ -1015,25 +1000,23 @@ class Level2Scene extends Phaser.Scene {
     container.add(bodyG);
 
     // 2. Plat Teks Pikiran (Poin 7: 400x104 px tepat di bawah badan, jarak 8 px)
-    const labelW = 400;
-    const labelH = 104;
     const labelCenterY = 108; // 48 + 8 + 52 = 108
-    const labelBg = this.add.graphics();
-    labelBg.fillStyle(0x121434, 0.95);
-    labelBg.fillRoundedRect(-labelW / 2, labelCenterY - labelH / 2, labelW, labelH, 20);
-    labelBg.lineStyle(2, 0x7FE0C3, 0.75);
-    labelBg.strokeRoundedRect(-labelW / 2, labelCenterY - labelH / 2, labelW, labelH, 20);
+    const labelBox = JEDA.UI.textBox(this, 0, labelCenterY, {
+      text: thought.text,
+      fontSize: 28,
+      fontWeight: '700',
+      minW: 400,
+      maxW: 400,
+      minH: 104,
+      padX: 20,
+      padY: 12,
+      variant: 'chip',
+      strokeColor: 0x7FE0C3,
+      bgColor: 0x121434,
+      radius: 20
+    });
 
-    const labelTxt = this.add.text(0, labelCenterY, thought.text, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '28px',
-      fontStyle: '700',
-      color: '#FFFFFF',
-      align: 'center',
-      wordWrap: { width: 360 }
-    }).setOrigin(0.5).setResolution(2);
-
-    container.add([labelBg, labelTxt]);
+    container.add(labelBox);
 
     // Animasi kemunculan membesar 0,5 detik (Poin 6)
     container.setScale(0.01);
