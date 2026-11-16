@@ -242,12 +242,15 @@ class Level2Scene extends Phaser.Scene {
       this.showHelpModal();
     }, { fontSize: 27, radius: 24 });
 
-    const counterW = 240; // Kelipatan 8 (30 * 8)
-    const counterX = helpBtnX - helpBtnSize / 2 - 16 - counterW / 2; // 1752 - 16 - 120 = 1616
+    const counterW = 288; // Kelipatan 8 (36 * 8, ruang lega dari lengkungan)
+    const counterX = helpBtnX - helpBtnSize / 2 - 16 - counterW / 2; // 1752 - 16 - 144 = 1592
     const counterBg = this.add.graphics();
+    // 100% Solid Base
+    counterBg.fillStyle(0x0E1026, 1.0);
+    counterBg.fillRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
     counterBg.fillStyle(0x181A3C, 0.95);
     counterBg.fillRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
-    counterBg.lineStyle(2, 0x485278, 0.65);
+    counterBg.lineStyle(2, 0x485278, 0.75);
     counterBg.strokeRoundedRect(counterX - counterW / 2, headerY - btnH / 2, counterW, btnH, 24);
     counterBg.setDepth(5);
 
@@ -827,10 +830,13 @@ class Level2Scene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2);
     container.add(txt);
 
-    const bw = Math.min(620, Math.max(340, txt.width + 36));
-    const bh = txt.height + 28;
+    const bw = Math.min(680, Math.max(360, Math.ceil((txt.width + 56) / 8) * 8));
+    const bh = Math.ceil((txt.height + 32) / 8) * 8;
 
-    bubbleBg.fillStyle(0x141838, 0.95);
+    // 100% Solid Base
+    bubbleBg.fillStyle(0x0E1026, 1.0);
+    bubbleBg.fillRoundedRect(-bw / 2, -bh / 2, bw, bh, 18);
+    bubbleBg.fillStyle(0x141838, 0.96);
     bubbleBg.fillRoundedRect(-bw / 2, -bh / 2, bw, bh, 18);
     bubbleBg.lineStyle(2, 0xFFA07A, 0.9);
     bubbleBg.strokeRoundedRect(-bw / 2, -bh / 2, bw, bh, 18);

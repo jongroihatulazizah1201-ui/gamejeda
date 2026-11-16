@@ -230,25 +230,43 @@ JEDA.UI = {
 
     // Fungsi otomatis pas-kan teks (fitText & wrap) agar tidak pernah keluar dari tombol (Prinsip UI/UX PRD 14.3)
     const fitButtonText = () => {
-      const maxTextW = Math.max(60, w - 48); // Padding minimal 24 px di kiri & kanan
+      // Padding horizontal aman memperhitungkan lengkungan sudut tombol (radius)
+      const minPadX = Math.max(36, Math.ceil((radius + 16) / 8) * 8);
+      const maxTextW = Math.max(60, w - minPadX * 2);
       let currentSize = fontSize;
       textObj.setFontSize(currentSize + 'px');
       textObj.setWordWrapWidth(0);
 
-      // 1. Turunkan ukuran font bertahap jika teks melebihi lebar tombol
-      while (textObj.width > maxTextW && currentSize > 18) {
-        currentSize -= 1;
-        textObj.setFontSize(currentSize + 'px');
-      }
+      const str = textObj.text || '';
+      const strLen = str.length;
 
-      // 2. Jika masih melebihi batas (teks panjang/kalimat), aktifkan wordWrap dan sesuaikan tinggi
-      if (textObj.width > maxTextW) {
+      // Jika tombol memiliki tinggi cukup untuk multiline (h >= 72) dan teks adalah kalimat panjang:
+      if (h >= 72 && strLen > 36) {
         textObj.setWordWrapWidth(maxTextW, true);
         textObj.setAlign('center');
         textObj.setLineSpacing(4);
-        while (textObj.height > (h - 16) && currentSize > 14) {
+        currentSize = Math.min(currentSize, 22);
+        textObj.setFontSize(currentSize + 'px');
+        while (textObj.height > (h - 20) && currentSize > 16) {
           currentSize -= 1;
           textObj.setFontSize(currentSize + 'px');
+        }
+      } else {
+        // 1. Turunkan ukuran font bertahap jika teks melebihi lebar aman tombol
+        while (textObj.width > maxTextW && currentSize > 18) {
+          currentSize -= 1;
+          textObj.setFontSize(currentSize + 'px');
+        }
+
+        // 2. Jika masih melebihi batas (teks panjang/kalimat), aktifkan wordWrap dan sesuaikan tinggi
+        if (textObj.width > maxTextW) {
+          textObj.setWordWrapWidth(maxTextW, true);
+          textObj.setAlign('center');
+          textObj.setLineSpacing(4);
+          while (textObj.height > (h - 16) && currentSize > 14) {
+            currentSize -= 1;
+            textObj.setFontSize(currentSize + 'px');
+          }
         }
       }
     };
@@ -452,18 +470,23 @@ JEDA.UI = {
       fontSize: JEDA.CFG.FONT.body + 'px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.text,
-      align: 'center'
+      align: 'center',
+      wordWrap: { width: Math.min(1080, W - 240) },
+      lineSpacing: 6
     }).setOrigin(0.5).setResolution(2);
 
-    const padX = 50;
+    const padX = 48;
     const padY = 24;
-    const w = textObj.width + padX * 2;
-    const h = textObj.height + padY * 2;
+    const w = Math.min(1120, Math.max(360, Math.ceil((textObj.width + padX * 2) / 8) * 8));
+    const h = Math.ceil((textObj.height + padY * 2) / 8) * 8;
 
     const bg = scene.add.graphics();
-    bg.fillStyle(0x16163A, 0.92);
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
     bg.fillRoundedRect(-w / 2, -h / 2, w, h, 20);
-    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.4);
+    bg.fillStyle(0x16163A, 0.96);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 20);
+    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.5);
     bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 20);
 
     container.add([bg, textObj]);
@@ -978,7 +1001,8 @@ JEDA.UI = {
       fontSize: JEDA.CFG.FONT.subtitle + 'px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.warn,
-      align: 'center'
+      align: 'center',
+      wordWrap: { width: 720 }
     }).setOrigin(0.5).setResolution(2);
 
     const sub = scene.add.text(0, 35, 'Input dijeda sejenak untuk membantumu kembali fokus.', {
@@ -986,7 +1010,9 @@ JEDA.UI = {
       fontSize: JEDA.CFG.FONT.body + 'px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted,
-      align: 'center'
+      align: 'center',
+      wordWrap: { width: 720 },
+      lineSpacing: 4
     }).setOrigin(0.5).setResolution(2);
 
     container.add([bg, text, sub]);
@@ -1016,8 +1042,8 @@ JEDA.UI = {
     const backdrop = scene.add.rectangle(0, 0, W, H, 0x050510, 0.75).setInteractive();
     modal.add(backdrop);
 
-    const cardW = 760;
-    const cardH = 380;
+    const cardW = 840; // Skala 8 px (105 * 8)
+    const cardH = 400; // Skala 8 px (50 * 8)
 
     const bg = scene.add.graphics();
     // 100% Solid Base
@@ -1041,6 +1067,7 @@ JEDA.UI = {
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.text,
       align: 'center',
+      wordWrap: { width: 720 },
       lineSpacing: 8
     }).setOrigin(0.5).setResolution(2);
 
@@ -1048,12 +1075,12 @@ JEDA.UI = {
     const btnH = 88;
     const btnGap = 32;
     // Prinsip 6: Aksi utama di kanan, aksi sekunder di kiri, sama lebar
-    const declineBtn = this.createButton(scene, -(btnW / 2 + btnGap / 2), 100, btnW, btnH, 'Tetap Mode Normal', () => {
+    const declineBtn = this.createButton(scene, -(btnW / 2 + btnGap / 2), 108, btnW, btnH, 'Tetap Mode Normal', () => {
       modal.destroy();
       if (typeof onDecline === 'function') onDecline();
     }, { radius: 44, fontSize: 33 });
 
-    const acceptBtn = this.createButton(scene, (btnW / 2 + btnGap / 2), 100, btnW, btnH, 'Gunakan Mode Ramah', () => {
+    const acceptBtn = this.createButton(scene, (btnW / 2 + btnGap / 2), 108, btnW, btnH, 'Gunakan Mode Ramah', () => {
       modal.destroy();
       if (typeof onAccept === 'function') onAccept();
     }, { primary: true, radius: 44, fontSize: 33 });
@@ -1082,10 +1109,10 @@ JEDA.UI = {
       lineSpacing: 6
     }).setOrigin(0.5).setResolution(2);
 
-    const padX = 48;
-    const padY = 24;
-    const w = Math.max(360, Math.min(maxW, textObj.width + padX * 2));
-    const h = textObj.height + padY * 2;
+    const padX = 64;
+    const padY = 28;
+    const w = Math.max(384, Math.min(maxW, Math.ceil((textObj.width + padX * 2) / 8) * 8));
+    const h = Math.ceil((textObj.height + padY * 2) / 8) * 8;
     const radius = 24;
 
     // Pastikan tidak menyentuh header (y minimal 140, PRD Poin 2)
@@ -1096,6 +1123,10 @@ JEDA.UI = {
     container.setPosition(x, actualY);
 
     const bg = scene.add.graphics();
+    // 0. 100% Solid Base (menjamin 0% tembus pandang)
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
+
     // 1. Latar belakang kaca gelap solid (0x121538 alpha 0.96)
     bg.fillStyle(0x121538, 0.96);
     bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
@@ -1144,6 +1175,9 @@ JEDA.UI = {
 
     if (isUnlocked) {
       // 1. Lencana Terbuka: Latar solid beraksen toska menyala
+      // 100% Solid Base
+      bg.fillStyle(0x0E1026, 1.0);
+      bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
       bg.fillStyle(0x181A3C, 0.96);
       bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
 
@@ -1158,17 +1192,17 @@ JEDA.UI = {
         fontSize: '28px'
       }).setOrigin(0.5);
 
-      const name = scene.add.text(-w / 2 + 76, -14, badge.name, {
+      const name = scene.add.text(-w / 2 + 76, -15, badge.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '27px',
+        fontSize: '22px',
         fontStyle: '800',
         color: '#FFFFFF',
-        wordWrap: { width: w - 90 }
+        wordWrap: { width: w - 96 }
       }).setOrigin(0, 0.5).setResolution(2);
 
-      const status = scene.add.text(-w / 2 + 76, 18, 'Terbuka ✓', {
+      const status = scene.add.text(-w / 2 + 76, 17, 'Terbuka ✓', {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '27px',
+        fontSize: '18px',
         fontStyle: '700',
         color: JEDA.CFG.COLOR.hex.calm
       }).setOrigin(0, 0.5).setResolution(2);
@@ -1211,18 +1245,18 @@ JEDA.UI = {
         fontSize: '28px'
       }).setOrigin(0.5).setAlpha(0.24);
 
-      const name = scene.add.text(-w / 2 + 76, -14, badge.name, {
+      const name = scene.add.text(-w / 2 + 76, -15, badge.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '27px',
+        fontSize: '22px',
         fontStyle: '700',
         color: '#64748B',
-        wordWrap: { width: w - 90 }
+        wordWrap: { width: w - 96 }
       }).setOrigin(0, 0.5).setResolution(2);
 
       // Pesan status netral dan ramah (tanpa penghakiman / pesan negatif)
-      const status = scene.add.text(-w / 2 + 76, 18, 'Belum Terbuka', {
+      const status = scene.add.text(-w / 2 + 76, 17, 'Belum Terbuka', {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '27px',
+        fontSize: '18px',
         fontStyle: '600',
         color: '#475569'
       }).setOrigin(0, 0.5).setResolution(2);

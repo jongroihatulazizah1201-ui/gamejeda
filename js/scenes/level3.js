@@ -123,10 +123,10 @@ class Level3Scene extends Phaser.Scene {
     const gap = 16; // Skala 8 px
     const rightAnchor = helpLeftEdge - gap; // 1736
 
-    // Ukur lebar teks, berikan padding horizontal minimal 32 px kiri & kanan (total 64 px)
+    // Ukur lebar teks, berikan padding horizontal minimal 48 px kiri & kanan (total 96 px)
     // Bulatkan lebar ke kelipatan 8 terdekat (PRD 14.3 Prinsip 3)
     const textW = this.stepCounterText.width;
-    const scW = Math.max(280, Math.ceil((textW + 64) / 8) * 8);
+    const scW = Math.max(328, Math.ceil((textW + 96) / 8) * 8);
     const scH = 48; // Kelipatan 8
     const radius = 24; // Kelipatan 8
 
@@ -134,6 +134,9 @@ class Level3Scene extends Phaser.Scene {
     this.scContainer.setPosition(scX, headerY);
 
     this.scBg.clear();
+    // 100% Solid Base
+    this.scBg.fillStyle(0x0E1026, 1.0);
+    this.scBg.fillRoundedRect(-scW / 2, -scH / 2, scW, scH, radius);
     this.scBg.fillStyle(0x181A3C, 0.95);
     this.scBg.fillRoundedRect(-scW / 2, -scH / 2, scW, scH, radius);
     this.scBg.lineStyle(2, 0x485278, 0.75);
@@ -299,7 +302,10 @@ class Level3Scene extends Phaser.Scene {
     const cardY = 380;
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x16163A, 0.95);
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(cx - cardW / 2, cardY - cardH / 2, cardW, cardH, 32);
+    bg.fillStyle(0x16163A, 0.96);
     bg.fillRoundedRect(cx - cardW / 2, cardY - cardH / 2, cardW, cardH, 32);
     bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
     bg.strokeRoundedRect(cx - cardW / 2, cardY - cardH / 2, cardW, cardH, 32);
@@ -383,7 +389,10 @@ class Level3Scene extends Phaser.Scene {
     const cardH = 520;
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x1a1a36, 0.95);
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    bg.fillStyle(0x1a1a36, 0.96);
     bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     bg.lineStyle(2, JEDA.CFG.COLOR.off, 0.45);
     bg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
@@ -500,9 +509,12 @@ class Level3Scene extends Phaser.Scene {
     const cardH = 544; // Skala 8 px (68 * 8)
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x16163A, 0.95);
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
     bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
-    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.3);
+    bg.fillStyle(0x16163A, 0.96);
+    bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
     bg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     this.scenarioContainer.add(bg);
 
@@ -575,9 +587,12 @@ class Level3Scene extends Phaser.Scene {
     const cardH = 544; // Skala 8 px
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x16163A, 0.95);
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
     bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
-    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.3);
+    bg.fillStyle(0x16163A, 0.96);
+    bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
     bg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     this.scenarioContainer.add(bg);
 
@@ -725,9 +740,12 @@ class Level3Scene extends Phaser.Scene {
     const scenario = this.stopData.scenario;
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x16163A, 0.95);
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
     bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
-    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.3);
+    bg.fillStyle(0x16163A, 0.96);
+    bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
     bg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     this.scenarioContainer.add(bg);
 
@@ -802,9 +820,12 @@ class Level3Scene extends Phaser.Scene {
     const scenario = this.stopData.scenario;
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x16163A, 0.95);
+    // 100% Solid Base
+    bg.fillStyle(0x0E1026, 1.0);
     bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
-    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.3);
+    bg.fillStyle(0x16163A, 0.96);
+    bg.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
+    bg.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
     bg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
     this.scenarioContainer.add(bg);
 
@@ -847,6 +868,8 @@ class Level3Scene extends Phaser.Scene {
 
         const highlightColor = resp.score === 100 ? JEDA.CFG.COLOR.calm : (resp.score === 60 ? 0x6E85B7 : 0x884A5D);
         btn.bg.clear();
+        btn.bg.fillStyle(0x0E1026, 1.0);
+        btn.bg.fillRoundedRect(-btnW / 2, -itemH / 2, btnW, itemH, 24);
         btn.bg.fillStyle(highlightColor, 0.35);
         btn.bg.fillRoundedRect(-btnW / 2, -itemH / 2, btnW, itemH, 24);
         btn.bg.lineStyle(2, resp.score === 100 ? JEDA.CFG.COLOR.calm : (resp.score === 60 ? 0x93B5C6 : 0xFF8FA3), 0.9);

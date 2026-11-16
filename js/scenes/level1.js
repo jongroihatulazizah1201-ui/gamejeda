@@ -84,13 +84,13 @@ class Level1Scene extends Phaser.Scene {
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
 
-    // Hitung lebar kapsul dengan batas Panel M (960 px) dan padding aman 48 px per sisi
-    const minPillW = (Layout && Layout.panelSize && Layout.panelSize.M) ? Layout.panelSize.M : 960;
-    const reqTextW = Math.max(this.instructionText.width, this.feedbackText.width) + 96;
+    // Hitung lebar kapsul dengan batas minimal 1024 px dan padding aman 64 px per sisi
+    const minPillW = 1024; // Skala 8 px (128 * 8)
+    const reqTextW = Math.max(this.instructionText.width, this.feedbackText.width) + 128;
     const pillW = Math.max(minPillW, Math.ceil(reqTextW / 8) * 8);
 
-    // Jaminan auto-fit teks instruksi agar tidak pernah melewati batas kapsul
-    const maxTextW = pillW - 96;
+    // Jaminan auto-fit teks instruksi agar tidak pernah mendekati lengkungan kapsul
+    const maxTextW = pillW - 128;
     if (this.instructionText.width > maxTextW) {
       let curSize = 27;
       while (this.instructionText.width > maxTextW && curSize > 18) {
@@ -611,12 +611,13 @@ class Level1Scene extends Phaser.Scene {
     ];
 
     this.scheduledDistractTimers = [];
-    // Notifikasi normal pada siklus 1-4 (muncul di detik 6, 16, 26)
+    // Notifikasi normal pada siklus 1-4 (muncul di detik 6, 16, 26 dengan Y bergantian)
     const times = [6000, 16000, 26000];
+    const normalYs = [180, 264, 180];
     times.forEach((ms, idx) => {
       const timer = this.time.delayedCall(ms, () => {
         if (!this.isFinished && !this.isStormActive) {
-          this.spawnDistractionCard(Layout.W, distractMessages[idx % distractMessages.length], 190, 5000);
+          this.spawnDistractionCard(Layout.W, distractMessages[idx % distractMessages.length], normalYs[idx], 5000);
         }
       });
       this.scheduledDistractTimers.push(timer);
@@ -678,8 +679,9 @@ class Level1Scene extends Phaser.Scene {
         if (!this.isFinished && this.isStormActive) {
           const msg = stormMessages[stormMsgIdx % stormMessages.length];
           stormMsgIdx++;
-          // Variasi posisi Y berjenjang (160, 240, 320) di atas batas orb (y = 500)
-          const stormY = 160 + ((stormMsgIdx % 3) * 80);
+          // Variasi posisi Y berjenjang dengan jarak bersih 24 px (tinggi 72 px, step 96 px)
+          const stormStep = 96; // Skala 8 px (12 * 8)
+          const stormY = 156 + ((stormMsgIdx % 3) * stormStep);
           this.spawnDistractionCard(Layout.W, msg, stormY, 3000);
         }
       },
@@ -744,29 +746,61 @@ class Level1Scene extends Phaser.Scene {
 
   /**
    * Memunculkan satu kartu notifikasi palsu dari tepi kanan (BR-03).
+   * Lebar dinamis terukur presisi dari teks, tinggi 72 px, padding 8px grid.
    */
   spawnDistractionCard(W, message, yPos = 190, lifeMs = 5000) {
     const Layout = JEDA.Layout;
-    const cardW = 380;
-    const cardH = 80;
-    const startX = W + 220;
+
+    // 1. Buat teks terlebih dahulu untuk mengukur lebar persis
+    const fontSize = 22;
+    const text = this.add.text(0, 0, message, {
+      fontFamily: JEDA.CFG.FONT.family,
+      fontSize: `${fontSize}px`,
+      fontStyle: '600',
+      color: '#FFFFFF'
+    }).setOrigin(0, 0.5).setResolution(2);
+
+    // Padding & dimensi (Prinsip 3: Skala 8 px)
+    const iconW = 28;
+    const padL = 24;
+    const gap = 12;
+    const padR = 28;
+    const minCardW = 440;
+    const neededW = padL + iconW + gap + text.width + padR;
+    const cardW = Math.max(minCardW, Math.ceil(neededW / 8) * 8);
+    const cardH = 72; // Skala 8 px (9 * 8)
+    const radius = 20;
+
+    // Pastikan teks tidak meluap jika ada pesan yang sangat panjang
+    const maxTextW = cardW - (padL + iconW + gap + padR);
+    if (text.width > maxTextW) {
+      let curSize = fontSize;
+      while (text.width > maxTextW && curSize > 16) {
+        curSize -= 1;
+        text.setFontSize(curSize);
+      }
+    }
+
+    // Posisikan elemen di dalam kontainer
+    const iconX = -cardW / 2 + padL;
+    const textX = iconX + iconW + gap;
+    text.setPosition(textX, 0);
+
+    const icon = this.add.text(iconX, 0, '🔔', { fontSize: '24px' }).setOrigin(0, 0.5);
+
+    const startX = W + cardW;
     const targetX = Layout.W - Layout.M - cardW / 2;
     const targetY = yPos;
 
     const container = this.add.container(startX, targetY).setDepth(500);
     const bg = this.add.graphics();
-    bg.fillStyle(0x1a1a3a, 0.94);
-    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
-    bg.lineStyle(2, JEDA.CFG.COLOR.warn, 0.6);
-    bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 20);
-
-    const icon = this.add.text(-cardW / 2 + 25, 0, '🔔', { fontSize: '28px' }).setOrigin(0, 0.5);
-    const text = this.add.text(-cardW / 2 + 65, 0, message, {
-      fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
-      fontStyle: '600',
-      color: JEDA.CFG.COLOR.hex.text
-    }).setOrigin(0, 0.5).setResolution(2);
+    // 100% Solid Base (menjamin 0% bleed-through)
+    bg.fillStyle(0x0E1026, 1.0);
+    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, radius);
+    bg.fillStyle(0x181C3D, 0.96);
+    bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, radius);
+    bg.lineStyle(2, JEDA.CFG.COLOR.warn, 0.75);
+    bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, radius);
 
     container.add([bg, icon, text]);
     container.setSize(cardW, cardH);
