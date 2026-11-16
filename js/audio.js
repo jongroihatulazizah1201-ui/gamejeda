@@ -1,14 +1,13 @@
 /**
- * JEDA - Procedural Mindfulness Audio Engine (js/audio.js)
- * Sintesis Audio & Musik Relaksasi Prosedural (Web Audio API Murni)
+ * JEDA - Peaceful Mindfulness Audio Engine (js/audio.js)
+ * Musik Relaksasi Menenangkan: Kalimba, Kotak Musik Zen (Music Box), & Wind Chime
  * 
- * Fitur:
- * 1. Zen Ambient Soundscape: Frekuensi penyembuhan 432 Hz dengan binaural detuning 6 Hz (Theta Wave).
- * 2. Tibetan Singing Bowl / Lonceng Meditasi: Multi-partisi harmonik dengan resonansi alami.
- * 3. Panduan Napas Harmonik: Nada mengembang perlahan saat menarik napas, dan mereda saat menghembus.
- * 4. SFX Zen: Ketukan kayu lembut (woodblock), lonceng kesadaran S.T.O.P., dan akord kemenangan pentatonik.
+ * Filosofi Suara:
+ * - Menghilangkan dengung berat (sub-bass) dan frekuensi disonan yang menegangkan.
+ * - Menggunakan Tangga Nada Pentatonik Mayor (F Major Pentatonic) yang hangat, ramah, dan menentramkan jiwa.
+ * - Karakter instrumen: Kalimba kayu manis, celesta lembut, dan petikan harpa penenang napas.
  * 
- * 100% Prosedural Tanpa File Eksternal (0 KB download), bebas latensi, offline-ready.
+ * 100% Prosedural Web Audio API - Bebas hak cipta, tanpa download (0 KB), ringan & offline-ready.
  */
 
 window.JEDA = window.JEDA || {};
@@ -19,13 +18,28 @@ JEDA.Audio = (function () {
   let bgmGain = null;
   let sfxGain = null;
 
-  // Nodes untuk Ambient BGM Drone
-  let bgmOscs = [];
-  let bgmFilter = null;
-  let bgmLfo = null;
+  // State BGM Melodik
   let isBgmRunning = false;
+  let bgmTimer = null;
+  let padOscs = [];
+  let padFilter = null;
 
-  // Status suara aktif (default mengikuti state tersimpan)
+  // Tangga Nada F Major Pentatonic / Lydian (Selalu harmonis, hangat, ceria & menenangkan)
+  // Tidak ada nada disonan atau minor yang suram
+  const PEACE_NOTES = [
+    { name: 'F3', freq: 174.61 },
+    { name: 'A3', freq: 220.00 },
+    { name: 'C4', freq: 261.63 },
+    { name: 'D4', freq: 293.66 },
+    { name: 'E4', freq: 329.63 },
+    { name: 'F4', freq: 349.23 },
+    { name: 'G4', freq: 392.00 },
+    { name: 'A4', freq: 440.00 },
+    { name: 'C5', freq: 523.25 },
+    { name: 'D5', freq: 587.33 },
+    { name: 'E5', freq: 659.25 }
+  ];
+
   function isEnabled() {
     return Boolean(
       window.JEDA &&
@@ -44,7 +58,7 @@ JEDA.Audio = (function () {
   }
 
   /**
-   * Menginisialisasi AudioContext secara aman setelah interaksi pengguna.
+   * Inisialisasi AudioContext dengan aman
    */
   function getContext() {
     if (!ctx) {
@@ -52,16 +66,19 @@ JEDA.Audio = (function () {
       if (!AudioCtx) return null;
       ctx = new AudioCtx();
 
+      // Master bus
       masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(1.0, ctx.currentTime);
+      masterGain.gain.setValueAtTime(0.85, ctx.currentTime);
       masterGain.connect(ctx.destination);
 
+      // Jalur BGM (Musik Latar Kalimba / Pad)
       bgmGain = ctx.createGain();
-      bgmGain.gain.setValueAtTime(0.35, ctx.currentTime);
+      bgmGain.gain.setValueAtTime(0.40, ctx.currentTime);
       bgmGain.connect(masterGain);
 
+      // Jalur SFX (Efek Suara Interaktif)
       sfxGain = ctx.createGain();
-      sfxGain.gain.setValueAtTime(0.45, ctx.currentTime);
+      sfxGain.gain.setValueAtTime(0.50, ctx.currentTime);
       sfxGain.connect(masterGain);
     }
 
@@ -73,7 +90,7 @@ JEDA.Audio = (function () {
   }
 
   /**
-   * Menyalakan / mematikan suara secara global.
+   * Toggle On/Off Suara
    */
   function toggle(forceState) {
     const target = (typeof forceState === 'boolean') ? forceState : !isEnabled();
@@ -82,7 +99,7 @@ JEDA.Audio = (function () {
     if (target) {
       getContext();
       startBGM();
-      playChime('bowl');
+      playKalimbaNote(440.0, 0.25); // Nada sambutan A4 yang manis
     } else {
       stopBGM();
     }
@@ -91,8 +108,55 @@ JEDA.Audio = (function () {
   }
 
   /**
-   * Memulai Musik Meditatif Ambient (Binaural Beats 432 Hz + Theta Wave 6 Hz).
-   * Menghasilkan lapisan suara menenangkan yang sangat hangat dan halus.
+   * Sintesis Nada Kalimba / Kotak Musik Kayu (Warm Thumb Piano)
+   * Menggunakan kombinasi gelombang sine murni dengan overton manis berdecay lembut.
+   */
+  function playKalimbaNote(freq, volume = 0.22, duration = 1.8) {
+    const ac = getContext();
+    if (!ac) return;
+
+    const now = ac.currentTime;
+
+    // Filter kayu hangat (Warm low-pass filter)
+    const filter = ac.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(freq * 3.5, 2600), now);
+    filter.connect(bgmGain);
+
+    // 1. Nada Fundamental (Body Kayu)
+    const osc1 = ac.createOscillator();
+    const g1 = ac.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(freq, now);
+
+    g1.gain.setValueAtTime(0.0001, now);
+    g1.gain.exponentialRampToValueAtTime(volume, now + 0.008); // Serangan petikan lembut
+    g1.gain.exponentialRampToValueAtTime(0.00001, now + duration);
+
+    osc1.connect(g1);
+    g1.connect(filter);
+    osc1.start(now);
+    osc1.stop(now + duration + 0.05);
+
+    // 2. Harmonik Lonceng Lembut (Tine Chime)
+    const osc2 = ac.createOscillator();
+    const g2 = ac.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq * 2.0, now); // Satu oktaf di atasnya
+
+    g2.gain.setValueAtTime(0.0001, now);
+    g2.gain.exponentialRampToValueAtTime(volume * 0.35, now + 0.005);
+    g2.gain.exponentialRampToValueAtTime(0.00001, now + duration * 0.6);
+
+    osc2.connect(g2);
+    g2.connect(filter);
+    osc2.start(now);
+    osc2.stop(now + duration * 0.65);
+  }
+
+  /**
+   * Memulai Musik Latar Generatif Damai (Peaceful Kalimba & Warm Sunbeam Pad)
+   * Memainkan pola petikan kalimba acak yang santai di tangga nada mayor setiap 2.5–4.5 detik.
    */
   function startBGM() {
     if (!isEnabled()) return;
@@ -102,193 +166,137 @@ JEDA.Audio = (function () {
     if (isBgmRunning) return;
     isBgmRunning = true;
 
-    // Bersihkan osilator lama jika ada
     stopBGM(false);
     isBgmRunning = true;
 
     const now = ac.currentTime;
 
-    // Filter hangat (Warm Lowpass)
-    bgmFilter = ac.createBiquadFilter();
-    bgmFilter.type = 'lowpass';
-    bgmFilter.frequency.setValueAtTime(320, now);
-    bgmFilter.Q.setValueAtTime(1.2, now);
-    bgmFilter.connect(bgmGain);
+    // 1. Warm Sunbeam Pad (Akord Fmaj9 yang sangat hangat, damai, dan terang)
+    // Nada: F3 (174.6 Hz), C4 (261.6 Hz), E4 (329.6 Hz), A4 (440 Hz)
+    const padTones = [174.61, 261.63, 329.63, 440.00];
 
-    // LFO lambat (0.08 Hz) untuk membuat pad bernapas secara alami
-    try {
-      bgmLfo = ac.createOscillator();
-      const lfoGain = ac.createGain();
-      bgmLfo.frequency.setValueAtTime(0.08, now); // 12.5 detik per siklus napas kosmik
-      lfoGain.gain.setValueAtTime(60, now);
-      bgmLfo.connect(lfoGain);
-      lfoGain.connect(bgmFilter.frequency);
-      bgmLfo.start();
-    } catch (e) {}
+    padFilter = ac.createBiquadFilter();
+    padFilter.type = 'lowpass';
+    padFilter.frequency.setValueAtTime(450, now); // Sangat lembut, tanpa dengung tajam
+    padFilter.connect(bgmGain);
 
-    // Harmoni 432 Hz:
-    // 108 Hz (Sub-bass grounding)
-    // 216 Hz (Oktaf tengah hangat)
-    // 222 Hz (Binaural detune +6 Hz -> Theta wave relaksasi otak)
-    // 432 Hz (Penyembuhan Verdi tuning lembut)
-    const tones = [
-      { freq: 108, gain: 0.22, type: 'sine' },
-      { freq: 216, gain: 0.18, type: 'sine' },
-      { freq: 222, gain: 0.15, type: 'sine' }, // +6 Hz Theta
-      { freq: 432, gain: 0.08, type: 'triangle' }
-    ];
-
-    bgmOscs = tones.map(t => {
+    padOscs = padTones.map((f, i) => {
       const osc = ac.createOscillator();
       const g = ac.createGain();
-      osc.type = t.type;
-      osc.frequency.setValueAtTime(t.freq, now);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, now);
 
       g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(t.gain, now + 3.0); // Fade in lembut 3 detik
+      // Volume pad sangat pelan seperti selimut suara di latar belakang
+      g.gain.exponentialRampToValueAtTime(0.045, now + 3.0);
 
       osc.connect(g);
-      g.connect(bgmFilter);
-      osc.start();
+      g.connect(padFilter);
+      osc.start(now);
       return { osc, gain: g };
     });
+
+    // 2. Loop Petikan Kalimba Santai (Seperti angin meniup genta angin bambu di siang hari)
+    let step = 0;
+    const melodyPattern = [
+      [349.23, 440.00],         // F4, A4
+      [523.25],                 // C5
+      [392.00, 587.33],         // G4, D5
+      [440.00],                 // A4
+      [329.63, 523.25],         // E4, C5
+      [349.23],                 // F4
+      [261.63, 440.00]          // C4, A4
+    ];
+
+    function scheduleNextPluck() {
+      if (!isBgmRunning) return;
+
+      const chord = melodyPattern[step % melodyPattern.length];
+      chord.forEach((noteFreq, idx) => {
+        setTimeout(() => {
+          if (isBgmRunning && isEnabled()) {
+            playKalimbaNote(noteFreq, 0.16, 2.2);
+          }
+        }, idx * 180);
+      });
+
+      step++;
+      // Interval jeda alami antara 2.8 hingga 4.2 detik
+      const nextDelay = 2800 + Math.random() * 1400;
+      bgmTimer = setTimeout(scheduleNextPluck, nextDelay);
+    }
+
+    // Mulai petikan pertama setelah 1 detik
+    bgmTimer = setTimeout(scheduleNextPluck, 1000);
   }
 
   /**
-   * Menghentikan musik ambient dengan fade-out halus.
+   * Menghentikan Musik Latar dengan Fade-out Lembut
    */
   function stopBGM(fade = true) {
-    if (!ctx || bgmOscs.length === 0) {
+    if (bgmTimer) {
+      clearTimeout(bgmTimer);
+      bgmTimer = null;
+    }
+
+    if (!ctx || padOscs.length === 0) {
       isBgmRunning = false;
       return;
     }
 
     const now = ctx.currentTime;
-    const fadeTime = fade ? 1.5 : 0.05;
+    const fadeDuration = fade ? 1.2 : 0.04;
 
-    bgmOscs.forEach(({ osc, gain }) => {
+    padOscs.forEach(({ osc, gain }) => {
       try {
         gain.gain.cancelScheduledValues(now);
         gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
-        gain.gain.exponentialRampToValueAtTime(0.00001, now + fadeTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, now + fadeDuration);
         setTimeout(() => {
           try { osc.stop(); osc.disconnect(); } catch (e) {}
-        }, fadeTime * 1000 + 100);
+        }, fadeDuration * 1000 + 50);
       } catch (e) {}
     });
 
-    if (bgmLfo) {
-      try { bgmLfo.stop(now + fadeTime); } catch (e) {}
-      bgmLfo = null;
-    }
-
-    bgmOscs = [];
+    padOscs = [];
     isBgmRunning = false;
   }
 
   /**
-   * Membunyikan Mangkuk Tibet (Tibetan Singing Bowl) atau Lonceng Meditasi.
+   * PANDUAN TARIK NAPAS LEVEL 1 (Inhale Chime)
+   * Tiga nada lembut menaik perlahan yang memberi kesan mengembang dan melegakan dada (C4 -> E4 -> G4).
    */
-  function playBowl(freq = 216, duration = 3.5) {
+  function playInhale(duration = 4.0) {
     if (!isEnabled()) return;
-    const ac = getContext();
-    if (!ac) return;
-
-    const now = ac.currentTime;
-
-    // Partisi harmonik mangkuk perunggu: Fundamental, ~2.76x, ~5.4x
-    const partials = [
-      { f: freq, g: 0.35, decay: duration },
-      { f: freq * 2.76, g: 0.15, decay: duration * 0.75 },
-      { f: freq * 5.40, g: 0.06, decay: duration * 0.50 }
-    ];
-
-    partials.forEach(p => {
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(p.f, now);
-
-      // Sentuhan getaran alami (vibrato sangat halus)
-      const vibrato = ac.createOscillator();
-      const vibGain = ac.createGain();
-      vibrato.frequency.setValueAtTime(3.2, now);
-      vibGain.gain.setValueAtTime(1.2, now);
-      vibrato.connect(vibGain);
-      vibGain.connect(osc.frequency);
-      vibrato.start();
-
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(p.g, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.00001, now + p.decay);
-
-      osc.connect(gain);
-      gain.connect(sfxGain);
-
-      osc.start(now);
-      osc.stop(now + p.decay);
-      vibrato.stop(now + p.decay);
+    const notes = [261.63, 329.63, 392.00]; // C4, E4, G4
+    notes.forEach((freq, idx) => {
+      setTimeout(() => {
+        if (isEnabled()) {
+          playKalimbaNote(freq, 0.18, 2.0);
+        }
+      }, idx * 1000);
     });
   }
 
   /**
-   * Efek Suara Panduan Tarik Napas (Inhale Harmonic Wave).
-   */
-  function playInhale(duration = 4.0) {
-    if (!isEnabled()) return;
-    const ac = getContext();
-    if (!ac) return;
-
-    const now = ac.currentTime;
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-
-    osc.type = 'sine';
-    // Nada naik perlahan dan tenang dari 144 Hz ke 216 Hz
-    osc.frequency.setValueAtTime(144, now);
-    osc.frequency.exponentialRampToValueAtTime(216, now + duration);
-
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.18, now + duration * 0.7);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-    osc.connect(gain);
-    gain.connect(sfxGain);
-
-    osc.start(now);
-    osc.stop(now + duration + 0.1);
-  }
-
-  /**
-   * Efek Suara Panduan Hembus Napas (Exhale Harmonic Release).
+   * PANDUAN HEMBUS NAPAS LEVEL 1 (Exhale Chime)
+   * Tiga nada lembut menurun perlahan yang memberi rasa pelepasan dan ketenangan (G4 -> E4 -> C4).
    */
   function playExhale(duration = 6.0) {
     if (!isEnabled()) return;
-    const ac = getContext();
-    if (!ac) return;
-
-    const now = ac.currentTime;
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-
-    osc.type = 'sine';
-    // Nada turun perlahan dari 216 Hz ke 108 Hz (melepaskan ketegangan)
-    osc.frequency.setValueAtTime(216, now);
-    osc.frequency.exponentialRampToValueAtTime(108, now + duration);
-
-    gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.00001, now + duration);
-
-    osc.connect(gain);
-    gain.connect(sfxGain);
-
-    osc.start(now);
-    osc.stop(now + duration + 0.1);
+    const notes = [392.00, 329.63, 261.63]; // G4, E4, C4
+    notes.forEach((freq, idx) => {
+      setTimeout(() => {
+        if (isEnabled()) {
+          playKalimbaNote(freq, 0.16, 2.4);
+        }
+      }, idx * 1400);
+    });
   }
 
   /**
-   * SFX Ketukan Kayu Lembut (Zen Woodblock Click) untuk tombol / interaksi.
+   * KLIK TOMBOL: Suara Tetes Air Menenangkan (Water Drop / Soft Bubble Pop)
+   * Sangat memuaskan, organik, dan sama sekali tidak mengejutkan telinga.
    */
   function playTap() {
     if (!isEnabled()) return;
@@ -300,126 +308,85 @@ JEDA.Audio = (function () {
     const gain = ac.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(360, now);
-    osc.frequency.exponentialRampToValueAtTime(180, now + 0.06);
+    // Nada pitch drop khas tetesan air di danau tenang (600 Hz -> 350 Hz)
+    osc.frequency.setValueAtTime(580, now);
+    osc.frequency.exponentialRampToValueAtTime(320, now + 0.07);
 
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.09);
 
     osc.connect(gain);
     gain.connect(sfxGain);
 
     osc.start(now);
-    osc.stop(now + 0.09);
+    osc.stop(now + 0.10);
   }
 
   /**
-   * SFX Tembakan Astronot (Level 2 Beam of Clarity).
+   * LEVEL 2: Tembakan Astronot (Gentle Starlight Chime)
+   * Bintang berkilau lembut dan ceria, bukan laser seram!
    */
   function playShoot() {
     if (!isEnabled()) return;
-    const ac = getContext();
-    if (!ac) return;
-
-    const now = ac.currentTime;
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
-
-    gain.gain.setValueAtTime(0.14, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-
-    osc.connect(gain);
-    gain.connect(sfxGain);
-
-    osc.start(now);
-    osc.stop(now + 0.25);
+    playKalimbaNote(659.25, 0.15, 0.8); // E5 yang ceria
   }
 
   /**
-   * SFX Monster Pikiran Terdefusi (Level 2 Peace Dissolve).
+   * LEVEL 2: Monster Pikiran Terurai Menjadi Awan (Soft Cloud Dissolve)
+   * Dua nada harpa manis yang menandakan pikiran sudah tenang (F5 & A5).
    */
   function playDefuse() {
     if (!isEnabled()) return;
-    const ac = getContext();
-    if (!ac) return;
-
-    const now = ac.currentTime;
-    const freqs = [540, 720, 1080];
-    freqs.forEach((f, i) => {
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(f, now + i * 0.04);
-
-      gain.gain.setValueAtTime(0.0001, now + i * 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.09, now + i * 0.04 + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.7);
-
-      osc.connect(gain);
-      gain.connect(sfxGain);
-
-      osc.start(now + i * 0.04);
-      osc.stop(now + 0.75);
-    });
+    playKalimbaNote(698.46, 0.15, 1.4); // F5
+    setTimeout(() => {
+      if (isEnabled()) playKalimbaNote(880.00, 0.12, 1.8); // A5
+    }, 120);
   }
 
   /**
-   * SFX Lonceng Sadar S.T.O.P. (Level 3 Temple Gong).
+   * LEVEL 3: Jeda S.T.O.P. (Peaceful Wind Chime)
+   * Lonceng angin kristal yang jernih dan menenangkan.
    */
   function playStopBell() {
-    playBowl(162, 4.0); // Nada dalam yang tenang
+    if (!isEnabled()) return;
+    playKalimbaNote(523.25, 0.22, 2.5); // C5 jernih
+    setTimeout(() => {
+      if (isEnabled()) playKalimbaNote(659.25, 0.18, 2.2); // E5
+    }, 150);
   }
 
   /**
-   * SFX Akord Kemenangan Pentatonik saat menyelesaikan level.
+   * KELULUSAN LEVEL (Sweet Joy Triad)
+   * Arpeggio 3 nada mayor yang manis dan mengapresiasi pemain.
    */
   function playSuccess() {
     if (!isEnabled()) return;
-    const ac = getContext();
-    if (!ac) return;
-
-    const now = ac.currentTime;
-    // Akord Pentatonik G Mayor (Tenang & Damai): G4, B4, D5, G5
-    const chord = [392, 493.88, 587.33, 783.99];
-
-    chord.forEach((freq, idx) => {
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-
-      const startTime = now + idx * 0.12;
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, startTime);
-
-      gain.gain.setValueAtTime(0.0001, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.12, startTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.00001, startTime + 2.4);
-
-      osc.connect(gain);
-      gain.connect(sfxGain);
-
-      osc.start(startTime);
-      osc.stop(startTime + 2.5);
+    const notes = [349.23, 440.00, 523.25, 698.46]; // F4, A4, C5, F5
+    notes.forEach((freq, idx) => {
+      setTimeout(() => {
+        if (isEnabled()) {
+          playKalimbaNote(freq, 0.18, 2.0);
+        }
+      }, idx * 160);
     });
   }
 
   /**
-   * Shortcut pemanggil berbagai jenis lonceng / efek.
+   * Mangkuk Meditasi Lembut (Soft Meditation Bell)
    */
+  function playBowl(freq = 440, duration = 2.5) {
+    if (!isEnabled()) return;
+    playKalimbaNote(freq, 0.22, duration);
+  }
+
   function playChime(type = 'bowl') {
     switch (type) {
-      case 'bowl':
-        playBowl(216, 3.5);
-        break;
       case 'inhale':
-        playInhale(4.0);
+        playInhale();
         break;
       case 'exhale':
-        playExhale(6.0);
+        playExhale();
         break;
       case 'tap':
         playTap();
@@ -437,11 +404,11 @@ JEDA.Audio = (function () {
         playSuccess();
         break;
       default:
-        playBowl(216, 2.5);
+        playBowl(440, 2.0);
     }
   }
 
-  // Interaksi pertama di window untuk membuka permission AudioContext
+  // Listener untuk membuka permission AudioContext pada interaksi pertama
   if (typeof window !== 'undefined') {
     const handleFirstInteraction = () => {
       if (isEnabled()) {
