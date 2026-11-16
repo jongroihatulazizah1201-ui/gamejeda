@@ -135,19 +135,28 @@ JEDA.Audio = (function () {
     }
   }
 
+  let breathTimeouts = [];
+
+  function stopBreath() {
+    breathTimeouts.forEach(t => clearTimeout(t));
+    breathTimeouts = [];
+  }
+
   /**
    * PANDUAN TARIK NAPAS LEVEL 1 (Inhale Chime)
    * Tiga nada lembut menaik perlahan yang memberi kesan mengembang dan melegakan dada (C4 -> E4 -> G4).
    */
   function playInhale(duration = 4.0) {
     if (!isEnabled()) return;
+    stopBreath();
     const notes = [261.63, 329.63, 392.00]; // C4, E4, G4
     notes.forEach((freq, idx) => {
-      setTimeout(() => {
+      const tid = setTimeout(() => {
         if (isEnabled()) {
           playKalimbaNote(freq, 0.18, 2.0);
         }
       }, idx * 1000);
+      breathTimeouts.push(tid);
     });
   }
 
@@ -157,13 +166,15 @@ JEDA.Audio = (function () {
    */
   function playExhale(duration = 6.0) {
     if (!isEnabled()) return;
+    stopBreath();
     const notes = [392.00, 329.63, 261.63]; // G4, E4, C4
     notes.forEach((freq, idx) => {
-      setTimeout(() => {
+      const tid = setTimeout(() => {
         if (isEnabled()) {
           playKalimbaNote(freq, 0.16, 2.4);
         }
       }, idx * 1400);
+      breathTimeouts.push(tid);
     });
   }
 
@@ -304,6 +315,7 @@ JEDA.Audio = (function () {
     playBowl,
     playInhale,
     playExhale,
+    stopBreath,
     playTap,
     playShoot,
     playDefuse,

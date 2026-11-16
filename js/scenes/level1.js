@@ -43,6 +43,9 @@ class Level1Scene extends Phaser.Scene {
     this.releaseStartTime = 0;
     this.state = 'WAITING_HOLD'; // WAITING_HOLD | HOLDING | RELEASING | FINISHED
     this.maxHoldTimer = null;
+    this.exhaleTimer = null;
+    this.recoveryTimer = null;
+    this.holdTween = null;
     this.isFinished = false;
 
     // State Badai Notifikasi (PRD 14.2 G3)
@@ -182,6 +185,22 @@ class Level1Scene extends Phaser.Scene {
       if (this.stormTimer) {
         this.stormTimer.remove(false);
         this.stormTimer = null;
+      }
+      if (this.maxHoldTimer) {
+        this.maxHoldTimer.remove(false);
+        this.maxHoldTimer = null;
+      }
+      if (this.exhaleTimer) {
+        this.exhaleTimer.remove(false);
+        this.exhaleTimer = null;
+      }
+      if (this.recoveryTimer) {
+        this.recoveryTimer.remove(false);
+        this.recoveryTimer = null;
+      }
+      if (this.holdTween) {
+        this.holdTween.stop();
+        this.holdTween = null;
       }
       if (this.stormFog) {
         this.stormFog.destroy();
@@ -411,9 +430,22 @@ class Level1Scene extends Phaser.Scene {
   handleActionStart() {
     if (this.isFinished || this.isHolding || this.isHelpOpen) return;
 
+    // Bersihkan timer pemulihan jika ada
+    if (this.recoveryTimer) {
+      this.recoveryTimer.remove(false);
+      this.recoveryTimer = null;
+    }
+
+    // Jika pemain menekan saat sedang menghembuskan napas (RELEASING),
+    // selesaikan siklus sebelumnya terlebih dahulu secara presisi.
     if (this.state === 'RELEASING' && this.releaseStartTime > 0) {
+      if (this.exhaleTimer) {
+        this.exhaleTimer.remove(false);
+        this.exhaleTimer = null;
+      }
       const releaseDuration = Date.now() - this.releaseStartTime;
-      this.finalizePreviousCycle(releaseDuration);
+      this.finalizeCycle(releaseDuration);
+      if (this.isFinished || this.currentCycle > this.totalCycles) return;
     }
 
     if (this.currentCycle > this.totalCycles) return;
@@ -423,6 +455,7 @@ class Level1Scene extends Phaser.Scene {
     this.holdStartTime = Date.now();
 
     if (window.JEDA && JEDA.Audio) {
+      if (JEDA.Audio.stopBreath) JEDA.Audio.stopBreath();
       JEDA.Audio.playInhale(this.inMs / 1000);
     }
 
@@ -433,11 +466,13 @@ class Level1Scene extends Phaser.Scene {
     if (this.idlePulse) this.idlePulse.pause();
     this.tweens.killTweensOf(this.orbContainer);
 
-    this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Tarik napas...`);
+    this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Tarik napas perlahan...`);
     this.feedbackText.setColor(JEDA.CFG.COLOR.hex.text);
 
     const ind = this.indicators[this.currentCycle - 1];
-    if (ind) this.drawIndicatorDot(ind.g, ind.x, ind.y, 'active');
+    if (ind && ind.status !== 'filled') {
+      this.drawIndicatorDot(ind.g, ind.x, ind.y, 'active');
+    }
 
     this.orbContainer.setScale(1.0);
     this.holdTween = this.tweens.add({
@@ -472,40 +507,70 @@ class Level1Scene extends Phaser.Scene {
     const holdDuration = Date.now() - this.holdStartTime;
     this.isHolding = false;
 
-    // BR-04: Tahan < 1 s tidak dihitung dan siklus diulang
+    // Hentikan tween mengembang agar tidak bertabrakan dengan tween berikutnya
+    if (this.holdTween) {
+      this.holdTween.stop();
+      this.holdTween = null;
+    }
+    this.tweens.killTweensOf(this.orbContainer);
+
+    // BR-04: Tahan < 1 s tidak dihitung dan siklus diulang tanpa hukuman
     if (holdDuration < this.holdMinMs) {
-      this.feedbackText.setText('Tahan sedikit lebih lama...');
-      this.feedbackText.setColor(JEDA.CFG.COLOR.hex.warn);
+      if (window.JEDA && JEDA.Audio && JEDA.Audio.stopBreath) {
+        JEDA.Audio.stopBreath();
+      }
+
       this.state = 'WAITING_HOLD';
+      this.holdStartTime = 0;
+      this.releaseStartTime = 0;
+
+      this.feedbackText.setText('Tahan sedikit lebih lama (minimal 1 detik)...');
+      this.feedbackText.setColor(JEDA.CFG.COLOR.hex.warn);
 
       const ind = this.indicators[this.currentCycle - 1];
-      if (ind) this.drawIndicatorDot(ind.g, ind.x, ind.y, 'empty');
+      if (ind && ind.status !== 'filled') {
+        this.drawIndicatorDot(ind.g, ind.x, ind.y, 'empty');
+      }
 
+      // Animasi kembalikan orb ke ukuran normal secara mulus
       this.tweens.add({
         targets: this.orbContainer,
         scaleX: 1.0,
         scaleY: 1.0,
-        duration: 400,
+        duration: 350,
         ease: 'Sine.easeOut',
         onComplete: () => {
-          if (this.idlePulse) this.idlePulse.resume();
+          if (this.idlePulse && this.state === 'WAITING_HOLD') {
+            this.idlePulse.resume();
+          }
+        }
+      });
+
+      // Kembalikan instruksi dalam 1.8 detik agar pemain tahu bisa mencoba lagi dengan tenang
+      if (this.recoveryTimer) this.recoveryTimer.remove(false);
+      this.recoveryTimer = this.time.delayedCall(1800, () => {
+        if (this.state === 'WAITING_HOLD' && !this.isFinished) {
+          this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Tekan & tahan untuk menarik napas...`);
+          this.feedbackText.setColor(JEDA.CFG.COLOR.hex.text);
         }
       });
       return;
     }
 
+    // Pelepasan napas sah: masuki fase RELEASING
     this.state = 'RELEASING';
     this.releaseStartTime = Date.now();
     this.currentHoldDuration = holdDuration;
 
     if (window.JEDA && JEDA.Audio) {
+      if (JEDA.Audio.stopBreath) JEDA.Audio.stopBreath();
       JEDA.Audio.playExhale(this.outMs / 1000);
     }
 
     this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Hembuskan napas perlahan...`);
     this.feedbackText.setColor(JEDA.CFG.COLOR.hex.text);
 
-    if (this.holdTween) this.holdTween.stop();
+    // Animasi orb mengempis selama target outMs (6000 ms)
     this.tweens.add({
       targets: this.orbContainer,
       scaleX: 1.0,
@@ -514,20 +579,33 @@ class Level1Scene extends Phaser.Scene {
       ease: 'Sine.easeInOut'
     });
 
-    if (this.currentCycle === this.totalCycles) {
-      this.time.delayedCall(this.outMs, () => {
-        if (this.state === 'RELEASING' && !this.isFinished) {
-          const finalRelease = Date.now() - this.releaseStartTime;
-          this.finalizePreviousCycle(finalRelease);
-        }
-      });
-    }
+    // Otomatis finalisasi siklus ketika durasi hembus selesai untuk SEMUA siklus (1 s.d. 6)
+    if (this.exhaleTimer) this.exhaleTimer.remove(false);
+    this.exhaleTimer = this.time.delayedCall(this.outMs, () => {
+      if (this.state === 'RELEASING' && !this.isFinished) {
+        const releaseDuration = Date.now() - this.releaseStartTime;
+        this.finalizeCycle(releaseDuration);
+      }
+    });
+  }
+
+  /**
+   * Alias kompatibilitas
+   */
+  finalizePreviousCycle(releaseDuration) {
+    return this.finalizeCycle(releaseDuration);
   }
 
   /**
    * Menyelesaikan evaluasi satu siklus napas.
+   * Dipanggil otomatis saat hembusan napas selesai (outMs), atau saat pemain menekan lebih awal.
    */
-  finalizePreviousCycle(releaseDuration) {
+  finalizeCycle(releaseDuration) {
+    if (this.exhaleTimer) {
+      this.exhaleTimer.remove(false);
+      this.exhaleTimer = null;
+    }
+
     const cycleIndex = this.currentCycle;
     const holdDuration = this.currentHoldDuration;
 
@@ -578,9 +656,7 @@ class Level1Scene extends Phaser.Scene {
       }
     }
 
-    this.feedbackText.setText(feedbackWord);
-    this.feedbackText.setColor(syncState === 'good' ? JEDA.CFG.COLOR.hex.calm : (syncState === 'warn' ? JEDA.CFG.COLOR.hex.warn : JEDA.CFG.COLOR.hex.off));
-
+    // Isi dot indikator untuk siklus yang baru diselesaikan
     const ind = this.indicators[cycleIndex - 1];
     if (ind) {
       this.drawIndicatorDot(ind.g, ind.x, ind.y, 'filled', dotColor);
@@ -595,7 +671,23 @@ class Level1Scene extends Phaser.Scene {
       });
     }
 
+    // Periksa apakah ini siklus terakhir
+    if (cycleIndex >= this.totalCycles) {
+      this.state = 'FINISHED';
+      this.feedbackText.setText('Siklus selesai. Rasakan ketenangan ini...');
+      this.feedbackText.setColor(JEDA.CFG.COLOR.hex.calm);
+      this.time.delayedCall(600, () => {
+        this.finishLevel();
+      });
+      return;
+    }
+
+    // Maju ke siklus berikutnya
     this.currentCycle++;
+    this.state = 'WAITING_HOLD';
+    this.holdStartTime = 0;
+    this.releaseStartTime = 0;
+
     if (this.cycleCounterText && this.currentCycle <= this.totalCycles) {
       this.cycleCounterText.setText(`Siklus ${this.currentCycle}/${this.totalCycles}`);
     }
@@ -605,8 +697,14 @@ class Level1Scene extends Phaser.Scene {
       this.startStorm();
     }
 
-    if (this.currentCycle > this.totalCycles) {
-      this.finishLevel();
+    // Berikan ajakan ramah untuk memulai siklus berikutnya
+    const praise = cycleScore >= 0.75 ? 'Napasmu pas.' : (cycleScore >= 0.5 ? 'Bagus.' : 'Tenang.');
+    this.feedbackText.setText(`${praise} Tahan untuk Siklus ${this.currentCycle}...`);
+    this.feedbackText.setColor(syncState === 'good' ? JEDA.CFG.COLOR.hex.calm : (syncState === 'warn' ? JEDA.CFG.COLOR.hex.warn : JEDA.CFG.COLOR.hex.off));
+
+    // Hidupkan kembali denyut orb lembut saat menunggu
+    if (this.idlePulse) {
+      this.idlePulse.resume();
     }
   }
 
