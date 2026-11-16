@@ -65,28 +65,70 @@ class Level1Scene extends Phaser.Scene {
     // 2. Header di Zona Header (0 - 120 px)
     this.createHeader();
 
-    // 3. Panel Petunjuk & Status di atas Orb (y = 250)
-    const pillW = 880;
-    const pillH = 88;
-    const headerPill = this.add.graphics();
-    headerPill.fillStyle(0x12142E, 0.94);
-    headerPill.fillRoundedRect(cx - pillW / 2, 250 - pillH / 2, pillW, pillH, 28);
-    headerPill.lineStyle(2, 0x3F486E, 0.7);
-    headerPill.strokeRoundedRect(cx - pillW / 2, 250 - pillH / 2, pillW, pillH, 28);
+    // 3. Panel Petunjuk & Status di atas Orb (y = 236, Skala 8 px PRD 14.3 & 14.5)
+    const pillY = 236;
+    const pillH = 96; // Skala 8 px (12 * 8)
+    const pillRadius = 28;
 
-    this.instructionText = this.add.text(cx, 232, 'Tahan untuk menarik napas, lepas untuk menghembuskan.', {
+    this.instructionText = this.add.text(cx, pillY - 16, 'Tahan untuk menarik napas, lepas untuk menghembuskan', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '33px',
+      fontSize: '27px',
       fontStyle: '700',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
-    this.feedbackText = this.add.text(cx, 268, 'Mulai dengan menekan dan menahan...', {
+    this.feedbackText = this.add.text(cx, pillY + 18, 'Mulai dengan menekan dan menahan...', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '27px',
+      fontSize: '22px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
+
+    // Hitung lebar kapsul dengan batas Panel M (960 px) dan padding aman 48 px per sisi
+    const minPillW = (Layout && Layout.panelSize && Layout.panelSize.M) ? Layout.panelSize.M : 960;
+    const reqTextW = Math.max(this.instructionText.width, this.feedbackText.width) + 96;
+    const pillW = Math.max(minPillW, Math.ceil(reqTextW / 8) * 8);
+
+    // Jaminan auto-fit teks instruksi agar tidak pernah melewati batas kapsul
+    const maxTextW = pillW - 96;
+    if (this.instructionText.width > maxTextW) {
+      let curSize = 27;
+      while (this.instructionText.width > maxTextW && curSize > 18) {
+        curSize -= 1;
+        this.instructionText.setFontSize(curSize);
+      }
+    }
+
+    // Pembungkus aman setText pada feedbackText agar teks panjang otomatis menyesuaikan
+    const origFeedbackSetText = this.feedbackText.setText.bind(this.feedbackText);
+    this.feedbackText.setText = (txt) => {
+      origFeedbackSetText(txt);
+      if (this.feedbackText.width > maxTextW) {
+        let curSize = 22;
+        while (this.feedbackText.width > maxTextW && curSize > 16) {
+          curSize -= 1;
+          this.feedbackText.setFontSize(curSize);
+        }
+      } else {
+        this.feedbackText.setFontSize(22);
+      }
+      return this.feedbackText;
+    };
+
+    // Gambar panel kapsul kaca dengan 100% Solid Base (mencegah teks tembus pandang)
+    const headerPill = this.add.graphics();
+    headerPill.fillStyle(0x0E1026, 1.0);
+    headerPill.fillRoundedRect(cx - pillW / 2, pillY - pillH / 2, pillW, pillH, pillRadius);
+    headerPill.fillStyle(0x131635, 0.95);
+    headerPill.fillRoundedRect(cx - pillW / 2, pillY - pillH / 2, pillW, pillH, pillRadius);
+    headerPill.fillStyle(0xFFFFFF, 0.03);
+    headerPill.fillRoundedRect(cx - pillW / 2 + 2, pillY - pillH / 2 + 2, pillW - 4, 32, { tl: 26, tr: 26, bl: 0, br: 0 });
+    headerPill.lineStyle(2, 0x3F4C7A, 0.75);
+    headerPill.strokeRoundedRect(cx - pillW / 2, pillY - pillH / 2, pillW, pillH, pillRadius);
+
+    headerPill.setDepth(10);
+    this.instructionText.setDepth(11);
+    this.feedbackText.setDepth(11);
 
     // 4. Orb Tiga Lapis di (W/2, 500) sesuai PRD 14.5
     this.createGlowingOrb(cx, 500);
@@ -276,6 +318,9 @@ class Level1Scene extends Phaser.Scene {
     const pillW = 420;
     const pillH = 56;
     const indPill = this.add.graphics();
+    // 100% Solid Base
+    indPill.fillStyle(0x0E1026, 1.0);
+    indPill.fillRoundedRect(cx - pillW / 2, y - pillH / 2, pillW, pillH, 28);
     indPill.fillStyle(0x12142E, 0.94);
     indPill.fillRoundedRect(cx - pillW / 2, y - pillH / 2, pillW, pillH, 28);
     indPill.lineStyle(2, 0x3F486E, 0.7);
