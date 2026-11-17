@@ -74,14 +74,14 @@ class Level1Scene extends Phaser.Scene {
     const pillH = 96; // Skala 8 px (12 * 8)
     const pillRadius = 28;
 
-    this.instructionText = this.add.text(cx, pillY - 16, 'Tahan untuk menarik napas, lepas untuk menghembuskan', {
+    this.instructionText = this.add.text(cx, pillY - 16, 'Tahan Spasi / Klik Kiri untuk menarik napas, lepas untuk menghembuskan', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '24px',
       fontStyle: '700',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
-    this.feedbackText = this.add.text(cx, pillY + 18, 'Mulai dengan menekan dan menahan...', {
+    this.feedbackText = this.add.text(cx, pillY + 18, 'Tekan & tahan tombol (jangan dilepas) untuk memulai...', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '20px',
       fontStyle: '600',
@@ -416,11 +416,21 @@ class Level1Scene extends Phaser.Scene {
       }
     };
     window.addEventListener('pointerup', this.onWindowPointerUp);
+    window.addEventListener('touchend', this.onWindowPointerUp);
     window.addEventListener('blur', this.onWindowPointerUp);
+
+    this.onWindowKeyUp = (e) => {
+      if (e && e.code === 'Space' && this.isHolding) {
+        this.handleActionEnd();
+      }
+    };
+    window.addEventListener('keyup', this.onWindowKeyUp);
 
     this.events.once('shutdown', () => {
       window.removeEventListener('pointerup', this.onWindowPointerUp);
+      window.removeEventListener('touchend', this.onWindowPointerUp);
       window.removeEventListener('blur', this.onWindowPointerUp);
+      window.removeEventListener('keyup', this.onWindowKeyUp);
     });
   }
 
@@ -524,7 +534,7 @@ class Level1Scene extends Phaser.Scene {
       this.holdStartTime = 0;
       this.releaseStartTime = 0;
 
-      this.feedbackText.setText('Tahan sedikit lebih lama (minimal 1 detik)...');
+      this.feedbackText.setText('Tahan tombol terus (jangan langsung dilepas) minimal 1 detik...');
       this.feedbackText.setColor(JEDA.CFG.COLOR.hex.warn);
 
       const ind = this.indicators[this.currentCycle - 1];
@@ -709,10 +719,11 @@ class Level1Scene extends Phaser.Scene {
   }
 
   calcAccuracy(actual, target) {
+    if (!actual || actual <= 0) return 0.5;
     const diff = Math.abs(actual - target);
     if (diff <= this.tolFull) return 1.0;
     if (diff <= this.tolHalf) return 0.5;
-    return 0.0;
+    return 0.35; // Non-punitive mindfulness: apresiasi usaha pemain
   }
 
   /**
@@ -1192,22 +1203,44 @@ class Level1Scene extends Phaser.Scene {
   }
 
   /**
-   * Update per-frame: sinkronisasi ritme pernapasan ke panggung 3D (PRD 13.2).
+   * Update per-frame: sinkronisasi ritme pernapasan ke panggung 3D & panduan detik visual real-time.
    */
   update(time, delta) {
-    if (!JEDA.Stage3D || !JEDA.Stage3D.isActive()) return;
+    const is3d = (JEDA.Stage3D && JEDA.Stage3D.isActive());
 
     if (this.state === 'HOLDING' && this.holdStartTime > 0) {
       const elapsed = Date.now() - this.holdStartTime;
       const t = Math.min(1.0, elapsed / this.inMs);
-      JEDA.Stage3D.setBreath(t);
+      if (is3d) JEDA.Stage3D.setBreath(t);
+
+      const remainingSec = Math.max(0, Math.ceil((this.inMs - elapsed) / 1000));
+      if (elapsed < this.inMs) {
+        this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Tarik napas... Tahan (${remainingSec} detik lagi)`);
+        this.feedbackText.setColor(JEDA.CFG.COLOR.hex.text);
+      } else {
+        this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Napas penuh! Siap lepaskan tombol...`);
+        this.feedbackText.setColor(JEDA.CFG.COLOR.hex.calm);
+      }
     } else if (this.state === 'RELEASING' && this.releaseStartTime > 0) {
       const elapsed = Date.now() - this.releaseStartTime;
       const t = Math.max(0.0, 1.0 - (elapsed / this.outMs));
-      JEDA.Stage3D.setBreath(t);
+      if (is3d) JEDA.Stage3D.setBreath(t);
+
+      const remainingSec = Math.max(0, Math.ceil((this.outMs - elapsed) / 1000));
+      if (elapsed < this.outMs) {
+        this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Hembuskan napas perlahan... (${remainingSec} detik)`);
+        this.feedbackText.setColor(JEDA.CFG.COLOR.hex.text);
+      } else {
+        // Jaminan anti-stuck: otomatis finalisasi siklus saat waktu hembus genap
+        if (!this.isFinished) {
+          this.finalizeCycle(this.outMs);
+        }
+      }
     } else if (this.state === 'WAITING_HOLD') {
-      const idleT = 0.18 + Math.sin(time * 0.0025) * 0.07;
-      JEDA.Stage3D.setBreath(idleT);
+      if (is3d) {
+        const idleT = 0.18 + Math.sin(time * 0.0025) * 0.07;
+        JEDA.Stage3D.setBreath(idleT);
+      }
     }
   }
 }
