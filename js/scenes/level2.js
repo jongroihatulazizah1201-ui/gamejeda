@@ -485,10 +485,13 @@ class Level2Scene extends Phaser.Scene {
       }
     });
 
-    // 5. Mode Debug (Poin 10: tombol G)
-    this.input.keyboard.on('keydown-G', () => {
-      this.toggleDebugOverlay();
-    });
+    // 5. Mode Debug (Poin 10: tombol G hanya jika ?debug=1)
+    const isDebug = window.JEDA && JEDA.State && JEDA.State.isDebug && JEDA.State.isDebug();
+    if (isDebug && this.input && this.input.keyboard) {
+      this.input.keyboard.on('keydown-G', () => {
+        this.toggleDebugOverlay();
+      });
+    }
   }
 
   /**

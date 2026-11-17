@@ -281,9 +281,16 @@ JEDA.Layout = {
   },
 
   /**
-   * Memasang listener keyboard untuk tombol 'G' saat mode debug aktif (?debug=1).
+   * Memasang listener keyboard untuk tombol 'G' HANYA saat mode debug aktif (?debug=1).
    */
   attachDebugKeyListener(scene) {
+    const isDebug = window.JEDA && JEDA.State && JEDA.State.isDebug && JEDA.State.isDebug();
+    if (!isDebug) {
+      this.clearDebugGrid();
+      this.debugGridVisible = false;
+      return;
+    }
+
     if (scene.input && scene.input.keyboard) {
       scene.input.keyboard.on('keydown-G', () => {
         this.toggleDebugGrid(scene);
