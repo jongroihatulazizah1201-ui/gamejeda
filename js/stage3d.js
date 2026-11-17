@@ -17,6 +17,11 @@ JEDA.Stage3D = (function() {
   let camera = null;
   let animFrameId = null;
 
+  // Throttling 30 FPS untuk background ambient Three.js (Optimasi CPU & Baterai)
+  let lastFrameTime = 0;
+  const TARGET_FPS = 30;
+  const FRAME_INTERVAL = 1000 / TARGET_FPS; // ~33.33ms
+
   // Objek panggung 3D
   let skyDome = null;
   let skyCanvas = null;
@@ -1997,6 +2002,7 @@ JEDA.Stage3D = (function() {
 
   /**
    * Render loop utama Three.js.
+   * Dibatasi ke target 30 FPS untuk background ambient guna menghemat CPU dan daya baterai.
    */
   function animate(timestamp) {
     if (!active || !isRunning) return;
@@ -2004,7 +2010,13 @@ JEDA.Stage3D = (function() {
 
     if (document.hidden) return; // Hentikan render saat tab tidak aktif
 
-    const dt = 0.016 * timeScale;
+    if (!timestamp) timestamp = performance.now();
+    const elapsed = timestamp - lastFrameTime;
+    if (elapsed < FRAME_INTERVAL) return; // Skip frame jika belum mencapai interval 30 FPS
+
+    const rawDt = (lastFrameTime > 0) ? (timestamp - lastFrameTime) / 1000 : 0.033;
+    const dt = Math.min(rawDt, 0.05) * timeScale;
+    lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
 
     // 1. Interpolasi Halus Warna Orb & Partikel
     currentColor.lerp(targetColor, 0.08);
@@ -2067,7 +2079,7 @@ JEDA.Stage3D = (function() {
     pulseEnergy = Math.max(0, pulseEnergy - dt * 2.2);
 
     // 4. Update Posisi Partikel Pengorbit (Semburan & Kurangi Gerakan)
-    if (particlesMesh && particlePositions) {
+    if (particlesMesh && particlePositions && particlesMesh.visible && particlesMesh.material && particlesMesh.material.opacity > 0.01) {
       const pos = particlesMesh.geometry.attributes.position.array;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const p = particleData[i];
@@ -2469,6 +2481,7 @@ JEDA.Stage3D = (function() {
     } else {
       if (!isRunning && active) {
         isRunning = true;
+        lastFrameTime = performance.now();
         animFrameId = requestAnimationFrame(animate);
       }
     }
@@ -2493,14 +2506,15 @@ JEDA.Stage3D = (function() {
           reduceMotion = !!JEDA.State.data.settings.reduceMotion;
         }
 
-        // 1. WebGL Renderer Transparan
+        // 1. WebGL Renderer Transparan (Dioptimalkan hemat daya & performa stabil)
         renderer = new THREE.WebGLRenderer({
           alpha: true,
           antialias: true,
-          powerPreference: 'high-performance'
+          powerPreference: 'default',
+          precision: 'mediump'
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
         renderer.setClearColor(0x000000, 0); // Background sepenuhnya transparan
         container.appendChild(renderer.domElement);
 
@@ -2603,6 +2617,7 @@ JEDA.Stage3D = (function() {
 
         active = true;
         isRunning = true;
+        lastFrameTime = performance.now();
         animFrameId = requestAnimationFrame(animate);
 
         let savedSkin = (window.JEDA && JEDA.State && JEDA.State.data && JEDA.State.data.skin) || 'embun';

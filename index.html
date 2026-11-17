@@ -8,8 +8,8 @@
   <meta name="description" content="JEDA: Game interaktif micro-mindfulness untuk melatih pernapasan ritmik, defusi kognitif, dan respons sadar metode S.T.O.P. Berhenti sejenak, pulihkan ketenangan.">
   <meta name="theme-color" content="#16163A">
   <meta name="robots" content="index, follow">
-  <!-- Style CSS lokal dengan @font-face Nunito (woff2 lokal) -->
-  <link rel="stylesheet" href="css/style.css?v=2.7">
+  <!-- Style CSS Minified dengan @font-face Nunito (woff2 lokal) -->
+  <link rel="stylesheet" href="dist/css/style.min.css?v=2.8">
 </head>
 <body>
   <!-- Container Pembungkus Utama (Semantic Main Landmark untuk Aksesibilitas) -->
@@ -23,37 +23,16 @@
     <!-- Panggung 3D Three.js di latar belakang (PRD Bagian 13) -->
     <div id="stage3d" aria-hidden="true"></div>
 
-    <!-- Induk Game Phaser 2D di lapisan atas transparan (Responsif Terpusat) -->
-    <div id="game-container" class="game-container" aria-label="Area Interaktif Game JEDA"></div>
+    <!-- Induk Game Phaser 2D di lapisan atas transparan (Role region untuk validitas atribut ARIA) -->
+    <div id="game-container" class="game-container" role="region" aria-label="Area Interaktif Game JEDA"></div>
   </main>
 
-  <!-- Urutan pemuatan script non-blocking (defer menjaga urutan eksekusi):
-       phaser -> three -> config -> data -> journal -> state -> score -> guard -> stage3d -> layout -> fx -> audio -> ui -> lumi -> scenes/* -> main -->
+  <!-- Urutan pemuatan script non-blocking:
+       1. Vendor Phaser 2D Engine
+       2. Vendor Three.js 3D Engine (Latar belakang ambient)
+       3. Bundle Aplikasi Minified JEDA (Semua modul, UI, stage3d, scenes, & inisialisasi) -->
   <script defer src="lib/phaser.min.js"></script>
   <script defer src="lib/three.min.js"></script>
-  <script defer src="js/config.js?v=2.7"></script>
-  <script defer src="js/data.js?v=2.7"></script>
-  <script defer src="js/journal.js?v=2.7"></script>
-  <script defer src="js/state.js?v=2.7"></script>
-  <script defer src="js/score.js?v=2.7"></script>
-  <script defer src="js/guard.js?v=2.7"></script>
-  <script defer src="js/stage3d.js?v=2.7"></script>
-  <script defer src="js/layout.js?v=2.7"></script>
-  <script defer src="js/fx.js?v=2.7"></script>
-  <script defer src="js/audio.js?v=2.7"></script>
-  <script defer src="js/ui.js?v=2.7"></script>
-  <script defer src="js/lumi.js?v=2.7"></script>
-  
-  <!-- Scenes -->
-  <script defer src="js/scenes/boot.js?v=2.7"></script>
-  <script defer src="js/scenes/checkin.js?v=2.7"></script>
-  <script defer src="js/scenes/level1.js?v=2.7"></script>
-  <script defer src="js/scenes/level2.js?v=2.7"></script>
-  <script defer src="js/scenes/level3.js?v=2.7"></script>
-  <script defer src="js/scenes/result.js?v=2.7"></script>
-  <script defer src="js/scenes/pause.js?v=2.7"></script>
-
-  <!-- Inisialisasi Game -->
-  <script defer src="js/main.js?v=2.7"></script>
+  <script defer src="dist/js/app.min.js?v=2.8"></script>
 </body>
 </html>
