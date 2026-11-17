@@ -222,10 +222,11 @@ class Level1Scene extends Phaser.Scene {
 
     // Kiri: Tombol Menu (rata margin kiri 120 px)
     const leftX = Layout.M + btnW / 2;
-    JEDA.UI.createButton(this, leftX, headerY, btnW, btnH, '← Menu', () => {
+    this.menuButton = JEDA.UI.createButton(this, leftX, headerY, btnW, btnH, '← Menu', () => {
       if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
-    }, { fontSize: 27, radius: 24 });
+    }, { fontSize: 27, radius: 24, depth: 100 });
+    this.menuButton.setDepth(100);
 
     // Tengah: Judul Level (Prinsip 8: Hierarki teks 33 px)
     const modeTitle = this.easyMode ? 'Level 1: Napas (Mode Ramah)' : 'Level 1: Napas';
@@ -234,14 +235,15 @@ class Level1Scene extends Phaser.Scene {
       fontSize: '33px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
-    }).setOrigin(0.5).setResolution(2);
+    }).setOrigin(0.5).setResolution(2).setDepth(100);
 
     // Kanan: Tombol Bantuan (?) dan Kapsul status siklus (rata margin kanan 1800 px)
     const helpBtnSize = 48;
     const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1800 - 24 = 1776
     this.helpButton = JEDA.UI.createButton(this, helpBtnX, headerY, helpBtnSize, helpBtnSize, '?', () => {
       this.showHelpModal();
-    }, { fontSize: 27, radius: 24 });
+    }, { fontSize: 27, radius: 24, depth: 100 });
+    this.helpButton.setDepth(100);
 
     const progW = 208; // Kelipatan 8 (26 * 8)
     const progX = helpBtnX - helpBtnSize / 2 - 16 - progW / 2; // 1752 - 16 - 104 = 1632
@@ -255,7 +257,7 @@ class Level1Scene extends Phaser.Scene {
       minW: progW,
       minH: btnH,
       variant: 'chip'
-    });
+    }).setDepth(100);
     this.cycleCounterText = this.progBox.textObj;
 
     // Toggle Suara Cepat
@@ -268,13 +270,17 @@ class Level1Scene extends Phaser.Scene {
         this.soundBtn.textObj.setText(next ? 'Suara: 🔊' : 'Suara: 🔈');
         JEDA.UI.toast(this, next ? 'Musik Meditasi 432 Hz Aktif' : 'Mode Suara Hening');
       }
-    }, { fontSize: 24, radius: 24 });
+    }, { fontSize: 24, radius: 24, depth: 100 });
+    this.soundBtn.setDepth(100);
   }
 
   /**
    * Menampilkan kartu petunjuk Level 1 (PRD 15.2 & BR-15).
    */
   showHelpModal() {
+    if (this.isHolding) {
+      this.isHolding = false;
+    }
     this.isHelpOpen = true;
     JEDA.UI.helpCard(this, {
       type: 'l1',
@@ -419,11 +425,14 @@ class Level1Scene extends Phaser.Scene {
     // Pointer down (mouse)
     this.input.on('pointerdown', (pointer, targets) => {
       if (targets && targets.length > 0) return;
+      if (this.isHelpOpen) return;
       this.handleActionStart();
     });
 
     // Pointer up (mouse)
-    this.input.on('pointerup', () => {
+    this.input.on('pointerup', (pointer, targets) => {
+      if (targets && targets.length > 0) return;
+      if (this.isHelpOpen) return;
       this.handleActionEnd();
     });
 

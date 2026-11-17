@@ -549,9 +549,16 @@ JEDA.UI = {
       fitButtonText();
     };
 
-    // Interaktivitas
+    if (options.depth !== undefined) {
+      container.setDepth(options.depth);
+    }
+
+    // Interaktivitas: Jaring pengaman padding hit area untuk tombol kecil (misal tombol bulat ? atau tombol < 68px)
+    const minHit = 68;
+    const hitW = Math.max(w, minHit);
+    const hitH = Math.max(h, minHit);
     container.setInteractive({
-      hitArea: new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
+      hitArea: new Phaser.Geom.Rectangle(-hitW / 2, -hitH / 2, hitW, hitH),
       hitAreaCallback: Phaser.Geom.Rectangle.Contains,
       useHandCursor: !isDisabled
     });
@@ -559,6 +566,8 @@ JEDA.UI = {
     if (isDisabled) {
       container.input.enabled = false;
     }
+
+    let isPressed = false;
 
     container.on('pointerover', () => {
       if (!container.input || !container.input.enabled) return;
@@ -588,20 +597,42 @@ JEDA.UI = {
       updateBg(normalFillAlpha, normalStrokeAlpha, normalColor, normalStrokeColor);
     });
 
-    container.on('pointerdown', () => {
+    container.on('pointerdown', (pointer) => {
       if (!container.input || !container.input.enabled) return;
+      isPressed = true;
       container.setScale(0.97);
       if (window.JEDA && JEDA.Audio) {
         JEDA.Audio.playTap();
       }
     });
 
-    container.on('pointerup', () => {
-      if (!container.input || !container.input.enabled) return;
-      container.setScale(1.04);
+    const triggerClick = () => {
+      if (!isPressed) return;
+      isPressed = false;
+      container.setScale(1.0);
       if (typeof onClick === 'function') {
         onClick();
       }
+    };
+
+    container.on('pointerup', () => {
+      if (!container.input || !container.input.enabled) return;
+      triggerClick();
+    });
+
+    container.on('pointerupoutside', (pointer) => {
+      if (!container.input || !container.input.enabled || !isPressed) return;
+      // Toleransi pelepasan jari/mouse sedikit di luar batas tombol kecil (hingga 36px)
+      if (pointer) {
+        const dx = Math.abs(pointer.worldX - (container.x || x));
+        const dy = Math.abs(pointer.worldY - (container.y || y));
+        if (dx <= hitW / 2 + 36 && dy <= hitH / 2 + 36) {
+          triggerClick();
+          return;
+        }
+      }
+      isPressed = false;
+      container.setScale(1.0);
     });
 
     container.setEnabled = (enabled) => {

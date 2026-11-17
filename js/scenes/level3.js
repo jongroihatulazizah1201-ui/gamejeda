@@ -89,7 +89,8 @@ class Level3Scene extends Phaser.Scene {
     const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1800 - 24 = 1776
     this.helpButton = JEDA.UI.createButton(this, helpBtnX, headerY, helpBtnSize, helpBtnSize, '?', () => {
       this.showHelpModal();
-    }, { fontSize: 27, radius: 24 });
+    }, { fontSize: 27, radius: 24, depth: 100 });
+    this.helpButton.setDepth(100);
 
     // Format dan posisikan kapsul sesuai skala 8 px dan lebar dinamis terukur dengan JEDA.UI.textBox
     this.updateScenarioCounter(0);

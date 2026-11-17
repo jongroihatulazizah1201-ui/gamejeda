@@ -241,7 +241,8 @@ class Level2Scene extends Phaser.Scene {
     const helpBtnX = (Layout.W - Layout.M) - helpBtnSize / 2; // 1800 - 24 = 1776
     this.helpButton = JEDA.UI.createButton(this, helpBtnX, headerY, helpBtnSize, helpBtnSize, '?', () => {
       this.showHelpModal();
-    }, { fontSize: 27, radius: 24 });
+    }, { fontSize: 27, radius: 24, depth: 100 });
+    this.helpButton.setDepth(100);
 
     const counterW = 288; // Kelipatan 8 (36 * 8, ruang lega dari lengkungan)
     const counterX = helpBtnX - helpBtnSize / 2 - 16 - counterW / 2; // 1752 - 16 - 144 = 1592
