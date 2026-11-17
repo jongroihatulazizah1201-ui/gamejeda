@@ -994,7 +994,7 @@ JEDA.UI = {
         const pillGap = 6;
         const singlePillW = Math.floor((swatchW - pillGap * 2) / 3);
         const swatchH = 14;
-        const swatchY = -cardH / 2 + 20;
+        const swatchY = -cardH / 2 + 18;
 
         const swatchG = scene.add.graphics();
         const skyColors = [theme.sky.topHex, theme.sky.midHex, theme.sky.bottomHex];
@@ -1010,25 +1010,28 @@ JEDA.UI = {
         card.add(swatchG);
 
         // 3. Nama Tema & Suasana (Prinsip 8: Hierarki Teks)
-        const nameText = scene.add.text(0, -cardH / 2 + 46, theme.name, {
+        const nameY = -cardH / 2 + 40;
+        const moodY = -cardH / 2 + 64;
+
+        const nameText = scene.add.text(0, nameY, theme.name, {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '24px',
+          fontSize: '22px',
           fontStyle: '800',
           color: isUnlocked ? '#FFFFFF' : '#757D99'
         }).setOrigin(0.5).setResolution(2);
 
-        const moodText = scene.add.text(0, -cardH / 2 + 74, theme.mood, {
+        const moodText = scene.add.text(0, moodY, theme.mood, {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '18px',
+          fontSize: '16px',
           fontStyle: '600',
           color: isUnlocked ? JEDA.CFG.COLOR.hex.muted : '#555C75'
         }).setOrigin(0.5).setResolution(2);
         card.add([nameText, moodText]);
 
-        // 4. Status Pill di Bawah Kartu (Skala 8 px: tinggi 32 px, radius 16 px)
-        const pillY = -cardH / 2 + 108;
+        // 4. Status Pill di Bawah Kartu (Skala 8 px: tinggi 30 px, radius 15 px)
+        const pillH = 30;
+        const pillY = cardH / 2 - pillH / 2 - 10;
         const pillW = 144; // Kelipatan 8 (18 * 8)
-        const pillH = 32; // Kelipatan 8
         const pillG = scene.add.graphics();
 
         if (isUnlocked) {
@@ -1383,7 +1386,7 @@ JEDA.UI = {
   badgeSlot(scene, x, y, badge, isUnlocked, options = {}) {
     const w = options.width || 304;
     const h = options.height || 88;
-    const radius = 24;
+    const radius = options.radius || (h <= 70 ? 18 : 24);
 
     const container = scene.add.container(x, y).setDepth(options.depth || 50);
     const bg = scene.add.graphics();

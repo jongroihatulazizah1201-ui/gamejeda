@@ -148,7 +148,7 @@ JEDA.Stage3D = (function() {
     l1:     { x: 0,   y: 0.0,  z: 11.2, lookX: 0,   lookY: 0.0,  lookZ: 0 },
     l2:     { x: 0,   y: 0.0,  z: 16.0, lookX: 0,   lookY: 0.0,  lookZ: 0 },
     l3:     { x: 0,   y: -1.0, z: 17.0, lookX: 0,   lookY: -2.0, lookZ: 0 },
-    result: { x: 0,   y: 1.6,  z: 24.5, lookX: 0,   lookY: -1.0, lookZ: 0 }
+    result: { x: 0,   y: 0.2,  z: 27.5, lookX: 0,   lookY: -3.0, lookZ: 0 }
   };
   let currentCamPos = { x: 0, y: 0.6, z: 22.5 };
   let targetCamPos = { x: 0, y: 0.6, z: 22.5 };
