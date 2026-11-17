@@ -202,6 +202,7 @@ class Level1Scene extends Phaser.Scene {
         this.holdTween.stop();
         this.holdTween = null;
       }
+      this.stopIdlePulse();
       if (this.stormFog) {
         this.stormFog.destroy();
         this.stormFog = null;
@@ -324,15 +325,39 @@ class Level1Scene extends Phaser.Scene {
     }
 
     // Animasi idle berdenyut pelan
-    this.idlePulse = this.tweens.add({
-      targets: this.orbContainer,
-      scaleX: 1.05,
-      scaleY: 1.05,
-      duration: 1800,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1
-    });
+    this.startIdlePulse();
+  }
+
+  /**
+   * Menyalakan kembali animasi denyut idle orb secara aman tanpa risiko referensi tween rusak.
+   */
+  startIdlePulse() {
+    this.stopIdlePulse();
+    if (this.orbContainer) {
+      this.orbContainer.setScale(1.0);
+      this.idlePulse = this.tweens.add({
+        targets: this.orbContainer,
+        scaleX: 1.05,
+        scaleY: 1.05,
+        duration: 1800,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1
+      });
+    }
+  }
+
+  /**
+   * Menghentikan denyut idle orb secara bersih.
+   */
+  stopIdlePulse() {
+    if (this.idlePulse) {
+      this.idlePulse.stop();
+      this.idlePulse = null;
+    }
+    if (this.orbContainer) {
+      this.tweens.killTweensOf(this.orbContainer);
+    }
   }
 
   /**
@@ -358,8 +383,8 @@ class Level1Scene extends Phaser.Scene {
 
     for (let i = 0; i < this.totalCycles; i++) {
       const ix = dotXs[i];
-      const g = this.add.graphics();
-      this.drawIndicatorDot(g, ix, y, 'empty');
+      const g = this.add.graphics().setPosition(ix, y);
+      this.drawIndicatorDot(g, 0, 0, 'empty');
       this.indicators.push({ g, x: ix, y, status: 'empty' });
     }
   }
@@ -473,15 +498,14 @@ class Level1Scene extends Phaser.Scene {
       JEDA.Stage3D.setSync('good');
     }
 
-    if (this.idlePulse) this.idlePulse.pause();
-    this.tweens.killTweensOf(this.orbContainer);
+    this.stopIdlePulse();
 
     this.feedbackText.setText(`Siklus ${this.currentCycle}/6: Tarik napas perlahan...`);
     this.feedbackText.setColor(JEDA.CFG.COLOR.hex.text);
 
     const ind = this.indicators[this.currentCycle - 1];
     if (ind && ind.status !== 'filled') {
-      this.drawIndicatorDot(ind.g, ind.x, ind.y, 'active');
+      this.drawIndicatorDot(ind.g, 0, 0, 'active');
     }
 
     this.orbContainer.setScale(1.0);
@@ -539,7 +563,7 @@ class Level1Scene extends Phaser.Scene {
 
       const ind = this.indicators[this.currentCycle - 1];
       if (ind && ind.status !== 'filled') {
-        this.drawIndicatorDot(ind.g, ind.x, ind.y, 'empty');
+        this.drawIndicatorDot(ind.g, 0, 0, 'empty');
       }
 
       // Animasi kembalikan orb ke ukuran normal secara mulus
@@ -550,8 +574,8 @@ class Level1Scene extends Phaser.Scene {
         duration: 350,
         ease: 'Sine.easeOut',
         onComplete: () => {
-          if (this.idlePulse && this.state === 'WAITING_HOLD') {
-            this.idlePulse.resume();
+          if (this.state === 'WAITING_HOLD') {
+            this.startIdlePulse();
           }
         }
       });
@@ -611,6 +635,8 @@ class Level1Scene extends Phaser.Scene {
    * Dipanggil otomatis saat hembusan napas selesai (outMs), atau saat pemain menekan lebih awal.
    */
   finalizeCycle(releaseDuration) {
+    if (this.state !== 'RELEASING') return;
+
     if (this.exhaleTimer) {
       this.exhaleTimer.remove(false);
       this.exhaleTimer = null;
@@ -669,7 +695,7 @@ class Level1Scene extends Phaser.Scene {
     // Isi dot indikator untuk siklus yang baru diselesaikan
     const ind = this.indicators[cycleIndex - 1];
     if (ind) {
-      this.drawIndicatorDot(ind.g, ind.x, ind.y, 'filled', dotColor);
+      this.drawIndicatorDot(ind.g, 0, 0, 'filled', dotColor);
       ind.status = 'filled';
       this.tweens.add({
         targets: ind.g,
@@ -712,10 +738,8 @@ class Level1Scene extends Phaser.Scene {
     this.feedbackText.setText(`${praise} Tahan untuk Siklus ${this.currentCycle}...`);
     this.feedbackText.setColor(syncState === 'good' ? JEDA.CFG.COLOR.hex.calm : (syncState === 'warn' ? JEDA.CFG.COLOR.hex.warn : JEDA.CFG.COLOR.hex.off));
 
-    // Hidupkan kembali denyut orb lembut saat menunggu
-    if (this.idlePulse) {
-      this.idlePulse.resume();
-    }
+    // Hidupkan kembali denyut orb lembut saat menunggu secara aman
+    this.startIdlePulse();
   }
 
   calcAccuracy(actual, target) {
