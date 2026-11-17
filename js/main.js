@@ -53,6 +53,14 @@ function initJedaGame() {
 
   // Instansiasi game pada namespace global JEDA
   window.JEDA.game = new Phaser.Game(config);
+
+  // Setelah game terinisialisasi, sembunyikan banner brand LCP secara halus
+  setTimeout(() => {
+    const brand = document.getElementById('game-brand');
+    if (brand) {
+      brand.style.opacity = '0';
+    }
+  }, 1800);
 }
 
 // Menunggu font lokal termuat paling lama 1500 ms (PRD Bagian 2 & Poin 1 UI/UX)

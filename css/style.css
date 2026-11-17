@@ -103,6 +103,41 @@ html, body {
   overflow: hidden;
 }
 
+/* Header Brand Semantik (Mendukung LCP & Aksesibilitas Screen Reader) */
+.game-hero-brand {
+  position: absolute;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 0;
+  pointer-events: none;
+  width: 90%;
+  max-width: 640px;
+  transition: opacity 0.8s ease;
+}
+
+.brand-title {
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: #F4F1FF;
+  margin: 0;
+  line-height: 1.1;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.brand-tagline {
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(0.95rem, 1.3vw, 1.2rem);
+  font-weight: 600;
+  color: #7FE0C3;
+  margin-top: 6px;
+  letter-spacing: 1px;
+  opacity: 0.90;
+}
+
 /* --------------------------------------------------------------------------
    3. Area Game Terpusat dengan max-width & margin: auto - [Ketentuan 2]
    -------------------------------------------------------------------------- */
