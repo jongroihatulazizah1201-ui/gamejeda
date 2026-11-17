@@ -622,11 +622,30 @@ JEDA.UI = {
 
     container.on('pointerupoutside', (pointer) => {
       if (!container.input || !container.input.enabled || !isPressed) return;
-      // Toleransi pelepasan jari/mouse sedikit di luar batas tombol kecil (hingga 36px)
+      // Toleransi pelepasan jari/mouse sedikit di luar batas tombol (hingga 48px), mendukung container bertingkat (modal)
       if (pointer) {
-        const dx = Math.abs(pointer.worldX - (container.x || x));
-        const dy = Math.abs(pointer.worldY - (container.y || y));
-        if (dx <= hitW / 2 + 36 && dy <= hitH / 2 + 36) {
+        let trueWorldX = container.x || x;
+        let trueWorldY = container.y || y;
+        try {
+          if (container.getWorldTransformMatrix) {
+            const mat = container.getWorldTransformMatrix();
+            if (mat) {
+              trueWorldX = mat.tx;
+              trueWorldY = mat.ty;
+            }
+          } else if (container.parentContainer) {
+            let p = container.parentContainer;
+            while (p) {
+              trueWorldX += p.x;
+              trueWorldY += p.y;
+              p = p.parentContainer;
+            }
+          }
+        } catch (_) {}
+
+        const dx = Math.abs(pointer.worldX - trueWorldX);
+        const dy = Math.abs(pointer.worldY - trueWorldY);
+        if (dx <= hitW / 2 + 48 && dy <= hitH / 2 + 48) {
           triggerClick();
           return;
         }

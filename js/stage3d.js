@@ -1497,11 +1497,10 @@ JEDA.Stage3D = (function() {
     if (!l2MonstersGroup) return null;
     const monsterId = 'm_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
 
-    // Badan monster berada di slotPos.y - 48 px
-    const bodyCenterScreen = { x: slotPos.x, y: slotPos.y - 48 };
-    const mGroup = createMonsterMesh(thought, monsterId, bodyCenterScreen);
+    // Badan monster berada di slotPos.y - 48 px, plat label di slotPos.y + 60 px
+    const mGroup = createMonsterMesh(thought, monsterId, slotPos);
 
-    const worldPos = screenToWorld(bodyCenterScreen.x, bodyCenterScreen.y, 0);
+    const worldPos = screenToWorld(slotPos.x, slotPos.y - 48, 0);
     mGroup.position.copy(worldPos);
     mGroup.userData.basePos = worldPos.clone();
     mGroup.userData.slotIndex = slotIndex;
@@ -1513,14 +1512,14 @@ JEDA.Stage3D = (function() {
       thought: thought,
       mesh: mGroup,
       userData: mGroup.userData,
-      slotPos: bodyCenterScreen
+      slotPos: slotPos
     });
 
     return monsterId;
   }
 
   /**
-   * Mendeteksi klik monster (Poin 9: lingkaran 100 px di sekitar badan DAN plat label 400x104 px).
+   * Mendeteksi klik monster (Poin 9: lingkaran 120 px di sekitar badan DAN plat label 400x104 px).
    */
   function pickL2Monster(clientX, clientY) {
     if (!renderer || !l2Monsters || l2Monsters.length === 0) return null;
@@ -1556,15 +1555,16 @@ JEDA.Stage3D = (function() {
       if (m.userData.isDying) continue;
       const bPos = m.slotPos; // { x, y }
 
-      // 1. Lingkaran 100 px di sekitar badan monster
-      const distBody = Math.hypot(sx - bPos.x, sy - bPos.y);
-      if (distBody <= 100) {
+      // 1. Lingkaran 120 px di sekitar badan monster (pusat badan di slotPos.y - 48)
+      const bodyCenterY = bPos.y - 48;
+      const distBody = Math.hypot(sx - bPos.x, sy - bodyCenterY);
+      if (distBody <= 120) {
         return m.id;
       }
 
-      // 2. Plat label 400x104 px di bawah badan (jarak 8 px, center y = bPos.y + 108)
-      const labelCenterY = bPos.y + 108;
-      if (Math.abs(sx - bPos.x) <= 200 && Math.abs(sy - labelCenterY) <= 52) {
+      // 2. Plat label 400x104 px di bawah badan (jarak 8 px, pusat label di slotPos.y + 60)
+      const labelCenterY = bPos.y + 60;
+      if (Math.abs(sx - bPos.x) <= 220 && Math.abs(sy - labelCenterY) <= 60) {
         return m.id;
       }
     }

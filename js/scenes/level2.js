@@ -148,7 +148,9 @@ class Level2Scene extends Phaser.Scene {
 
     // 8. Munculkan Monster Pertama Serial
     this.time.delayedCall(450, () => {
-      this.spawnMonster();
+      if (!this.isHelpOpen && !this.isFinished && this.activeMonsters.length === 0) {
+        this.spawnMonster();
+      }
     });
 
     // 9. Timer Pemunculan Serial Monster (Poin 6: Jeda minimal 2,5 detik, maks 4 di layar)
@@ -604,19 +606,20 @@ class Level2Scene extends Phaser.Scene {
       }
     }
 
-    // 2. Cek jarak radius 100 px ke posisi layar slot monster
+    // 2. Cek jarak radius 120 px ke badan monster atau 220x60 px ke plat label
     const px = pointerOrPos ? pointerOrPos.x : (this.lastPointerX || 960);
     const py = pointerOrPos ? pointerOrPos.y : (this.lastPointerY || 500);
 
     let closest = null;
-    let minDist = 100;
+    let minDist = 120;
 
     this.activeMonsters.forEach(m => {
       const spos = this.getMonsterPos(m);
       if (spos) {
-        const dist = Math.hypot(px - spos.x, py - spos.y);
-        if (dist <= minDist) {
-          minDist = dist;
+        const bodyDist = Math.hypot(px - spos.x, py - (spos.y - 48));
+        const centerDist = Math.hypot(px - spos.x, py - spos.y);
+        const inLabelBox = (Math.abs(px - spos.x) <= 220 && Math.abs(py - (spos.y + 60)) <= 60);
+        if (bodyDist <= minDist || inLabelBox || centerDist <= minDist) {
           closest = m;
         }
       }
@@ -684,17 +687,17 @@ class Level2Scene extends Phaser.Scene {
   }
 
   /**
-   * Melepas pengisian napas (tembak jika >= 0,5 detik, batal jika kurang).
+   * Melepas pengisian napas (menembak target jika ada, baik tahan napas maupun klik/tap langsung).
    */
   releaseCharge() {
     if (!this.isCharging) return;
+    const target = this.currentTargetMonster;
     this.isCharging = false;
     this.reticleContainer.setVisible(false);
 
-    if (this.chargeTime >= this.chargeThreshold) {
-      if (this.currentTargetMonster) {
-        this.fireShot(this.selectedAstronautIndex, this.currentTargetMonster);
-      }
+    // Tembak jika ada target yang dibidik: mendukung tahan napas 0,5s maupun klik/tap langsung
+    if (target) {
+      this.fireShot(this.selectedAstronautIndex, target);
     } else {
       this.reticleLabel.setText('');
     }
@@ -1268,7 +1271,15 @@ class Level2Scene extends Phaser.Scene {
       this.stagnantAccumulationTime = 0;
     }
 
-    // 4. Update overlay debug jika aktif
+    // 4. Jaring pengaman: jika layar kosong dan belum selesai, segera munculkan monster
+    if (!this.isFinished && !this.isHelpOpen && this.activeMonsters.length === 0 && this.spawnedCount < this.totalThoughts) {
+      const now = Date.now();
+      if (now - this.lastSpawnTime >= 1000) {
+        this.spawnMonster();
+      }
+    }
+
+    // 5. Update overlay debug jika aktif
     if (this.isDebugMode) {
       this.renderDebugOverlay();
     }
@@ -1406,7 +1417,9 @@ class Level2Scene extends Phaser.Scene {
     const btnH = 88; // Kelipatan 8 (11 * 8)
     const btnGap = 32; // Kelipatan 8 (4 * 8)
 
-    if (result.passed) {
+    const canProceed = result.passed || (window.JEDA && JEDA.State && JEDA.State.isLevelUnlocked && JEDA.State.isLevelUnlocked(3));
+
+    if (canProceed) {
       const repeatBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Ulangi Level 2', () => {
         if (JEDA.Stage3D) {
           JEDA.Stage3D.setMode('l2');
@@ -1422,6 +1435,15 @@ class Level2Scene extends Phaser.Scene {
 
       modal.add([repeatBtn, nextBtn]);
     } else {
+      const noticeText = this.add.text(0, rowY + 168, 'Batas kelulusan membuka Level 3: 60 Poin.\nAyo ulangi sekali lagi untuk membuka Level 3!', {
+        fontFamily: JEDA.CFG.FONT.family,
+        fontSize: '22px',
+        fontStyle: '700',
+        color: '#FFA07A',
+        align: 'center'
+      }).setOrigin(0.5).setResolution(2);
+      modal.add(noticeText);
+
       const menuBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Menu Utama', () => {
         if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
         JEDA.FX.transitionTo(this, 'CheckinScene');
@@ -1463,6 +1485,9 @@ class Level2Scene extends Phaser.Scene {
         if (this.spawnTimer) this.spawnTimer.paused = false;
         if (JEDA.State && JEDA.State.markSeen) {
           JEDA.State.markSeen('l2');
+        }
+        if (this.activeMonsters.length === 0 && this.spawnedCount < this.totalThoughts && !this.isFinished) {
+          this.spawnMonster();
         }
       }
     });
