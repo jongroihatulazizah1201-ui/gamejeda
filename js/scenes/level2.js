@@ -210,7 +210,7 @@ class Level2Scene extends Phaser.Scene {
   createHeader() {
     const Layout = JEDA.Layout;
     const headerY = 60; // Pusat vertikal y 0..120
-    const btnW = 140;
+    const btnW = 144;
     const btnH = 48;
 
     // 1. Tombol Menu kiri (x 120)
@@ -290,7 +290,7 @@ class Level2Scene extends Phaser.Scene {
       // Angka tombol shortcut [1..4]
       const keyBadge = this.add.text(-cardW / 2 + 18, -cardH / 2 + 18, `[${cfg.key}]`, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '20px',
+        fontSize: '27px',
         fontStyle: '800',
         color: cfg.colorHex
       }).setOrigin(0, 0.5).setResolution(2);
@@ -303,7 +303,7 @@ class Level2Scene extends Phaser.Scene {
         color: cfg.colorHex
       }).setOrigin(0.5, 0.5).setResolution(2);
 
-      // Dua baris teks: Nama 30 px, Kategori 24 px dengan fitText
+      // Dua baris teks: Nama 30 px, Kategori 27 px dengan fitText
       const maxTextW = cardW - 88;
       const nameText = this.add.text(-cardW / 2 + 68, -14, cfg.name, {
         fontFamily: JEDA.CFG.FONT.family,
@@ -315,11 +315,11 @@ class Level2Scene extends Phaser.Scene {
 
       const catText = this.add.text(-cardW / 2 + 68, 18, cfg.cat, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '24px',
+        fontSize: '27px',
         fontStyle: '700',
         color: cfg.colorHex
       }).setOrigin(0, 0.5).setResolution(2);
-      this.fitText(catText, maxTextW, 24);
+      this.fitText(catText, maxTextW, 27);
 
       container.add([keyBadge, iconText, nameText, catText]);
 
@@ -413,7 +413,7 @@ class Level2Scene extends Phaser.Scene {
 
     this.reticleLabel = this.add.text(0, 52, '', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '800',
       color: '#FFFFFF',
       backgroundColor: 'rgba(15, 18, 44, 0.85)',
@@ -1013,8 +1013,8 @@ class Level2Scene extends Phaser.Scene {
    * Memasang tombol '✕ Tidak cocok' pada monster dari jurnal (BR-19).
    */
   attachJournalDismissButton(monsterItem, slotPos) {
-    const btnW = 140;
-    const btnH = 32;
+    const btnW = 144;
+    const btnH = 48;
     const btn = JEDA.UI.createButton(
       this,
       slotPos.x,
@@ -1025,7 +1025,7 @@ class Level2Scene extends Phaser.Scene {
       () => {
         this.dismissJournalMonster(monsterItem);
       },
-      { fontSize: 18, radius: 16 }
+      { fontSize: 27, radius: 24 }
     );
     btn.setDepth(2100);
     monsterItem.dismissBtn = btn;
@@ -1323,7 +1323,7 @@ class Level2Scene extends Phaser.Scene {
 
       this.reticleGraphics.clear();
       const currentAst = this.astronautConfigs[this.selectedAstronautIndex];
-      const ringRadius = 46;
+      const ringRadius = 48;
 
       this.reticleGraphics.lineStyle(2, 0x506085, 0.4);
       this.reticleGraphics.strokeCircle(0, 0, ringRadius);
@@ -1491,7 +1491,7 @@ class Level2Scene extends Phaser.Scene {
 
       const nameT = this.add.text(mx, rowY - 42, m.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '22px',
+        fontSize: '27px',
         fontStyle: '700',
         color: '#CBD5E1'
       }).setOrigin(0.5).setResolution(2);
@@ -1505,7 +1505,7 @@ class Level2Scene extends Phaser.Scene {
 
       const descT = this.add.text(mx, rowY + 44, m.desc, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '18px',
+        fontSize: '27px',
         color: '#94A3B8'
       }).setOrigin(0.5).setResolution(2);
 
@@ -1546,7 +1546,7 @@ class Level2Scene extends Phaser.Scene {
     } else {
       const noticeText = this.add.text(0, rowY + 168, 'Batas kelulusan membuka Level 3: 60 Poin.\nAyo ulangi sekali lagi untuk membuka Level 3!', {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '22px',
+        fontSize: '27px',
         fontStyle: '700',
         color: '#FFA07A',
         align: 'center'

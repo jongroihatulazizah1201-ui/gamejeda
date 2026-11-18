@@ -170,7 +170,7 @@ class Level3Scene extends Phaser.Scene {
   createEmotionMeter(cx, y) {
     this.meterContainer = this.add.container(cx, y);
     const meterW = 720;
-    const meterH = 26;
+    const meterH = 24;
 
     // Label meter
     this.meterLabel = this.add.text(0, -28, `Tingkat Emosi: ${this.emotionMeter}%`, {
@@ -183,9 +183,9 @@ class Level3Scene extends Phaser.Scene {
     // Track latar belakang
     const track = this.add.graphics();
     track.fillStyle(0x0e0e24, 0.85);
-    track.fillRoundedRect(-meterW / 2, -meterH / 2, meterW, meterH, 13);
+    track.fillRoundedRect(-meterW / 2, -meterH / 2, meterW, meterH, 12);
     track.lineStyle(2, JEDA.CFG.COLOR.panelLine, 0.35);
-    track.strokeRoundedRect(-meterW / 2, -meterH / 2, meterW, meterH, 13);
+    track.strokeRoundedRect(-meterW / 2, -meterH / 2, meterW, meterH, 12);
 
     // Bar isi
     this.meterBar = this.add.graphics();
@@ -394,7 +394,7 @@ class Level3Scene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2);
 
     // Teks konsekuensi dari data.js
-    const consText = this.add.text(cx, cy - 25, scenario.reactionConsequence, {
+    const consText = this.add.text(cx, cy - 24, scenario.reactionConsequence, {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -404,7 +404,7 @@ class Level3Scene extends Phaser.Scene {
       lineSpacing: 10
     }).setOrigin(0.5).setResolution(2);
 
-    const note = this.add.text(cx, cy + 95, 'Emosi meningkat (+15). Reaksi impulsif memperkeruh suasana.', {
+    const note = this.add.text(cx, cy + 96, 'Emosi meningkat (+15). Reaksi impulsif memperkeruh suasana.', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -422,7 +422,7 @@ class Level3Scene extends Phaser.Scene {
     });
 
     let isNextHandled = false;
-    const nextBtn = JEDA.UI.createButton(this, cx, cy + 180, 320, 88, 'Lanjutkan', () => {
+    const nextBtn = JEDA.UI.createButton(this, cx, cy + 176, 320, 88, 'Lanjutkan', () => {
       if (isNextHandled) return;
       isNextHandled = true;
       this.loadScenario(this.currentScenarioIndex + 1);
@@ -477,7 +477,7 @@ class Level3Scene extends Phaser.Scene {
 
       const label = this.add.text(sx, indY + 38, st.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '20px',
+        fontSize: '27px',
         fontStyle: '700',
         color: isActive ? JEDA.CFG.COLOR.hex.calm : JEDA.CFG.COLOR.hex.muted
       }).setOrigin(0.5).setResolution(2);
@@ -517,7 +517,7 @@ class Level3Scene extends Phaser.Scene {
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    const desc = this.add.text(cx, cy - 35, 'Tahan diri dari dorongan untuk langsung mengetik atau membalas.', {
+    const desc = this.add.text(cx, cy - 32, 'Tahan diri dari dorongan untuk langsung mengetik atau membalas.', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -525,7 +525,7 @@ class Level3Scene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2);
 
     // Orb yang berdenyut lembut
-    const orb = JEDA.FX.createOrb(this, cx, cy + 60, 55, JEDA.CFG.COLOR.warn);
+    const orb = JEDA.FX.createOrb(this, cx, cy + 64, 55, JEDA.CFG.COLOR.warn);
     const pulse = this.tweens.add({
       targets: orb,
       scaleX: 1.15,
@@ -537,7 +537,7 @@ class Level3Scene extends Phaser.Scene {
 
     // Tombol STOP
     let isHandled = false;
-    const stopBtn = JEDA.UI.createButton(this, cx, cy + 180, 360, 88, 'Berhenti (STOP)', () => {
+    const stopBtn = JEDA.UI.createButton(this, cx, cy + 176, 360, 88, 'Berhenti (STOP)', () => {
       if (isHandled) return;
       isHandled = true;
 
@@ -594,14 +594,14 @@ class Level3Scene extends Phaser.Scene {
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    const desc = this.add.text(cx, cy - 35, 'Tahan tombol, orb, atau tombol Spasi selama 4 detik.', {
+    const desc = this.add.text(cx, cy - 32, 'Tahan tombol, orb, atau tombol Spasi selama 4 detik.', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
 
-    const orb = JEDA.FX.createOrb(this, cx, cy + 60, 55, JEDA.CFG.COLOR.calm);
+    const orb = JEDA.FX.createOrb(this, cx, cy + 64, 55, JEDA.CFG.COLOR.calm);
     orb.setSize(150, 150);
     orb.setInteractive({
       hitArea: new Phaser.Geom.Circle(0, 0, 75),
@@ -609,14 +609,14 @@ class Level3Scene extends Phaser.Scene {
       useHandCursor: true
     });
 
-    const timerText = this.add.text(cx, cy + 60, '', {
+    const timerText = this.add.text(cx, cy + 64, '', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '33px',
       fontStyle: '800',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2).setDepth(20);
 
-    const breathBtn = JEDA.UI.createButton(this, cx, cy + 180, 520, 88, 'Tahan untuk Tarik Napas (4 detik)', null, {
+    const breathBtn = JEDA.UI.createButton(this, cx, cy + 176, 520, 88, 'Tahan untuk Tarik Napas (4 detik)', null, {
       primary: true,
       textColor: '#FFFFFF',
       fontSize: 27,
@@ -747,7 +747,7 @@ class Level3Scene extends Phaser.Scene {
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    const desc = this.add.text(cx, cy - 35, 'Kenali apa yang kamu rasakan tanpa menghakiminya:', {
+    const desc = this.add.text(cx, cy - 32, 'Kenali apa yang kamu rasakan tanpa menghakiminya:', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '27px',
       fontStyle: '600',
@@ -760,7 +760,7 @@ class Level3Scene extends Phaser.Scene {
     const emotionOptions = Phaser.Utils.Array.Shuffle([...scenario.emotions]);
     const spacing = 200;
     const startX = cx - ((emotionOptions.length - 1) * spacing) / 2;
-    const pillY = cy + 60;
+    const pillY = cy + 64;
 
     let isHandled = false;
     const pills = [];
@@ -978,7 +978,7 @@ class Level3Scene extends Phaser.Scene {
 
     // Tiga Komponen Skor Level 3: Jeda, Respons, Observe (PRD Bagian 6)
     const rowY = -cardH / 2 + 220;
-    const compBoxW = 250;
+    const compBoxW = 256;
     const compBoxH = 120;
     const comps = [
       { name: 'Jeda (40%)', val: `${result.jeda}%`, desc: 'Pilihan Mengambil Jeda' },
@@ -1027,9 +1027,9 @@ class Level3Scene extends Phaser.Scene {
 
     modal.add([title, stars, scoreText]);
 
-    // Tombol Tindakan Baku (Tinggi 88, sama lebar 300, aksi utama di kanan)
+    // Tombol Tindakan Baku (Tinggi 88, sama lebar 288, aksi utama di kanan)
     const btnY = cardH / 2 - 76;
-    const btnW = 300;
+    const btnW = 288;
     const btnH = 88;
     const btnGap = 32;
 

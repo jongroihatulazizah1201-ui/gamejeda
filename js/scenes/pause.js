@@ -38,14 +38,14 @@ class PauseScene extends Phaser.Scene {
     bg.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 32);
 
     // 3. Judul & Subjudul (PRD Bagian 5.6)
-    const title = this.add.text(cx, cy - 110, 'Dijeda.', {
+    const title = this.add.text(cx, cy - 112, 'Dijeda.', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '44px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
 
-    const sub = this.add.text(cx, cy - 42, 'Lanjut kapan pun kamu siap.', {
+    const sub = this.add.text(cx, cy - 40, 'Lanjut kapan pun kamu siap.', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '33px',
       fontStyle: '600',
@@ -63,7 +63,7 @@ class PauseScene extends Phaser.Scene {
     const btnW = 280;
     const btnH = 88;
     const btnGap = 32;
-    const btnY = cy + 130;
+    const btnY = cy + 128;
     const btnXs = Layout.rowCenter([btnW, btnW], btnGap);
 
     // Kiri: Aksi Sekunder (Ke Menu Utama)

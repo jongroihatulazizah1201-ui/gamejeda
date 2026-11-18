@@ -6,7 +6,7 @@ const path = require('path');
 const vm = require('vm');
 
 console.log('====================================================');
-console.log('   PENGUJIAN & AUDIT KUALITAS GAME JEDA (V3.2)');
+console.log('   PENGUJIAN & AUDIT KUALITAS GAME JEDA (V3.3)');
 console.log('====================================================\n');
 
 let passCount = 0;
@@ -203,8 +203,8 @@ assert(fs.existsSync(distCss), 'File dist/css/style.min.css tersedia');
 
 const htmlContent = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
 assert(htmlContent.includes('role="region"'), 'Atribut aksesibilitas ARIA role="region" ada pada #game-container');
-assert(htmlContent.includes('dist/js/app.min.js?v=3.2'), 'index.html memuat app.min.js versi 3.2');
-assert(htmlContent.includes('dist/css/style.min.css?v=3.2'), 'index.html memuat style.min.css versi 3.2');
+assert(htmlContent.includes('dist/js/app.min.js?v=3.3'), 'index.html memuat app.min.js versi 3.3');
+assert(htmlContent.includes('dist/css/style.min.css?v=3.3'), 'index.html memuat style.min.css versi 3.3');
 
 console.log('\n====================================================');
 console.log(`HASIL AKHIR: ${passCount} LULUS, ${failCount} GAGAL`);

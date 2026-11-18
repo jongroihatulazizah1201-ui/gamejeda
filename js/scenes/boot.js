@@ -142,7 +142,7 @@ class BootScene extends Phaser.Scene {
     const cy = JEDA.CFG.H / 2;
 
     // Posisi teks tepat di tengah ruang langit (bebas tabrakan dari orb di atas dan pulau di bawah)
-    this.titleText = this.add.text(cx, cy - 75, 'JEDA', {
+    this.titleText = this.add.text(cx, cy - 72, 'JEDA', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '66px',
       fontStyle: '800',
@@ -150,7 +150,7 @@ class BootScene extends Phaser.Scene {
       shadow: { offsetX: 0, offsetY: 3, blur: 14, color: 'rgba(5, 5, 20, 0.9)', fill: true }
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
-    this.subtitleText = this.add.text(cx, cy - 5, 'Latihan berhenti sejenak', {
+    this.subtitleText = this.add.text(cx, cy, 'Latihan berhenti sejenak', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '33px',
       fontStyle: '600',
@@ -159,7 +159,7 @@ class BootScene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(2).setAlpha(0);
 
     // Kapsul petunjuk interaksi (frosted pill beraksen tenang, bebas tabrakan dari lentera pulau)
-    this.hintContainer = this.add.container(cx, cy + 70).setAlpha(0);
+    this.hintContainer = this.add.container(cx, cy + 72).setAlpha(0);
     const pillW = 520;
     const pillH = 56;
     const pillBg = this.add.graphics();

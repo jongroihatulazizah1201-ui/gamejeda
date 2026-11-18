@@ -102,7 +102,7 @@ class ResultScene extends Phaser.Scene {
 
     this.add.text(cx, 70, 'Refleksi dan Evaluasi Sesi Mindfulness', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
@@ -114,7 +114,7 @@ class ResultScene extends Phaser.Scene {
   createFinalScoreCard(cx, y) {
     const Layout = JEDA.Layout;
     const cardW = Layout.panelSize.M; // 960 px
-    const cardH = 116;
+    const cardH = 120;
 
     const bg = this.add.graphics();
     // 100% Solid Base
@@ -135,7 +135,7 @@ class ResultScene extends Phaser.Scene {
     const weightFormula = '(Bobot: 25% Napas + 30% Awan Pikiran + 45% Jeda S.T.O.P.)';
     this.add.text(cx, y - 2, weightFormula, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '18px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
@@ -174,7 +174,7 @@ class ResultScene extends Phaser.Scene {
   createLevelBreakdownCards(cx, y) {
     const Layout = JEDA.Layout;
     const cardW = 320;
-    const cardH = 92;
+    const cardH = 96;
     const cardGap = 24;
     const cardWidths = [cardW, cardW, cardW];
     const cardXs = Layout.rowCenter(cardWidths, cardGap);
@@ -195,14 +195,14 @@ class ResultScene extends Phaser.Scene {
 
       const title = this.add.text(bx, y - 24, lvl.name, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '20px',
+        fontSize: '27px',
         fontStyle: '800',
         color: JEDA.CFG.COLOR.hex.text
       }).setOrigin(0.5).setResolution(2);
 
       const scoreT = this.add.text(bx, y + 2, `${lvl.score} Poin`, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '26px',
+        fontSize: '27px',
         fontStyle: '800',
         color: JEDA.CFG.COLOR.hex.calm
       }).setOrigin(0.5).setResolution(2);
@@ -211,7 +211,7 @@ class ResultScene extends Phaser.Scene {
       const starStr = '★'.repeat(starsCount) + '☆'.repeat(3 - starsCount);
       const starT = this.add.text(bx, y + 26, starStr, {
         fontFamily: JEDA.CFG.FONT.family,
-        fontSize: '20px',
+        fontSize: '27px',
         fontStyle: '600',
         color: JEDA.CFG.COLOR.hex.warn
       }).setOrigin(0.5).setResolution(2);
@@ -219,7 +219,7 @@ class ResultScene extends Phaser.Scene {
       if (lvl.easy) {
         this.add.text(bx + cardW / 2 - 12, y - cardH / 2 + 12, 'Mode Ramah', {
           fontFamily: JEDA.CFG.FONT.family,
-          fontSize: '14px',
+          fontSize: '27px',
           fontStyle: '600',
           color: JEDA.CFG.COLOR.hex.calm
         }).setOrigin(1, 0.5).setResolution(2);
@@ -233,7 +233,7 @@ class ResultScene extends Phaser.Scene {
   createCheckinComparison(cx, y) {
     const Layout = JEDA.Layout;
     const cardW = Layout.panelSize.M; // 960 px
-    const cardH = 154;
+    const cardH = 160;
 
     const bg = this.add.graphics();
     // 100% Solid Base
@@ -250,7 +250,7 @@ class ResultScene extends Phaser.Scene {
     const info = `Check-in Awal: ${startScore}/5 (${startLabel})`;
     this.add.text(cx, y - 50, info, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '18px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted
     }).setOrigin(0.5).setResolution(2);
@@ -258,7 +258,7 @@ class ResultScene extends Phaser.Scene {
     const question = 'Bagaimana perasaanmu sekarang setelah latihan?';
     this.add.text(cx, y - 26, question, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2);
@@ -273,7 +273,7 @@ class ResultScene extends Phaser.Scene {
     // Teks refleksi (BR-10) - Dibatasi wordWrap agar rapi dan tidak keluar batas card
     this.reflectionText = this.add.text(cx, y + 48, 'Pilih perasaanmu sekarang untuk melihat refleksi.', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '18px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.muted,
       align: 'center',
@@ -305,7 +305,7 @@ class ResultScene extends Phaser.Scene {
 
     const numText = this.add.text(0, 0, String(value), {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '27px',
       fontStyle: '800',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
@@ -374,13 +374,13 @@ class ResultScene extends Phaser.Scene {
     // Label judul bagian lencana (kedalaman 60 di atas kartu agar tidak tertutup badge)
     this.add.text(cx, y - 54, 'Lencana Sikap Positif', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2).setDepth(60);
 
     const slotW = 304;
-    const slotH = 68;
+    const slotH = 72;
     const slotWidths = [slotW, slotW, slotW, slotW, slotW];
     const slotXs = Layout.rowCenter(slotWidths, 24);
 
@@ -412,7 +412,7 @@ class ResultScene extends Phaser.Scene {
 
     this.add.text(cx, y - 78, `Tema Visual Sesi Berikutnya (Koleksi: ${totalStars}/9 ★)`, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
     }).setOrigin(0.5).setResolution(2).setDepth(60);
@@ -452,7 +452,7 @@ class ResultScene extends Phaser.Scene {
   createActionButtons(cx, y) {
     const Layout = JEDA.Layout;
     const btnW = 320;
-    const btnH = 68;
+    const btnH = 72;
     const btnGap = 32;
     const btnWidths = [btnW, btnW];
     const btnXs = Layout.rowCenter(btnWidths, btnGap);
@@ -461,7 +461,7 @@ class ResultScene extends Phaser.Scene {
     JEDA.UI.createButton(this, btnXs[0], y, btnW, btnH, 'Menu Utama', () => {
       if (JEDA.Stage3D) JEDA.Stage3D.setMode('menu');
       JEDA.FX.transitionTo(this, 'CheckinScene');
-    }, { radius: 34, fontSize: 28 });
+    }, { radius: 36, fontSize: 28 });
 
     // Kanan: Aksi Utama (Main Lagi)
     JEDA.UI.createButton(this, btnXs[1], y, btnW, btnH, 'Main Lagi', () => {

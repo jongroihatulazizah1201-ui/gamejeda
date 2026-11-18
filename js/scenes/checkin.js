@@ -159,7 +159,7 @@ class CheckinScene extends Phaser.Scene {
       this.showIntroCard();
     }, { fontSize: 27, radius: 24 });
 
-    const settingsW = 210;
+    const settingsW = 208;
     const settingsX = helpBtnX - helpBtnSize / 2 - 16 - settingsW / 2;
     JEDA.UI.createButton(this, settingsX, headerY, settingsW, btnH, 'Pengaturan ⚙', () => {
       JEDA.UI.showSettingsModal(this, () => {
@@ -179,7 +179,7 @@ class CheckinScene extends Phaser.Scene {
         this.soundBtn.textObj.setText(next ? 'Suara: 🔊' : 'Suara: 🔈');
         JEDA.UI.toast(this, next ? 'Musik Meditasi 432 Hz Aktif' : 'Mode Suara Hening');
       }
-    }, { fontSize: 24, radius: 24 });
+    }, { fontSize: 27, radius: 24 });
   }
 
   /**
@@ -293,9 +293,9 @@ class CheckinScene extends Phaser.Scene {
 
     // 7. Tombol Mulai dan Mode Jurnal (opsional) (PRD 14.5 & 15.6)
     // Panel bottom = 480 + 384/2 = 672. 672 + 48 = 720. Pusat tombol = 720 + 44 = 764.
-    const startW = 280;
-    const journalW = 340;
-    const btnGap = 24;
+    const startW = 320;
+    const journalW = 320;
+    const btnGap = 32;
     const btnXs = Layout.rowCenter([startW, journalW], btnGap);
 
     this.startButton = JEDA.UI.createButton(this, btnXs[0], 764, startW, 88, 'Mulai', () => {
@@ -355,7 +355,7 @@ class CheckinScene extends Phaser.Scene {
     const noticeText = 'Tulisanmu hanya diproses di perangkat ini, tidak dikirim ke mana pun,\ndan hilang saat sesi berakhir. Hindari menulis nama orang lain.';
     const noticeT = this.add.text(0, -cardH / 2 + 115, noticeText, {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '600',
       color: '#CBD5E1',
       align: 'center',
@@ -365,7 +365,7 @@ class CheckinScene extends Phaser.Scene {
     // Counter Kalimat Real-time
     const counterT = this.add.text(0, 160, 'Terdeteksi: 0 kalimat (minimal 3, maksimal 12 kalimat)', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '22px',
+      fontSize: '27px',
       fontStyle: '700',
       color: '#94A3B8'
     }).setOrigin(0.5).setResolution(2);

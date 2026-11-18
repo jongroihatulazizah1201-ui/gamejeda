@@ -72,18 +72,18 @@ class Level1Scene extends Phaser.Scene {
     // 3. Panel Petunjuk & Status di atas Orb (y = 236, Skala 8 px PRD 14.3 & 14.5)
     const pillY = 236;
     const pillH = 96; // Skala 8 px (12 * 8)
-    const pillRadius = 28;
+    const pillRadius = 24;
 
     this.instructionText = this.add.text(cx, pillY - 16, 'Tahan Spasi / Klik Kiri untuk menarik napas, lepas untuk menghembuskan', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '24px',
+      fontSize: '27px',
       fontStyle: '700',
       color: '#FFFFFF'
     }).setOrigin(0.5).setResolution(2);
 
     this.feedbackText = this.add.text(cx, pillY + 18, 'Tekan & tahan tombol (jangan dilepas) untuk memulai...', {
       fontFamily: JEDA.CFG.FONT.family,
-      fontSize: '20px',
+      fontSize: '27px',
       fontStyle: '600',
       color: JEDA.CFG.COLOR.hex.calm
     }).setOrigin(0.5).setResolution(2);
@@ -376,16 +376,16 @@ class Level1Scene extends Phaser.Scene {
     const dotXs = Layout.rowCenter(dotWidths, 24);
 
     // Kapsul pembungkus indikator di y = 860
-    const pillW = 420;
+    const pillW = 416;
     const pillH = 56;
     const indPill = this.add.graphics();
     // 100% Solid Base
     indPill.fillStyle(0x0E1026, 1.0);
-    indPill.fillRoundedRect(cx - pillW / 2, y - pillH / 2, pillW, pillH, 28);
+    indPill.fillRoundedRect(cx - pillW / 2, y - pillH / 2, pillW, pillH, 24);
     indPill.fillStyle(0x12142E, 0.94);
-    indPill.fillRoundedRect(cx - pillW / 2, y - pillH / 2, pillW, pillH, 28);
+    indPill.fillRoundedRect(cx - pillW / 2, y - pillH / 2, pillW, pillH, 24);
     indPill.lineStyle(2, 0x3F486E, 0.7);
-    indPill.strokeRoundedRect(cx - pillW / 2, y - pillH / 2, pillW, pillH, 28);
+    indPill.strokeRoundedRect(cx - pillW / 2, y - pillH / 2, pillW, pillH, 24);
 
     for (let i = 0; i < this.totalCycles; i++) {
       const ix = dotXs[i];
@@ -1184,9 +1184,9 @@ class Level1Scene extends Phaser.Scene {
 
     modal.add([title, stars, scoreText]);
 
-    // Tombol Tindakan Baku (Tinggi 88, sama lebar 300, teks 33 px, aksi utama di kanan)
+    // Tombol Tindakan Baku (Tinggi 88, sama lebar 288, teks 33 px, aksi utama di kanan)
     const btnY = cardH / 2 - 76;
-    const btnW = 300;
+    const btnW = 288;
     const btnH = 88;
     const btnGap = 32;
 
