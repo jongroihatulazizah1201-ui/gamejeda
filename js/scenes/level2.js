@@ -477,6 +477,26 @@ class Level2Scene extends Phaser.Scene {
       // Hindari menembak jika mengklik tombol astronot atau header
       if (pointer.y > 880 || pointer.y < 120) return;
 
+      // Ambil sasaran monster yang diklik atau monster terdekat / aktif
+      const target = this.resolveTargetMonster(pointer) || this.currentTargetMonster || (this.activeMonsters.length > 0 ? this.activeMonsters[0] : null);
+      if (target && !this.isFiring) {
+        const catToIdx = {
+          'Cemas': 0,
+          'Rencana': 1,
+          'Menilai Diri': 2,
+          'Kenangan': 3
+        };
+        const mCat = (target.thought && (target.thought.cat || target.thought.category)) || 'Cemas';
+        const matchIdx = (catToIdx[mCat] !== undefined) ? catToIdx[mCat] : this.selectedAstronautIndex;
+
+        // Otomatis pilih astronot yang sesuai dan langsung tembakkan untuk menjinakkan
+        this.selectAstronaut(matchIdx);
+        this.currentTargetMonster = target;
+        this.lastHighlightedMonster = target;
+        this.fireShot(matchIdx, target);
+        return;
+      }
+
       this.startCharge(pointer);
     });
 
@@ -704,18 +724,25 @@ class Level2Scene extends Phaser.Scene {
    */
   releaseCharge() {
     if (!this.isCharging) return;
-    const target = this.currentTargetMonster;
+    const target = this.currentTargetMonster || this.lastHighlightedMonster || (this.activeMonsters.length > 0 ? this.activeMonsters[0] : null);
     this.isCharging = false;
     this.reticleContainer.setVisible(false);
 
-    // Tembak jika ada target yang dibidik: mendukung tahan napas 0,5s maupun klik/tap langsung
+    // Tembak jika ada target yang dibidik
     if (target) {
-      this.fireShot(this.selectedAstronautIndex, target);
+      const catToIdx = {
+        'Cemas': 0,
+        'Rencana': 1,
+        'Menilai Diri': 2,
+        'Kenangan': 3
+      };
+      const mCat = (target.thought && (target.thought.cat || target.thought.category)) || 'Cemas';
+      const matchIdx = (catToIdx[mCat] !== undefined) ? catToIdx[mCat] : this.selectedAstronautIndex;
+      this.selectAstronaut(matchIdx);
+      this.fireShot(matchIdx, target);
     } else {
       this.reticleLabel.setText('');
     }
-
-    this.currentTargetMonster = null;
   }
 
   /**
@@ -828,7 +855,7 @@ class Level2Scene extends Phaser.Scene {
       this.progressText.setText(`Dijinakkan ${this.defeatedCount} / ${this.totalThoughts}`);
 
       // Cek apakah level selesai
-      if (this.defeatedCount >= this.totalThoughts) {
+      if (this.defeatedCount >= this.totalThoughts || (this.spawnedCount >= this.totalThoughts && this.activeMonsters.length === 0)) {
         this.time.delayedCall(700, () => {
           this.finishLevel();
         });
@@ -1351,6 +1378,11 @@ class Level2Scene extends Phaser.Scene {
       }
     }
 
+    // 4b. Jaring pengaman penyelesaian: jika seluruh pikiran sudah keluar dan monster aktif sudah habis
+    if (!this.isFinished && !this.isHelpOpen && this.spawnedCount >= this.totalThoughts && this.activeMonsters.length === 0) {
+      this.finishLevel();
+    }
+
     // 5. Update overlay debug jika aktif
     if (this.isDebugMode) {
       this.renderDebugOverlay();
@@ -1367,12 +1399,10 @@ class Level2Scene extends Phaser.Scene {
     const panicHits = (JEDA.State.session && JEDA.State.session.panicHits) || this.panicHits || 0;
     const result = JEDA.Score.calcL2(this.firstTryCorrect, panicHits, this.totalThoughts);
 
-    // Jika seluruh 10 pikiran berhasil dijinakkan, pemain tuntas menyelesaikan latihan & berhak lanjut ke Level 3
-    if (this.defeatedCount >= this.totalThoughts) {
-      result.passed = true;
-      result.score = Math.max(result.score, 60);
-      result.stars = Math.max(result.stars, 1);
-    }
+    // Jaminan kelulusan Level 2: Setiap pemain yang menuntaskan Level 2 dijamin lulus & berhak lanjut ke Level 3
+    result.passed = true;
+    result.score = Math.max(result.score, 75);
+    result.stars = Math.max(result.stars, 2);
 
     if (result.passed) {
       if (JEDA.Lumi) JEDA.Lumi.say('level_pass');
@@ -1496,7 +1526,7 @@ class Level2Scene extends Phaser.Scene {
     const btnH = 88; // Kelipatan 8 (11 * 8)
     const btnGap = 32; // Kelipatan 8 (4 * 8)
 
-    const canProceed = result.passed || (window.JEDA && JEDA.State && JEDA.State.isLevelUnlocked && JEDA.State.isLevelUnlocked(3));
+    const canProceed = true; // Selalu true agar tombol 'Lanjut ke Level 3' selalu tersedia saat level tuntas
 
     if (canProceed) {
       const repeatBtn = JEDA.UI.createButton(this, -(btnW / 2 + btnGap / 2), btnY, btnW, btnH, 'Ulangi Level 2', () => {
