@@ -103,10 +103,10 @@ JEDA.Stage3D = (function() {
 
   // Data elemen Level 2: Misi Astronot (PRD Bagian 15.4 - Prompt R-5)
   const L2_ASTRONAUT_CONFIGS = [
-    { index: 0, name: 'Penenang', cat: 'Cemas', color: 0x6EC6FF, x: -4.5, y: -3.2, z: 0.0 },
-    { index: 1, name: 'Navigator', cat: 'Rencana', color: 0xFFB86B, x: -1.5, y: -3.2, z: 0.0 },
-    { index: 2, name: 'Sahabat', cat: 'Menilai Diri', color: 0xB69CFF, x: 1.5, y: -3.2, z: 0.0 },
-    { index: 3, name: 'Arsiparis', cat: 'Kenangan', color: 0xE6EEF7, x: 4.5, y: -3.2, z: 0.0 }
+    { index: 0, name: 'Penenang', cat: 'Cemas', color: 0x6EC6FF, sx: 393, sy: 855 },
+    { index: 1, name: 'Navigator', cat: 'Rencana', color: 0xFFB86B, sx: 771, sy: 855 },
+    { index: 2, name: 'Sahabat', cat: 'Menilai Diri', color: 0xB69CFF, sx: 1149, sy: 855 },
+    { index: 3, name: 'Arsiparis', cat: 'Kenangan', color: 0xE6EEF7, sx: 1527, sy: 855 }
   ];
   let l2Group = null;
   let l2AstronautsGroup = null;
@@ -1085,8 +1085,8 @@ JEDA.Stage3D = (function() {
    * Merender teks pikiran ke dalam kanvas dengan auto-fit font dinamis.
    * Dilarang memotong teks atau memakai tanda elipsis (Prinsip UI/UX PRD 14.3).
    */
-  function renderThoughtTextToCanvas(ctx, text, maxWidth, maxHeight) {
-    let fontSize = 56; // 28 px di layar 1920x1080 (56 px pada kanvas 1024)
+  function renderThoughtTextToCanvas(ctx, text, maxWidth, maxHeight, centerY = 128) {
+    let fontSize = 48; // font tajam dan proporsional
     let lines = [];
 
     while (fontSize >= 20) {
@@ -1119,9 +1119,9 @@ JEDA.Stage3D = (function() {
       fontSize -= 2;
     }
 
-    // Gambar baris-baris teks terpusat secara simetris
+    // Gambar baris-baris teks terpusat secara simetris pada centerY
     const lineHeight = fontSize * 1.22;
-    const startY = 128 - ((lines.length - 1) * lineHeight) / 2;
+    const startY = centerY - ((lines.length - 1) * lineHeight) / 2;
     for (let i = 0; i < lines.length; i++) {
       ctx.fillText(lines[i], 512, startY + (i * lineHeight));
     }
@@ -1129,7 +1129,7 @@ JEDA.Stage3D = (function() {
 
   /**
    * Membuat Sprite kanvas label pikiran tajam (CanvasTexture 1024x256, ukuran layar tetap 400x104 px).
-   * Teks Nunito 700 putih dengan fitText tanpa elipsis.
+   * Teks Nunito 700 putih dengan fitText tanpa elipsis dan indikator kategori/astronot yang jelas.
    */
   function createThoughtSprite(thought) {
     const canvas = document.createElement('canvas');
@@ -1137,23 +1137,43 @@ JEDA.Stage3D = (function() {
     canvas.height = 256;
     const ctx = canvas.getContext('2d');
 
-    // Panel kaca gelap pekat (alpha 0.95)
+    const catMap = {
+      'Cemas': { name: 'Penenang [1]', color: '#6EC6FF', border: '#6EC6FF' },
+      'Rencana': { name: 'Navigator [2]', color: '#FFB86B', border: '#FFB86B' },
+      'Menilai Diri': { name: 'Sahabat [3]', color: '#B69CFF', border: '#B69CFF' },
+      'Kenangan': { name: 'Arsiparis [4]', color: '#E6EEF7', border: '#CBD5E1' }
+    };
+    const catInfo = catMap[thought.cat] || { name: 'Astronot', color: '#7FE0C3', border: '#7FE0C3' };
+
+    // Panel kaca gelap pekat (alpha 0.96)
     ctx.fillStyle = 'rgba(16, 18, 48, 0.96)';
     drawRoundRect(ctx, 24, 16, 976, 224, 32);
     ctx.fill();
 
-    // Border aksen lembut
-    ctx.strokeStyle = '#7FE0C3';
+    // Border aksen bercahaya sesuai warna kategori astronot
+    ctx.strokeStyle = catInfo.border;
     ctx.lineWidth = 6;
     drawRoundRect(ctx, 24, 16, 976, 224, 32);
     ctx.stroke();
 
-    // Teks pikiran putih tajam
-    ctx.fillStyle = '#FFFFFF';
+    // Lencana Kategori & Panduan Astronot di bagian atas plat
+    ctx.font = '800 32px Nunito, sans-serif';
+    ctx.fillStyle = catInfo.color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.fillText(`${thought.cat || 'Pikiran'} • Gunakan ${catInfo.name}`, 512, 54);
 
-    renderThoughtTextToCanvas(ctx, thought.text || '', 920, 180);
+    // Garis pemisah halus di bawah lencana
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(80, 80);
+    ctx.lineTo(944, 80);
+    ctx.stroke();
+
+    // Teks pikiran putih tajam di bagian bawah (y: 84 s.d. 228)
+    ctx.fillStyle = '#FFFFFF';
+    renderThoughtTextToCanvas(ctx, thought.text || '', 920, 140, 155);
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.generateMipmaps = false;
@@ -1433,15 +1453,8 @@ JEDA.Stage3D = (function() {
     l2Group.add(l2EffectsGroup);
 
     // 4 Koordinat layar astronot sesuai Poin 4 (x = 393, 771, 1149, 1527, y = 855)
-    const astScreenPositions = [
-      { index: 0, name: 'Penenang', cat: 'Cemas', color: 0x6EC6FF, sx: 393, sy: 855 },
-      { index: 1, name: 'Navigator', cat: 'Rencana', color: 0xFFB86B, sx: 771, sy: 855 },
-      { index: 2, name: 'Sahabat', cat: 'Menilai Diri', color: 0xB69CFF, sx: 1149, sy: 855 },
-      { index: 3, name: 'Arsiparis', cat: 'Kenangan', color: 0xE6EEF7, sx: 1527, sy: 855 }
-    ];
-
     l2Astronauts = [];
-    astScreenPositions.forEach(cfg => {
+    L2_ASTRONAUT_CONFIGS.forEach(cfg => {
       const aMesh = createAstronautMesh(cfg);
       const wPos = screenToWorld(cfg.sx, cfg.sy, 0);
       aMesh.position.copy(wPos);
@@ -1622,8 +1635,8 @@ JEDA.Stage3D = (function() {
     const beamGeo = new THREE.CylinderGeometry(0.06, 0.06, Math.min(2.4, dist * 0.35), 8);
     beamGeo.rotateX(Math.PI * 0.5);
 
-    const astCfg = (astronaut.userData && astronaut.userData.cfg) || (astScreenPositions && astScreenPositions[astronautIndex]) || {};
-    const astCat = astCfg.cat || '';
+    const astCfg = (astronaut.userData && astronaut.userData.cfg) || L2_ASTRONAUT_CONFIGS[astronautIndex] || L2_ASTRONAUT_CONFIGS[0];
+    const astCat = astCfg.cat || 'Cemas';
     const astColor = astCfg.color || 0x6EC6FF;
 
     const beamMat = new THREE.MeshBasicMaterial({
@@ -1883,13 +1896,20 @@ JEDA.Stage3D = (function() {
           }
         }
 
-        // Efek getaran saat tembakan salah
+        // Efek tembakan salah: Dilarang menggetarkan posisi mesh/teks (anti-dizziness & ramah sensorik)
         if (ud.shake > 0) {
-          item.mesh.position.x = ud.basePos.x + (Math.random() - 0.5) * ud.shake * 0.35;
-          ud.shake -= dt * 1.8;
-          if (ud.shake < 0) {
+          item.mesh.position.x = ud.basePos.x;
+          ud.shake -= dt * 2.0;
+          if (ud.shake <= 0) {
             ud.shake = 0;
-            item.mesh.position.x = ud.basePos.x;
+            if (ud.body && ud.body.material && ud.body.material.emissive) {
+              ud.body.material.emissive.setHex(0x241C3C);
+            }
+          } else {
+            // Berikan kilas warna lembut tenang hanya pada badan monster (bukan teks)
+            if (ud.body && ud.body.material && ud.body.material.emissive) {
+              ud.body.material.emissive.setHex(0x552838);
+            }
           }
         }
       } else {

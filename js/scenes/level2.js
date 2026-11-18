@@ -327,6 +327,11 @@ class Level2Scene extends Phaser.Scene {
       container.setInteractive({ useHandCursor: true });
       container.on('pointerdown', () => {
         this.selectAstronaut(idx);
+        // Langsung luncurkan tembakan ke monster aktif jika ada sasaran
+        const target = this.currentTargetMonster || this.lastHighlightedMonster || (this.activeMonsters.length > 0 ? this.activeMonsters[0] : null);
+        if (target && !this.isFiring) {
+          this.fireShot(idx, target);
+        }
       });
 
       this.astronautCards.push({
@@ -423,12 +428,16 @@ class Level2Scene extends Phaser.Scene {
    * Mengatur kontrol masukan keyboard dan pointer (mouse / touch).
    */
   setupInputControls() {
-    // 1. Tombol angka 1, 2, 3, 4 untuk ganti astronot
+    // 1. Tombol angka 1, 2, 3, 4 untuk ganti astronot dan langsung menembak sasaran aktif
     const keys = ['ONE', 'TWO', 'THREE', 'FOUR'];
     keys.forEach((k, idx) => {
       this.input.keyboard.on(`keydown-${k}`, () => {
         if (!this.isHelpOpen && !this.isFinished) {
           this.selectAstronaut(idx);
+          const target = this.currentTargetMonster || this.lastHighlightedMonster || (this.activeMonsters.length > 0 ? this.activeMonsters[0] : null);
+          if (target && !this.isFiring) {
+            this.fireShot(idx, target);
+          }
         }
       });
     });
@@ -438,6 +447,10 @@ class Level2Scene extends Phaser.Scene {
       this.input.keyboard.on(`keydown-${k}`, () => {
         if (!this.isHelpOpen && !this.isFinished) {
           this.selectAstronaut(idx);
+          const target = this.currentTargetMonster || this.lastHighlightedMonster || (this.activeMonsters.length > 0 ? this.activeMonsters[0] : null);
+          if (target && !this.isFiring) {
+            this.fireShot(idx, target);
+          }
         }
       });
     });
@@ -764,11 +777,28 @@ class Level2Scene extends Phaser.Scene {
 
       // Hapus dari daftar aktif
       this.activeMonsters = this.activeMonsters.filter(m => m.id !== monster.id);
-      if (this.currentTargetMonster && this.currentTargetMonster.id === monster.id) {
-        this.currentTargetMonster = null;
+      if (this.currentHintBubble) {
+        this.currentHintBubble.destroy();
+        this.currentHintBubble = null;
       }
-      if (this.lastHighlightedMonster && this.lastHighlightedMonster.id === monster.id) {
+
+      // Kunci sasaran secara otomatis ke monster aktif berikutnya jika ada
+      if (this.activeMonsters.length > 0) {
+        const nextTarget = this.activeMonsters[0];
+        this.currentTargetMonster = nextTarget;
+        this.lastHighlightedMonster = nextTarget;
+        const nextPos = this.getMonsterPos(nextTarget);
+        if (nextPos) {
+          this.reticleContainer.setPosition(nextPos.x, nextPos.y);
+          this.reticleContainer.setVisible(true);
+          if (window.JEDA && JEDA.Stage3D && JEDA.Stage3D.l2 && JEDA.Stage3D.l2.aim) {
+            JEDA.Stage3D.l2.aim(this.selectedAstronautIndex, nextPos.x, nextPos.y);
+          }
+        }
+      } else {
+        this.currentTargetMonster = null;
         this.lastHighlightedMonster = null;
+        this.reticleContainer.setVisible(false);
       }
 
       if (monster.is2D && monster.container2D) {
@@ -824,17 +854,26 @@ class Level2Scene extends Phaser.Scene {
    * Menampilkan gelembung petunjuk satu kalimat saat tembakan salah (PRD 15.4, 15.5, BR-19).
    */
   showThoughtHintBubble(monster) {
+    if (this.currentHintBubble) {
+      this.currentHintBubble.destroy();
+      this.currentHintBubble = null;
+    }
+
     const pos = this.getMonsterPos(monster) || { x: 960, y: 360 };
     const sx = pos.x;
     const sy = pos.y - 80;
 
-    // BR-19: Tembakan salah pada monster jurnal menampilkan penjelasan kata kunci transparan
-    let hintText = monster.thought.hint;
+    const catToAstro = {
+      'Cemas': 'Penenang [1]',
+      'Rencana': 'Navigator [2]',
+      'Menilai Diri': 'Sahabat [3]',
+      'Kenangan': 'Arsiparis [4]'
+    };
+    const targetAstro = catToAstro[monster.thought.cat] || 'Astronot';
+
+    let hintText = `Pikiran '${monster.thought.cat}'. Gunakan ${targetAstro}!`;
     if (monster.thought.isJournal && monster.thought.matchedWord) {
-      hintText = `Aku mengira ini ${monster.thought.cat} karena kata '${monster.thought.matchedWord}'.`;
-    }
-    if (!hintText) {
-      hintText = 'Perhatikan apakah pikiran ini tentang kecemasan, rencana, evaluasi diri, atau kenangan.';
+      hintText = `Aku mengira ini '${monster.thought.cat}' karena kata '${monster.thought.matchedWord}'. Gunakan ${targetAstro}!`;
     }
 
     const container = JEDA.UI.textBox(this, sx, sy, {
@@ -844,11 +883,12 @@ class Level2Scene extends Phaser.Scene {
       fontWeight: '700',
       padX: 24,
       padY: 16,
-      maxW: 680,
+      maxW: 720,
       variant: 'notif',
       strokeColor: 0xFFA07A
     }).setDepth(3000);
 
+    this.currentHintBubble = container;
     container.setAlpha(0);
     this.tweens.add({
       targets: container,
@@ -863,7 +903,12 @@ class Level2Scene extends Phaser.Scene {
               targets: container,
               alpha: 0,
               duration: 350,
-              onComplete: () => container.destroy()
+              onComplete: () => {
+                if (this.currentHintBubble === container) {
+                  this.currentHintBubble = null;
+                }
+                container.destroy();
+              }
             });
           }
         });
@@ -924,6 +969,17 @@ class Level2Scene extends Phaser.Scene {
     }
 
     this.activeMonsters.push(monsterItem);
+
+    // Kunci sasaran otomatis ke monster ini jika belum ada target aktif
+    if (!this.currentTargetMonster || !this.activeMonsters.some(m => m.id === this.currentTargetMonster.id)) {
+      this.currentTargetMonster = monsterItem;
+      this.lastHighlightedMonster = monsterItem;
+      this.reticleContainer.setPosition(slotPos.x, slotPos.y);
+      this.reticleContainer.setVisible(true);
+      if (window.JEDA && JEDA.Stage3D && JEDA.Stage3D.l2 && JEDA.Stage3D.l2.aim) {
+        JEDA.Stage3D.l2.aim(this.selectedAstronautIndex, slotPos.x, slotPos.y);
+      }
+    }
   }
 
   /**
@@ -1310,6 +1366,13 @@ class Level2Scene extends Phaser.Scene {
 
     const panicHits = (JEDA.State.session && JEDA.State.session.panicHits) || this.panicHits || 0;
     const result = JEDA.Score.calcL2(this.firstTryCorrect, panicHits, this.totalThoughts);
+
+    // Jika seluruh 10 pikiran berhasil dijinakkan, pemain tuntas menyelesaikan latihan & berhak lanjut ke Level 3
+    if (this.defeatedCount >= this.totalThoughts) {
+      result.passed = true;
+      result.score = Math.max(result.score, 60);
+      result.stars = Math.max(result.stars, 1);
+    }
 
     if (result.passed) {
       if (JEDA.Lumi) JEDA.Lumi.say('level_pass');
