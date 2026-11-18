@@ -712,14 +712,26 @@ class Level2Scene extends Phaser.Scene {
     if (this.isFiring) return;
     this.isFiring = true;
 
+    // Jaring pengaman: buka kunci tembak otomatis setelah 700ms jika callback tertunda
+    if (this.firingSafetyTimer) this.firingSafetyTimer.remove(false);
+    this.firingSafetyTimer = this.time.delayedCall(700, () => {
+      this.isFiring = false;
+    });
+
     const astCfg = this.astronautConfigs[astronautIndex];
     const has3D = (window.JEDA && JEDA.Stage3D && JEDA.Stage3D.isActive() && JEDA.Stage3D.l2 && JEDA.Stage3D.l2.fire);
 
-    if (has3D && !monster.is2D) {
-      JEDA.Stage3D.l2.fire(astronautIndex, monster.id, (result) => {
-        this.handleShotResult(result, monster, astCfg);
-      });
-    } else {
+    try {
+      if (has3D && !monster.is2D) {
+        JEDA.Stage3D.l2.fire(astronautIndex, monster.id, (result) => {
+          this.handleShotResult(result, monster, astCfg);
+        });
+      } else {
+        this.fire2DBeam(astronautIndex, monster, (result) => {
+          this.handleShotResult(result, monster, astCfg);
+        });
+      }
+    } catch (err) {
       this.fire2DBeam(astronautIndex, monster, (result) => {
         this.handleShotResult(result, monster, astCfg);
       });
@@ -731,6 +743,10 @@ class Level2Scene extends Phaser.Scene {
    */
   handleShotResult(result, monster, astCfg) {
     this.isFiring = false;
+    if (this.firingSafetyTimer) {
+      this.firingSafetyTimer.remove(false);
+      this.firingSafetyTimer = null;
+    }
 
     if (result && result.correct) {
       // === TEMBAKAN BENAR (Poin 11 e) ===

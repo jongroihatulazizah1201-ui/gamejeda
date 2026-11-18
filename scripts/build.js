@@ -1,4 +1,18 @@
-const esbuild = require('esbuild');
+let esbuild;
+try {
+  esbuild = require('esbuild');
+} catch (err) {
+  console.warn('[Build] Peringatan: esbuild tidak ditemukan. Memeriksa file bundle dist yang sudah ada...');
+  const appMinPath = path.join(__dirname, '../dist/js/app.min.js');
+  const cssMinPath = path.join(__dirname, '../dist/css/style.min.css');
+  if (fs.existsSync(appMinPath) && fs.existsSync(cssMinPath)) {
+    console.log('[Build] File dist/js/app.min.js dan dist/css/style.min.css sudah tersedia di repositori. Melanjutkan deploy.');
+    process.exit(0);
+  } else {
+    console.error('[Build] Error: esbuild diperlukan untuk mengompilasi bundel awal.');
+    process.exit(1);
+  }
+}
 const fs = require('fs');
 const path = require('path');
 

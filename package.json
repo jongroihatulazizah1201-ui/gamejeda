@@ -22,7 +22,7 @@
     "url": "https://github.com/jongroihatulazizah1201-ui/gamejeda/issues"
   },
   "homepage": "https://github.com/jongroihatulazizah1201-ui/gamejeda#readme",
-  "devDependencies": {
+  "dependencies": {
     "esbuild": "^0.28.2"
   }
 }

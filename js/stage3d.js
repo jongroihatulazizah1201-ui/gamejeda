@@ -1621,8 +1621,13 @@ JEDA.Stage3D = (function() {
     const dist = startPos.distanceTo(targetPos);
     const beamGeo = new THREE.CylinderGeometry(0.06, 0.06, Math.min(2.4, dist * 0.35), 8);
     beamGeo.rotateX(Math.PI * 0.5);
+
+    const astCfg = (astronaut.userData && astronaut.userData.cfg) || (astScreenPositions && astScreenPositions[astronautIndex]) || {};
+    const astCat = astCfg.cat || '';
+    const astColor = astCfg.color || 0x6EC6FF;
+
     const beamMat = new THREE.MeshBasicMaterial({
-      color: astronaut.userData.cfg.color,
+      color: astColor,
       transparent: true,
       opacity: 0.95,
       blending: THREE.AdditiveBlending,
@@ -1637,7 +1642,7 @@ JEDA.Stage3D = (function() {
       mesh: beamMesh,
       start: startPos,
       target: targetPos,
-      cat: astronaut.userData.cfg.cat,
+      cat: astCat,
       monsterId: monsterId,
       progress: 0.0,
       duration: 0.35,
@@ -1938,8 +1943,10 @@ JEDA.Stage3D = (function() {
 
         // Kilatan di pusat monster
         const targetMonster = l2Monsters.find(m => m.id === beam.monsterId);
+        let isCorrect = false;
         if (targetMonster && !targetMonster.userData.isDying) {
-          const isCorrect = (beam.cat === targetMonster.userData.thought.cat);
+          const thoughtCat = (targetMonster.userData.thought && (targetMonster.userData.thought.cat || targetMonster.userData.thought.category)) || '';
+          isCorrect = String(beam.cat).trim().toLowerCase() === String(thoughtCat).trim().toLowerCase();
           if (isCorrect) {
             targetMonster.userData.isDying = true;
             spawnL2CorrectEffects(targetMonster.mesh.position);
@@ -1948,10 +1955,11 @@ JEDA.Stage3D = (function() {
             targetMonster.userData.hasFailed = true;
             spawnL2MissEffects(targetMonster.mesh.position);
           }
+        }
 
-          if (typeof beam.onResult === 'function') {
-            beam.onResult({ correct: isCorrect });
-          }
+        // Pastikan onResult selalu terpanggil agar Phaser isFiring tidak pernah macet
+        if (typeof beam.onResult === 'function') {
+          beam.onResult({ correct: isCorrect });
         }
       }
     }

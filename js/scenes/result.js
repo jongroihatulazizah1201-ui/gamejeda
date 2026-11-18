@@ -58,11 +58,11 @@ class ResultScene extends Phaser.Scene {
     // 7. Perbandingan Check-in Awal vs Akhir (BR-10, y = 428)
     this.createCheckinComparison(cx, 428);
 
-    // 8. Lima Slot Lencana (PRD 14.5: rowCenter, y = 588)
-    this.createBadgeSlots(cx, 588);
+    // 8. Lima Slot Lencana (PRD 14.5: rowCenter, y = 592, ruang vertikal rapi tanpa tumpang-tindih)
+    this.createBadgeSlots(cx, 592);
 
-    // 9. Pemilih Tema Visual Tiga Kartu Pratinjau (PRD 15.3, y = 740)
-    this.createThemeSelector(cx, 740);
+    // 9. Pemilih Tema Visual Tiga Kartu Pratinjau (PRD 15.3, y = 746)
+    this.createThemeSelector(cx, 746);
 
     // 10. Pengingat Istirahat jika runsToday >= 3 (BR-11, y = 840)
     if (JEDA.State.data.runs.count >= (JEDA.CFG.RUNS_PER_DAY_NOTE || 3)) {
@@ -371,13 +371,13 @@ class ResultScene extends Phaser.Scene {
     const badges = badgeResult.badges || [];
     const earned = badgeResult.earned || [];
 
-    // Label judul bagian lencana
-    this.add.text(cx, y - 48, 'Lencana Sikap Positif', {
+    // Label judul bagian lencana (kedalaman 60 di atas kartu agar tidak tertutup badge)
+    this.add.text(cx, y - 54, 'Lencana Sikap Positif', {
       fontFamily: JEDA.CFG.FONT.family,
       fontSize: '22px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
-    }).setOrigin(0.5).setResolution(2);
+    }).setOrigin(0.5).setResolution(2).setDepth(60);
 
     const slotW = 304;
     const slotH = 68;
@@ -415,7 +415,7 @@ class ResultScene extends Phaser.Scene {
       fontSize: '22px',
       fontStyle: '800',
       color: JEDA.CFG.COLOR.hex.text
-    }).setOrigin(0.5).setResolution(2);
+    }).setOrigin(0.5).setResolution(2).setDepth(60);
 
     JEDA.UI.themeCards(this, cx, y, {
       cardW: 304,
